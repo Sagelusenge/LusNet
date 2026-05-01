@@ -14,6 +14,8 @@ import {
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import { api, getToken, parseUser, setToken } from './src/api';
 
 const palettes = {
@@ -47,6 +49,127 @@ const palettes = {
 
 function money(value) {
   return `${Number(value || 0).toFixed(2)} USD`;
+}
+
+function text(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  }[char]));
+}
+
+async function printDocument(title, html) {
+  try {
+    await Print.printAsync({ html });
+  } catch (error) {
+    const file = await Print.printToFileAsync({ html, base64: false });
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(file.uri, { dialogTitle: title });
+    } else {
+      Alert.alert(title, 'PDF cree, mais le partage n est pas disponible sur cet appareil.');
+    }
+  }
+}
+
+function documentStyles() {
+  return `
+    <style>
+      body { font-family: Arial, sans-serif; color: #17211d; margin: 0; background: #f5f8f7; }
+      .doc { width: 92%; margin: 24px auto; background: white; padding: 28px; border: 1px solid #d9e5e0; }
+      .head { display: flex; justify-content: space-between; gap: 20px; border-bottom: 3px solid #08765d; padding-bottom: 14px; margin-bottom: 18px; }
+      .brand { font-size: 25px; font-weight: 900; color: #08765d; }
+      .sub { color: #65756f; font-size: 12px; line-height: 1.6; }
+      h1 { margin: 0; font-size: 22px; text-align: right; }
+      h2 { color: #08765d; font-size: 16px; margin-top: 18px; }
+      p { line-height: 1.55; }
+      table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+      th, td { border: 1px solid #d9e5e0; padding: 8px; font-size: 12px; text-align: left; }
+      th { background: #eef4f2; }
+      .box { border: 1px solid #d9e5e0; padding: 12px; margin: 12px 0; }
+      .row { display: flex; justify-content: space-between; gap: 16px; padding: 5px 0; border-bottom: 1px dashed #d9e5e0; }
+      .selected { background: #e3f4ef; font-weight: 700; }
+      .sign { display: flex; gap: 18px; margin-top: 28px; }
+      .sign div { flex: 1; min-height: 110px; border: 1px solid #d9e5e0; padding: 12px; }
+      .footer { margin-top: 18px; color: #65756f; font-size: 11px; text-align: center; }
+    </style>
+  `;
+}
+
+function selectedMark(name, selected) {
+  return name === selected ? '[X]' : '[ ]';
+}
+
+function quoteHtml(item) {
+  return `
+    <html><head>${documentStyles()}</head><body><main class="doc">
+      <header class="head"><div><div class="brand">LWASIVA_NET</div><div class="sub">Fournisseur d Acces Internet - Goma, Nord-Kivu, RDC<br/>KITSA LUSENGE LWASIVA Sage - +243 980 208 012</div></div><div><h1>Devis Internet</h1><div class="sub">Num : ${text(item.quote_number)}</div></div></header>
+      <section class="box">
+        <div class="row"><strong>Client</strong><span>${text(item.full_name)}</span></div>
+        <div class="row"><strong>Telephone</strong><span>${text(item.phone)}</span></div>
+        <div class="row"><strong>Adresse</strong><span>${text(item.address)}</span></div>
+        <div class="row"><strong>Bouquet demande</strong><span>${text(item.plan_name || 'Non precise')}</span></div>
+        <div class="row"><strong>Statut</strong><span>${text(item.status)}</span></div>
+      </section>
+      <h2>Details</h2>
+      <p>Usage prevu : ${text(item.intended_usage || item.message || 'Non precise')}</p>
+      <table><thead><tr><th>Bouquet</th><th>Debit</th><th>Prix mensuel</th></tr></thead><tbody><tr><td>${text(item.plan_name || '-')}</td><td>${text(item.bandwidth_mbps ? `${item.bandwidth_mbps} Mbps` : '-')}</td><td>${money(item.monthly_price_usd)}</td></tr></tbody></table>
+      <p>Ce devis est transmis a l administration. Le contrat final est imprime uniquement apres validation.</p>
+      <section class="sign"><div><strong>Pour LWASIVA_NET</strong><p>Date : ..... / ..... / 202...</p></div><div><strong>Pour le demandeur</strong><p>${text(item.full_name)}</p><p>Date : ..... / ..... / 202...</p></div></section>
+      <footer class="footer">LWASIVA_NET - Devis</footer>
+    </main></body></html>`;
+}
+
+function contractHtml(item, client = {}) {
+  const selectedPlan = item.plan_name || '.........................................';
+  const clientName = item.client_name || client.full_name || '';
+  const clientPhone = item.client_phone || client.phone || '';
+  const clientAddress = item.installation_address || item.client_address || client.address || '';
+  return `
+    <html><head>${documentStyles()}</head><body><main class="doc">
+      <header class="head"><div><div class="brand">LWASIVA_NET</div><div class="sub">Fournisseur d Acces Internet - Goma, Nord-Kivu, RDC<br/>Representant : KITSA LUSENGE LWASIVA Sage - +243 980 208 012</div></div><div><h1>Contrat d Abonnement</h1><div class="sub">Num : ${text(item.contract_number)}</div></div></header>
+      <section class="box"><div class="row"><strong>Fait a</strong><span>Goma, Province du Nord-Kivu, RDC</span></div><div class="row"><strong>Client</strong><span>${text(clientName)}</span></div><div class="row"><strong>Adresse</strong><span>${text(clientAddress)}</span></div><div class="row"><strong>Telephone</strong><span>${text(clientPhone)}</span></div></section>
+      <h2>Article 1 : Objet du Contrat</h2><p>Le present contrat definit les conditions techniques, juridiques et financieres dans lesquelles LWASIVA_NET fournit au Client un acces Internet haut debit par liaison sans fil, ainsi que les equipements necessaires a la reception du signal.</p>
+      <h2>Article 2 : Offre choisie</h2>
+      <table><thead><tr><th>Choix</th><th>Bouquet</th><th>Debit</th><th>Usage recommande</th><th>Prix mensuel</th></tr></thead><tbody>
+        <tr class="${selectedPlan === 'Basic Home' ? 'selected' : ''}"><td>${selectedMark('Basic Home', selectedPlan)}</td><td>Basic Home</td><td>Jusqu a 5 Mbps</td><td>Navigation, reseaux sociaux, video SD</td><td>15 USD</td></tr>
+        <tr class="${selectedPlan === 'Stream Plus' ? 'selected' : ''}"><td>${selectedMark('Stream Plus', selectedPlan)}</td><td>Stream Plus</td><td>Jusqu a 10 Mbps</td><td>Streaming HD, teletravail</td><td>20 USD</td></tr>
+        <tr class="${selectedPlan === 'Pro Ultra' ? 'selected' : ''}"><td>${selectedMark('Pro Ultra', selectedPlan)}</td><td>Pro Ultra</td><td>Jusqu a 30 Mbps</td><td>Streaming 4K, gaming, multi-utilisateurs</td><td>50 USD</td></tr>
+      </tbody></table>
+      <p>Le Client souscrit au bouquet <strong>${text(selectedPlan)}</strong>, tarif mensuel <strong>${money(item.monthly_price_usd)}</strong>.</p>
+      <h2>Article 3 : Equipements</h2><p>Kit de connexion : antenne CPE, routeur Wi-Fi, cablage et accessoires. Valeur totale : <strong>100 USD</strong>. Tranche 1 : <strong>20 USD</strong>.</p>
+      <h2>Article 4 : Interdiction de revente</h2><p>La connexion est personnelle. La revente, le partage payant, les tickets Wi-Fi et la sous-location sont interdits.</p>
+      <h2>Article 5 : Paiement</h2><p>L abonnement mensuel est payable d avance, deux jours avant l echeance fixee au <strong>${text(item.billing_due_day || '')}</strong> de chaque mois.</p>
+      <h2>Article 6 : Service et support</h2><p>LWASIVA_NET fournit le service 24h/24 et 7j/7, sauf force majeure ou maintenance programmee.</p>
+      <h2>Article 7 : Duree et resiliation</h2><p>Une periode d essai de sept jours est accordee. La resiliation apres essai se fait avec preavis de quinze jours.</p>
+      <h2>Article 8 : Litiges</h2><p>Les parties recherchent une solution amiable. A defaut, les tribunaux competents de Goma tranchent.</p>
+      <section class="sign"><div><strong>Pour l Operateur</strong><p>KITSA LUSENGE LWASIVA Sage</p><p>Signature et cachet</p></div><div><strong>Pour le Client</strong><p>${text(clientName)}</p><p>Lu et approuve</p></div></section>
+      <footer class="footer">LWASIVA_NET - Contrat d abonnement</footer>
+    </main></body></html>`;
+}
+
+function invoiceHtml(item, client = {}) {
+  return `
+    <html><head>${documentStyles()}</head><body><main class="doc">
+      <header class="head"><div><div class="brand">LWASIVA_NET</div><div class="sub">Facturation Internet - Goma, RDC<br/>+243 980 208 012</div></div><div><h1>Facture</h1><div class="sub">Num : ${text(item.invoice_number)}</div></div></header>
+      <section class="box">
+        <div class="row"><strong>Client</strong><span>${text(item.client_name || client.full_name || '')}</span></div>
+        <div class="row"><strong>Contrat</strong><span>${text(item.contract_number || item.contract_id || '')}</span></div>
+        <div class="row"><strong>Periode</strong><span>${text(item.period_start || '')} - ${text(item.period_end || '')}</span></div>
+        <div class="row"><strong>Echeance</strong><span>${text(item.due_date || '')}</span></div>
+        <div class="row"><strong>Statut</strong><span>${text(item.status || '')}</span></div>
+      </section>
+      <table><thead><tr><th>Description</th><th>Montant</th></tr></thead><tbody>
+        <tr><td>Abonnement Internet</td><td>${money(item.subscription_amount_usd || item.total_amount_usd)}</td></tr>
+        <tr><td>Tranche materiel</td><td>${money(item.equipment_installment_amount_usd)}</td></tr>
+        <tr><td>Remise</td><td>${money(item.discount_amount_usd)}</td></tr>
+        <tr><th>Total</th><th>${money(item.total_amount_usd)}</th></tr>
+      </tbody></table>
+      <p>Merci de regler cette facture selon les moyens communiques par LWASIVA_NET.</p>
+      <footer class="footer">LWASIVA_NET - Facture</footer>
+    </main></body></html>`;
 }
 
 const initialData = {
@@ -410,6 +533,7 @@ function QuotesAdmin({ styles, colors, data, submit }) {
       <SectionTitle styles={styles} colors={colors} icon="clipboard-outline" title="Devis recus" />
       {data.quotes.length === 0 ? <Empty styles={styles} text="Aucun devis recu" /> : data.quotes.map((item) => (
         <Record key={item.id} styles={styles} title={`${item.quote_number} - ${item.full_name}`} text={`${item.phone} - ${item.address} - ${item.plan_name || 'Bouquet non precise'} - ${item.status}`}>
+          <Action styles={styles} colors={colors} label="Imprimer" icon="print-outline" onPress={() => printDocument(item.quote_number, quoteHtml(item))} />
           <Action styles={styles} colors={colors} label="Valider" icon="checkmark-outline" onPress={() => submit(() => api.updateQuoteStatus(item.id, { status: 'valide', adminNotes: item.admin_notes || '' }), 'Devis valide')} />
           <Action styles={styles} colors={colors} label="Rejeter" icon="close-outline" onPress={() => submit(() => api.updateQuoteStatus(item.id, { status: 'rejete', adminNotes: item.admin_notes || '' }), 'Devis rejete')} />
           <Action styles={styles} colors={colors} label="Creer client" icon="person-add-outline" onPress={() => submit(() => api.convertQuoteToClient(item.id), 'Client cree depuis le devis')} />
@@ -484,6 +608,7 @@ function ContractsAdmin({ styles, colors, data, submit }) {
         <SectionTitle styles={styles} colors={colors} icon="document-text-outline" title="Contrats" />
         {data.contracts.map((item) => (
           <Record key={item.contract_id} styles={styles} title={`${item.contract_number} - ${item.client_name}`} text={`${item.plan_name} - ${item.status} - ${item.bandwidth_mbps} Mbps`}>
+            <Action styles={styles} colors={colors} label="Imprimer" icon="print-outline" onPress={() => printDocument(item.contract_number, contractHtml(item))} />
             <Action styles={styles} colors={colors} label="Modifier" icon="create-outline" onPress={() => edit(item)} />
             <Action styles={styles} colors={colors} label="Activer" icon="checkmark-circle-outline" onPress={() => submit(() => api.updateContract(item.contract_id, { status: 'actif' }), 'Contrat active')} />
             <Action styles={styles} colors={colors} label="Suspendre" icon="pause-circle-outline" onPress={() => submit(() => api.updateContract(item.contract_id, { status: 'suspendu' }), 'Contrat suspendu')} />
@@ -509,7 +634,14 @@ function InvoicesAdmin({ styles, colors, data, submit }) {
         <Field styles={styles} colors={colors} label="Tranche materiel" value={form.equipmentInstallmentAmountUsd} onChangeText={(equipmentInstallmentAmountUsd) => setForm({ ...form, equipmentInstallmentAmountUsd })} keyboardType="numeric" />
         <Action styles={styles} colors={colors} primary label="Creer facture" icon="save-outline" onPress={() => submit(() => api.createInvoice(form), 'Facture creee')} />
       </Card>
-      <List styles={styles} colors={colors} title="Factures" icon="receipt-outline" items={data.invoices.map((x) => `${x.invoice_number} - ${x.client_name || ''} - ${money(x.total_amount_usd)} - ${x.status}`)} />
+      <Card styles={styles}>
+        <SectionTitle styles={styles} colors={colors} icon="receipt-outline" title="Factures" />
+        {data.invoices.length === 0 ? <Empty styles={styles} text="Aucune facture" /> : data.invoices.map((item) => (
+          <Record key={item.id} styles={styles} title={`${item.invoice_number} - ${item.client_name || ''}`} text={`${money(item.total_amount_usd)} - ${item.status} - ${item.due_date || ''}`}>
+            <Action styles={styles} colors={colors} label="Imprimer" icon="print-outline" onPress={() => printDocument(item.invoice_number, invoiceHtml(item))} />
+          </Record>
+        ))}
+      </Card>
     </>
   );
 }
@@ -638,8 +770,26 @@ function ClientScreen({ data, screen, setScreen, styles, colors, theme, toggleTh
             </View>
           </>
         )}
-        {active === 'clientContracts' && <List styles={styles} colors={colors} title="Mes contrats" icon="document-text-outline" items={data.contracts.map((x) => `${x.contract_number} - ${x.plan_name} - ${x.status}`)} />}
-        {active === 'clientInvoices' && <List styles={styles} colors={colors} title="Mes factures" icon="receipt-outline" items={data.invoices.map((x) => `${x.invoice_number} - ${money(x.total_amount_usd)} - ${x.status}`)} />}
+        {active === 'clientContracts' && (
+          <Card styles={styles}>
+            <SectionTitle styles={styles} colors={colors} icon="document-text-outline" title="Mes contrats" />
+            {data.contracts.length === 0 ? <Empty styles={styles} text="Aucun contrat" /> : data.contracts.map((item) => (
+              <Record key={item.id} styles={styles} title={`${item.contract_number} - ${item.plan_name}`} text={`${item.status} - ${item.bandwidth_mbps} Mbps - ${item.installation_address || ''}`}>
+                <Action styles={styles} colors={colors} label="Voir / imprimer" icon="print-outline" onPress={() => printDocument(item.contract_number, contractHtml(item, data.client))} />
+              </Record>
+            ))}
+          </Card>
+        )}
+        {active === 'clientInvoices' && (
+          <Card styles={styles}>
+            <SectionTitle styles={styles} colors={colors} icon="receipt-outline" title="Mes factures" />
+            {data.invoices.length === 0 ? <Empty styles={styles} text="Aucune facture" /> : data.invoices.map((item) => (
+              <Record key={item.id} styles={styles} title={item.invoice_number} text={`${money(item.total_amount_usd)} - ${item.status} - ${item.due_date || ''}`}>
+                <Action styles={styles} colors={colors} label="Voir / imprimer" icon="print-outline" onPress={() => printDocument(item.invoice_number, invoiceHtml(item, data.client))} />
+              </Record>
+            ))}
+          </Card>
+        )}
         {active === 'clientPayments' && <List styles={styles} colors={colors} title="Mes paiements" icon="cash-outline" items={data.payments.map((x) => `${x.payment_reference} - ${money(x.amount_usd)} - ${x.method}`)} />}
       </ScrollView>
       <BottomNav
