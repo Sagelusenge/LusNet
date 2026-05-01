@@ -1,0 +1,74 @@
+const fs = require('fs');
+const path = require('path');
+const mysql = require('mysql2/promise');
+const env = require('../src/config/env');
+
+const files = [
+  path.join(__dirname, '..', 'database', '001_initial_schema.sql'),
+  path.join(__dirname, '..', 'database', '002_views_procedures.sql'),
+  path.join(__dirname, '..', 'database', '003_quote_requests_and_client_users.sql'),
+  path.join(__dirname, '..', 'database', '004_whatsapp_notifications.sql'),
+  path.join(__dirname, '..', 'database', '005_contact_feedback.sql')
+];
+
+function splitSqlStatements(sql) {
+  const statements = [];
+  let delimiter = ';';
+  let buffer = '';
+
+  for (const line of sql.split(/\r?\n/)) {
+    const trimmed = line.trim();
+
+    if (/^DELIMITER\s+/i.test(trimmed)) {
+      delimiter = trimmed.replace(/^DELIMITER\s+/i, '');
+      continue;
+    }
+
+    buffer += `${line}\n`;
+
+    if (buffer.trimEnd().endsWith(delimiter)) {
+      const statement = buffer.trimEnd().slice(0, -delimiter.length).trim();
+      if (statement) statements.push(statement);
+      buffer = '';
+    }
+  }
+
+  const lastStatement = buffer.trim();
+  if (lastStatement) statements.push(lastStatement);
+
+  return statements;
+}
+
+async function main() {
+  const connection = await mysql.createConnection({
+    host: env.db.host,
+    port: env.db.port,
+    user: env.db.user,
+    password: env.db.password,
+    database: env.db.ssl ? env.db.database : undefined,
+    ssl: env.db.ssl ? { rejectUnauthorized: false } : undefined,
+    multipleStatements: false
+  });
+
+  for (const file of files) {
+    console.log(`Execution: ${path.relative(process.cwd(), file)}`);
+    const sql = fs.readFileSync(file, 'utf8');
+    const statements = splitSqlStatements(sql);
+
+    for (const statement of statements) {
+      if (env.db.ssl && (/CREATE\s+DATABASE/i.test(statement) || /USE\s+lwasiva_net/i.test(statement))) {
+        continue;
+      }
+
+      await connection.query(statement);
+    }
+  }
+
+  await connection.end();
+  console.log('Base de donnees initialisee avec succes.');
+}
+
+main().catch((error) => {
+  console.error('Initialisation BD echouee:', error.message);
+  process.exit(1);
+});

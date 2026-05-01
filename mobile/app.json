@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "LWASIVA_NET",
+    "slug": "lwasiva-net",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.svg",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "backgroundColor": "#08765d"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.lwasiva.net"
+    }
+  }
+}

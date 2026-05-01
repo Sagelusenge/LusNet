@@ -1,0 +1,43 @@
+{
+  "name": "lwasiva-net-backend",
+  "version": "1.0.0",
+  "description": "Backend Node.js/Express pour la gestion des abonnements Internet LWASIVA_NET.",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "frontend:dev": "node node_modules/vite/bin/vite.js --config frontend/vite.config.mjs --host 0.0.0.0",
+    "frontend:build": "node node_modules/vite/bin/vite.js build --config frontend/vite.config.mjs",
+    "frontend:preview": "node node_modules/vite/bin/vite.js preview --config frontend/vite.config.mjs --host 0.0.0.0",
+    "db:init": "node scripts/init-db.js",
+    "db:check": "node scripts/check-db.js",
+    "notifications:whatsapp": "node scripts/send-whatsapp-reminders.js"
+  },
+  "keywords": [
+    "lwasiva",
+    "internet",
+    "express",
+    "mysql"
+  ],
+  "author": "LWASIVA_NET",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "lucide-react": "^0.468.0",
+    "mysql2": "^3.12.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^6.0.7",
+    "nodemon": "^3.1.9"
+  }
+}

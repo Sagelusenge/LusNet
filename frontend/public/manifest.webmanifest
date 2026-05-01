@@ -1,0 +1,19 @@
+{
+  "name": "LWASIVA_NET",
+  "short_name": "LWASIVA",
+  "description": "Gestion et souscription aux services Internet LWASIVA_NET.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#eef4f2",
+  "theme_color": "#08765d",
+  "icons": [
+    {
+      "src": "/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
