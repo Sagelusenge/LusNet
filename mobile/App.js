@@ -57,9 +57,16 @@ const initialData = {
   contracts: [],
   quotes: [],
   invoices: [],
+  unpaidInvoices: [],
   payments: [],
   tickets: [],
   users: [],
+  balances: [],
+  equipmentStatus: [],
+  kits: [],
+  notificationLogs: [],
+  contactMessages: [],
+  allFeedback: [],
   clientSpace: { client: null, contracts: [], invoices: [], payments: [] }
 };
 
@@ -106,18 +113,31 @@ export default function App() {
         return;
       }
 
-      const [summary, clients, contracts, quotes, invoices, payments, tickets, users] = await Promise.all([
+      const [
+        summary, clients, contracts, quotes, invoices, unpaidInvoices, payments, tickets, users,
+        balances, equipmentStatus, kits, notificationLogs, contactMessages, allFeedback
+      ] = await Promise.all([
         api.summary().catch(() => null),
         api.clients().catch(() => []),
         api.contracts().catch(() => []),
         api.quotes().catch(() => []),
         api.invoices().catch(() => []),
+        api.unpaidInvoices().catch(() => []),
         api.payments().catch(() => []),
         api.tickets().catch(() => []),
-        api.users().catch(() => [])
+        api.users().catch(() => []),
+        api.balances().catch(() => []),
+        api.equipmentStatus().catch(() => []),
+        api.kits().catch(() => []),
+        api.notificationLogs().catch(() => []),
+        api.contactMessages().catch(() => []),
+        api.allFeedback().catch(() => [])
       ]);
 
-      setData((old) => ({ ...old, plans, feedback, summary, clients, contracts, quotes, invoices, payments, tickets, users }));
+      setData((old) => ({
+        ...old, plans, feedback, summary, clients, contracts, quotes, invoices, unpaidInvoices, payments, tickets,
+        users, balances, equipmentStatus, kits, notificationLogs, contactMessages, allFeedback
+      }));
     } finally {
       setLoading(false);
     }
@@ -333,6 +353,16 @@ function LoginScreen({ styles, colors, theme, toggleTheme, setScreen, onLogin })
 function AdminScreen({ data, screen, setScreen, styles, colors, theme, toggleTheme, loading, load, logout }) {
   const summary = data.summary || {};
   const active = screen || 'adminDashboard';
+  async function submit(action, message) {
+    try {
+      await action();
+      Alert.alert('Operation', message);
+      await load();
+    } catch (error) {
+      Alert.alert('Erreur', error.message);
+    }
+  }
+
   return (
     <SafeAreaView style={styles.safe}>
       <AppHeader styles={styles} colors={colors} title="Administration" logout={logout} theme={theme} toggleTheme={toggleTheme} />
@@ -344,17 +374,18 @@ function AdminScreen({ data, screen, setScreen, styles, colors, theme, toggleThe
               <MiniStat styles={styles} colors={colors} label="Contrats" value={summary.active_contracts || 0} icon="document-text-outline" />
               <MiniStat styles={styles} colors={colors} label="Tickets" value={summary.open_tickets || 0} icon="construct-outline" />
             </View>
-            <List styles={styles} colors={colors} title="Devis recents" icon="clipboard-outline" items={data.quotes.map((x) => `${x.quote_number} - ${x.full_name} - ${x.status}`)} />
+            <QuotesAdmin styles={styles} colors={colors} data={data} submit={submit} />
           </>
         )}
-        {active === 'adminClients' && <List styles={styles} colors={colors} title="Clients" icon="people-outline" items={data.clients.map((x) => `${x.full_name} - ${x.phone} - ${x.status || 'actif'}`)} />}
-        {active === 'adminContracts' && <List styles={styles} colors={colors} title="Contrats" icon="document-text-outline" items={data.contracts.map((x) => `${x.contract_number} - ${x.client_name} - ${x.plan_name}`)} />}
+        {active === 'adminClients' && <ClientsAdmin styles={styles} colors={colors} data={data} submit={submit} />}
+        {active === 'adminContracts' && <ContractsAdmin styles={styles} colors={colors} data={data} submit={submit} />}
         {active === 'adminMoney' && (
           <>
-            <List styles={styles} colors={colors} title="Factures" icon="receipt-outline" items={data.invoices.map((x) => `${x.invoice_number} - ${x.client_name || ''} - ${money(x.total_amount_usd)}`)} />
-            <List styles={styles} colors={colors} title="Paiements" icon="cash-outline" items={data.payments.map((x) => `${x.client_name || ''} - ${money(x.amount_usd)} - ${x.method}`)} />
+            <InvoicesAdmin styles={styles} colors={colors} data={data} submit={submit} />
+            <PaymentsAdmin styles={styles} colors={colors} data={data} submit={submit} />
           </>
         )}
+        {active === 'adminMore' && <MoreAdmin styles={styles} colors={colors} data={data} submit={submit} />}
       </ScrollView>
       <BottomNav
         styles={styles}
@@ -364,11 +395,223 @@ function AdminScreen({ data, screen, setScreen, styles, colors, theme, toggleThe
           ['adminDashboard', 'Tableau', 'grid-outline'],
           ['adminClients', 'Clients', 'people-outline'],
           ['adminContracts', 'Contrats', 'document-text-outline'],
-          ['adminMoney', 'Argent', 'cash-outline']
+          ['adminMoney', 'Argent', 'cash-outline'],
+          ['adminMore', 'Plus', 'menu-outline']
         ]}
         onPress={setScreen}
       />
     </SafeAreaView>
+  );
+}
+
+function QuotesAdmin({ styles, colors, data, submit }) {
+  return (
+    <Card styles={styles}>
+      <SectionTitle styles={styles} colors={colors} icon="clipboard-outline" title="Devis recus" />
+      {data.quotes.length === 0 ? <Empty styles={styles} text="Aucun devis recu" /> : data.quotes.map((item) => (
+        <Record key={item.id} styles={styles} title={`${item.quote_number} - ${item.full_name}`} text={`${item.phone} - ${item.address} - ${item.plan_name || 'Bouquet non precise'} - ${item.status}`}>
+          <Action styles={styles} colors={colors} label="Valider" icon="checkmark-outline" onPress={() => submit(() => api.updateQuoteStatus(item.id, { status: 'valide', adminNotes: item.admin_notes || '' }), 'Devis valide')} />
+          <Action styles={styles} colors={colors} label="Rejeter" icon="close-outline" onPress={() => submit(() => api.updateQuoteStatus(item.id, { status: 'rejete', adminNotes: item.admin_notes || '' }), 'Devis rejete')} />
+          <Action styles={styles} colors={colors} label="Creer client" icon="person-add-outline" onPress={() => submit(() => api.convertQuoteToClient(item.id), 'Client cree depuis le devis')} />
+          <Action styles={styles} colors={colors} danger label="Supprimer" icon="trash-outline" onPress={() => confirmDelete(() => submit(() => api.deleteQuote(item.id), 'Devis supprime'))} />
+        </Record>
+      ))}
+    </Card>
+  );
+}
+
+function ClientsAdmin({ styles, colors, data, submit }) {
+  const empty = { id: '', fullName: '', phone: '', email: '', address: '', clientType: 'particulier' };
+  const [form, setForm] = useState(empty);
+  const editing = Boolean(form.id);
+
+  function edit(item) {
+    setForm({ id: item.id, fullName: item.full_name, phone: item.phone, email: item.email || '', address: item.address, clientType: item.client_type || 'particulier' });
+  }
+
+  return (
+    <>
+      <Card styles={styles}>
+        <SectionTitle styles={styles} colors={colors} icon="person-add-outline" title={editing ? 'Modifier client' : 'Nouveau client'} />
+        <Field styles={styles} colors={colors} label="Nom complet" value={form.fullName} onChangeText={(fullName) => setForm({ ...form, fullName })} />
+        <Field styles={styles} colors={colors} label="Telephone" value={form.phone} onChangeText={(phone) => setForm({ ...form, phone })} keyboardType="phone-pad" />
+        <Field styles={styles} colors={colors} label="Email" value={form.email} onChangeText={(email) => setForm({ ...form, email })} autoCapitalize="none" />
+        <SelectChips styles={styles} colors={colors} label="Type" value={form.clientType} options={['particulier', 'entreprise']} onChange={(clientType) => setForm({ ...form, clientType })} />
+        <Field styles={styles} colors={colors} label="Adresse" value={form.address} onChangeText={(address) => setForm({ ...form, address })} />
+        <SaveRow styles={styles} colors={colors} editing={editing} onCancel={() => setForm(empty)} onSave={() => submit(() => editing ? api.updateClient(form.id, form) : api.createClient(form), editing ? 'Client modifie' : 'Client cree').then(() => setForm(empty))} />
+      </Card>
+      <Card styles={styles}>
+        <SectionTitle styles={styles} colors={colors} icon="people-outline" title="Clients" />
+        {data.clients.map((item) => (
+          <Record key={item.id} styles={styles} title={`${item.client_code} - ${item.full_name}`} text={`${item.phone} - ${item.address}`}>
+            <Action styles={styles} colors={colors} label="Modifier" icon="create-outline" onPress={() => edit(item)} />
+            <Action styles={styles} colors={colors} danger label="Supprimer" icon="trash-outline" onPress={() => confirmDelete(() => submit(() => api.deleteClient(item.id), 'Client supprime'))} />
+          </Record>
+        ))}
+      </Card>
+    </>
+  );
+}
+
+function ContractsAdmin({ styles, colors, data, submit }) {
+  const empty = { id: '', clientId: '', planId: '', installationAddress: '', status: 'essai', billingDueDay: '5' };
+  const [form, setForm] = useState(empty);
+  const editing = Boolean(form.id);
+
+  function edit(item) {
+    setForm({
+      id: item.contract_id,
+      clientId: String(item.client_id || ''),
+      planId: String(item.plan_id || ''),
+      installationAddress: item.installation_address || '',
+      status: item.status || 'essai',
+      billingDueDay: String(item.billing_due_day || 5)
+    });
+  }
+
+  return (
+    <>
+      <Card styles={styles}>
+        <SectionTitle styles={styles} colors={colors} icon="document-text-outline" title={editing ? 'Modifier contrat' : 'Nouveau contrat'} />
+        <SelectChips styles={styles} colors={colors} label="Client" value={form.clientId} options={data.clients.map((x) => ({ value: String(x.id), label: x.full_name }))} onChange={(clientId) => setForm({ ...form, clientId })} />
+        <SelectChips styles={styles} colors={colors} label="Bouquet" value={form.planId} options={data.plans.map((x) => ({ value: String(x.id), label: `${x.name} - ${money(x.monthly_price_usd)}` }))} onChange={(planId) => setForm({ ...form, planId })} />
+        <SelectChips styles={styles} colors={colors} label="Statut" value={form.status} options={['brouillon', 'essai', 'actif', 'suspendu']} onChange={(status) => setForm({ ...form, status })} />
+        <Field styles={styles} colors={colors} label="Jour echeance" value={form.billingDueDay} onChangeText={(billingDueDay) => setForm({ ...form, billingDueDay })} keyboardType="numeric" />
+        <Field styles={styles} colors={colors} label="Adresse installation" value={form.installationAddress} onChangeText={(installationAddress) => setForm({ ...form, installationAddress })} />
+        <SaveRow styles={styles} colors={colors} editing={editing} onCancel={() => setForm(empty)} onSave={() => submit(() => editing ? api.updateContract(form.id, form) : api.createContract(form), editing ? 'Contrat modifie' : 'Contrat cree').then(() => setForm(empty))} />
+      </Card>
+      <Card styles={styles}>
+        <SectionTitle styles={styles} colors={colors} icon="document-text-outline" title="Contrats" />
+        {data.contracts.map((item) => (
+          <Record key={item.contract_id} styles={styles} title={`${item.contract_number} - ${item.client_name}`} text={`${item.plan_name} - ${item.status} - ${item.bandwidth_mbps} Mbps`}>
+            <Action styles={styles} colors={colors} label="Modifier" icon="create-outline" onPress={() => edit(item)} />
+            <Action styles={styles} colors={colors} label="Activer" icon="checkmark-circle-outline" onPress={() => submit(() => api.updateContract(item.contract_id, { status: 'actif' }), 'Contrat active')} />
+            <Action styles={styles} colors={colors} label="Suspendre" icon="pause-circle-outline" onPress={() => submit(() => api.updateContract(item.contract_id, { status: 'suspendu' }), 'Contrat suspendu')} />
+            <Action styles={styles} colors={colors} danger label="Supprimer" icon="trash-outline" onPress={() => confirmDelete(() => submit(() => api.deleteContract(item.contract_id), 'Contrat supprime'))} />
+          </Record>
+        ))}
+      </Card>
+      <List styles={styles} colors={colors} title="Soldes contrats" icon="wallet-outline" items={data.balances.map((x) => `${x.contract_number} - ${x.client_name} - Solde ${money(x.balance_usd)}`)} />
+    </>
+  );
+}
+
+function InvoicesAdmin({ styles, colors, data, submit }) {
+  const [form, setForm] = useState({ contractId: '', periodStart: '', periodEnd: '', dueDate: '', equipmentInstallmentAmountUsd: '0', discountAmountUsd: '0' });
+  return (
+    <>
+      <Card styles={styles}>
+        <SectionTitle styles={styles} colors={colors} icon="receipt-outline" title="Facture mensuelle" />
+        <SelectChips styles={styles} colors={colors} label="Contrat" value={form.contractId} options={data.contracts.map((x) => ({ value: String(x.contract_id), label: `${x.contract_number} - ${x.client_name}` }))} onChange={(contractId) => setForm({ ...form, contractId })} />
+        <Field styles={styles} colors={colors} label="Debut AAAA-MM-JJ" value={form.periodStart} onChangeText={(periodStart) => setForm({ ...form, periodStart })} />
+        <Field styles={styles} colors={colors} label="Fin AAAA-MM-JJ" value={form.periodEnd} onChangeText={(periodEnd) => setForm({ ...form, periodEnd })} />
+        <Field styles={styles} colors={colors} label="Echeance AAAA-MM-JJ" value={form.dueDate} onChangeText={(dueDate) => setForm({ ...form, dueDate })} />
+        <Field styles={styles} colors={colors} label="Tranche materiel" value={form.equipmentInstallmentAmountUsd} onChangeText={(equipmentInstallmentAmountUsd) => setForm({ ...form, equipmentInstallmentAmountUsd })} keyboardType="numeric" />
+        <Action styles={styles} colors={colors} primary label="Creer facture" icon="save-outline" onPress={() => submit(() => api.createInvoice(form), 'Facture creee')} />
+      </Card>
+      <List styles={styles} colors={colors} title="Factures" icon="receipt-outline" items={data.invoices.map((x) => `${x.invoice_number} - ${x.client_name || ''} - ${money(x.total_amount_usd)} - ${x.status}`)} />
+    </>
+  );
+}
+
+function PaymentsAdmin({ styles, colors, data, submit }) {
+  const [form, setForm] = useState({ invoiceId: '', amountUsd: '', method: 'especes', transactionNumber: '' });
+  return (
+    <>
+      <Card styles={styles}>
+        <SectionTitle styles={styles} colors={colors} icon="cash-outline" title="Nouveau paiement" />
+        <SelectChips styles={styles} colors={colors} label="Facture" value={form.invoiceId} options={data.invoices.map((x) => ({ value: String(x.id), label: `${x.invoice_number} - ${money(x.total_amount_usd)}` }))} onChange={(invoiceId) => setForm({ ...form, invoiceId })} />
+        <Field styles={styles} colors={colors} label="Montant USD" value={form.amountUsd} onChangeText={(amountUsd) => setForm({ ...form, amountUsd })} keyboardType="numeric" />
+        <SelectChips styles={styles} colors={colors} label="Methode" value={form.method} options={['especes', 'airtel_money', 'mpesa', 'orange_money', 'banque', 'autre']} onChange={(method) => setForm({ ...form, method })} />
+        <Field styles={styles} colors={colors} label="Transaction" value={form.transactionNumber} onChangeText={(transactionNumber) => setForm({ ...form, transactionNumber })} />
+        <Action styles={styles} colors={colors} primary label="Enregistrer paiement" icon="save-outline" onPress={() => submit(() => api.registerPayment(form), 'Paiement enregistre')} />
+      </Card>
+      <List styles={styles} colors={colors} title="Paiements" icon="cash-outline" items={data.payments.map((x) => `${x.payment_reference} - ${x.client_name || ''} - ${money(x.amount_usd)} - ${x.method}`)} />
+    </>
+  );
+}
+
+function MoreAdmin({ styles, colors, data, submit }) {
+  return (
+    <>
+      <UsersAdmin styles={styles} colors={colors} data={data} submit={submit} />
+      <SupportAdmin styles={styles} colors={colors} data={data} submit={submit} />
+      <EquipmentAdmin styles={styles} colors={colors} data={data} submit={submit} />
+      <Card styles={styles}>
+        <SectionTitle styles={styles} colors={colors} icon="logo-whatsapp" title="Rappels WhatsApp J-5" />
+        <Action styles={styles} colors={colors} primary label="Envoyer maintenant" icon="send-outline" onPress={() => submit(() => api.sendWhatsAppReminders(), 'Rappels WhatsApp traites')} />
+      </Card>
+      <List styles={styles} colors={colors} title="Messages contact" icon="mail-outline" items={data.contactMessages.map((x) => `${x.full_name} - ${x.phone} - ${x.subject}`)} />
+      <List styles={styles} colors={colors} title="Historique WhatsApp" icon="logo-whatsapp" items={data.notificationLogs.map((x) => `${x.client_name} - ${x.phone} - ${x.status}`)} />
+    </>
+  );
+}
+
+function UsersAdmin({ styles, colors, data, submit }) {
+  const empty = { id: '', fullName: '', email: '', phone: '', password: '', role: 'manager', clientId: '' };
+  const [form, setForm] = useState(empty);
+  const editing = Boolean(form.id);
+  function edit(item) {
+    setForm({ id: item.id, fullName: item.full_name, email: item.email, phone: item.phone || '', password: '', role: item.role, clientId: String(item.client_id || '') });
+  }
+  return (
+    <>
+      <Card styles={styles}>
+        <SectionTitle styles={styles} colors={colors} icon="person-add-outline" title={editing ? 'Modifier utilisateur' : 'Creer utilisateur'} />
+        <Field styles={styles} colors={colors} label="Nom complet" value={form.fullName} onChangeText={(fullName) => setForm({ ...form, fullName })} />
+        <Field styles={styles} colors={colors} label="Email" value={form.email} onChangeText={(email) => setForm({ ...form, email })} autoCapitalize="none" />
+        <Field styles={styles} colors={colors} label="Telephone" value={form.phone} onChangeText={(phone) => setForm({ ...form, phone })} />
+        {!editing && <Field styles={styles} colors={colors} label="Mot de passe" value={form.password} onChangeText={(password) => setForm({ ...form, password })} secureTextEntry />}
+        <SelectChips styles={styles} colors={colors} label="Role" value={form.role} options={['admin', 'manager', 'technician', 'cashier', 'client']} onChange={(role) => setForm({ ...form, role })} />
+        <SelectChips styles={styles} colors={colors} label="Client lie" value={form.clientId} options={data.clients.map((x) => ({ value: String(x.id), label: x.full_name }))} onChange={(clientId) => setForm({ ...form, clientId })} />
+        <SaveRow styles={styles} colors={colors} editing={editing} onCancel={() => setForm(empty)} onSave={() => submit(() => editing ? api.updateUser(form.id, form) : api.createUser(form), editing ? 'Utilisateur modifie' : 'Utilisateur cree').then(() => setForm(empty))} />
+      </Card>
+      <Card styles={styles}>
+        <SectionTitle styles={styles} colors={colors} icon="people-outline" title="Utilisateurs" />
+        {data.users.map((item) => (
+          <Record key={item.id} styles={styles} title={`${item.full_name} - ${item.role}`} text={`${item.email} - ${item.client_name || 'Aucun client'} - ${item.is_active ? 'Actif' : 'Bloque'}`}>
+            <Action styles={styles} colors={colors} label="Modifier" icon="create-outline" onPress={() => edit(item)} />
+            <Action styles={styles} colors={colors} label={item.is_active ? 'Bloquer' : 'Activer'} icon="power-outline" onPress={() => submit(() => api.updateUser(item.id, { isActive: !item.is_active }), item.is_active ? 'Utilisateur bloque' : 'Utilisateur active')} />
+            <Action styles={styles} colors={colors} danger label="Supprimer" icon="trash-outline" onPress={() => confirmDelete(() => submit(() => api.deleteUser(item.id), 'Utilisateur supprime'))} />
+          </Record>
+        ))}
+      </Card>
+    </>
+  );
+}
+
+function SupportAdmin({ styles, colors, data, submit }) {
+  const [form, setForm] = useState({ clientId: '', contractId: '', title: '', description: '', priority: 'normale' });
+  return (
+    <>
+      <Card styles={styles}>
+        <SectionTitle styles={styles} colors={colors} icon="construct-outline" title="Ticket support" />
+        <SelectChips styles={styles} colors={colors} label="Client" value={form.clientId} options={data.clients.map((x) => ({ value: String(x.id), label: x.full_name }))} onChange={(clientId) => setForm({ ...form, clientId })} />
+        <SelectChips styles={styles} colors={colors} label="Contrat" value={form.contractId} options={data.contracts.map((x) => ({ value: String(x.contract_id), label: x.contract_number }))} onChange={(contractId) => setForm({ ...form, contractId })} />
+        <Field styles={styles} colors={colors} label="Titre" value={form.title} onChangeText={(title) => setForm({ ...form, title })} />
+        <SelectChips styles={styles} colors={colors} label="Priorite" value={form.priority} options={['basse', 'normale', 'haute', 'urgente']} onChange={(priority) => setForm({ ...form, priority })} />
+        <Field styles={styles} colors={colors} label="Description" value={form.description} onChangeText={(description) => setForm({ ...form, description })} multiline />
+        <Action styles={styles} colors={colors} primary label="Ouvrir ticket" icon="save-outline" onPress={() => submit(() => api.openTicket(form), 'Ticket ouvert')} />
+      </Card>
+      <List styles={styles} colors={colors} title="Tickets" icon="construct-outline" items={data.tickets.map((x) => `${x.client_name} - ${x.title} - ${x.priority} - ${x.status}`)} />
+    </>
+  );
+}
+
+function EquipmentAdmin({ styles, colors, data, submit }) {
+  const [form, setForm] = useState({ contractId: '', installmentNumber: '1', amountUsd: '20', dueDate: '' });
+  return (
+    <>
+      <Card styles={styles}>
+        <SectionTitle styles={styles} colors={colors} icon="cube-outline" title="Tranche materiel" />
+        <SelectChips styles={styles} colors={colors} label="Contrat" value={form.contractId} options={data.contracts.map((x) => ({ value: String(x.contract_id), label: `${x.contract_number} - ${x.client_name}` }))} onChange={(contractId) => setForm({ ...form, contractId })} />
+        <Field styles={styles} colors={colors} label="Numero tranche" value={form.installmentNumber} onChangeText={(installmentNumber) => setForm({ ...form, installmentNumber })} keyboardType="numeric" />
+        <Field styles={styles} colors={colors} label="Montant USD" value={form.amountUsd} onChangeText={(amountUsd) => setForm({ ...form, amountUsd })} keyboardType="numeric" />
+        <Field styles={styles} colors={colors} label="Echeance AAAA-MM-JJ" value={form.dueDate} onChangeText={(dueDate) => setForm({ ...form, dueDate })} />
+        <Action styles={styles} colors={colors} primary label="Creer tranche" icon="save-outline" onPress={() => submit(() => api.createInstallment(form), 'Tranche materiel creee')} />
+      </Card>
+      <List styles={styles} colors={colors} title="Etat materiel" icon="cube-outline" items={data.equipmentStatus.map((x) => `${x.contract_number} - ${x.client_name} - Reste ${money(x.equipment_remaining_usd)}`)} />
+    </>
   );
 }
 
@@ -535,6 +778,62 @@ function List({ styles, colors, title, icon, items }) {
   );
 }
 
+function Record({ styles, title, text, children }) {
+  return (
+    <View style={styles.record}>
+      <Text style={styles.recordTitle}>{title}</Text>
+      <Text style={styles.recordText}>{text}</Text>
+      <View style={styles.actionWrap}>{children}</View>
+    </View>
+  );
+}
+
+function Action({ styles, colors, label, icon, onPress, danger = false, primary = false }) {
+  return (
+    <Pressable style={[styles.actionButton, primary && styles.actionPrimary, danger && styles.actionDanger]} onPress={onPress}>
+      <Ionicons name={icon} size={15} color={primary || danger ? '#fff' : colors.ink} />
+      <Text style={[styles.actionText, (primary || danger) && styles.actionTextLight]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function SaveRow({ styles, colors, editing, onSave, onCancel }) {
+  return (
+    <View style={styles.saveRow}>
+      <Action styles={styles} colors={colors} primary label="Enregistrer" icon="save-outline" onPress={onSave} />
+      {editing && <Action styles={styles} colors={colors} label="Annuler" icon="close-outline" onPress={onCancel} />}
+    </View>
+  );
+}
+
+function SelectChips({ styles, colors, label, value, options, onChange }) {
+  const normalized = options.map((item) => (typeof item === 'string' ? { value: item, label: item } : item));
+  return (
+    <View style={styles.field}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <View style={styles.chipRow}>
+          {normalized.map((item) => {
+            const selected = String(value) === String(item.value);
+            return (
+              <Pressable key={`${label}-${item.value}`} style={[styles.chip, selected && styles.chipActive]} onPress={() => onChange(item.value)}>
+                <Text style={[styles.chipText, selected && { color: colors.brand }]} numberOfLines={1}>{item.label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+function confirmDelete(onConfirm) {
+  Alert.alert('Confirmer', 'Voulez-vous vraiment supprimer ?', [
+    { text: 'Annuler', style: 'cancel' },
+    { text: 'Supprimer', style: 'destructive', onPress: onConfirm }
+  ]);
+}
+
 function Empty({ styles, text }) {
   return <Text style={styles.muted}>{text}</Text>;
 }
@@ -598,6 +897,20 @@ function createStyles(colors) {
     headerTitle: { flex: 1, color: '#fff', fontSize: 17, fontWeight: '900', textAlign: 'right' },
     listItem: { paddingVertical: 10, borderTopWidth: 1, borderTopColor: colors.line },
     listText: { color: colors.ink, lineHeight: 20 },
+    record: { paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.line, gap: 6 },
+    recordTitle: { color: colors.ink, fontWeight: '900', fontSize: 15 },
+    recordText: { color: colors.muted, lineHeight: 20 },
+    actionWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+    actionButton: { minHeight: 38, borderRadius: 12, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.soft, paddingHorizontal: 11, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+    actionPrimary: { backgroundColor: colors.brand, borderColor: colors.brand },
+    actionDanger: { backgroundColor: colors.danger, borderColor: colors.danger },
+    actionText: { color: colors.ink, fontWeight: '900', fontSize: 12 },
+    actionTextLight: { color: '#fff' },
+    saveRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+    chipRow: { flexDirection: 'row', gap: 8, paddingRight: 12 },
+    chip: { minHeight: 38, maxWidth: 230, borderRadius: 12, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.soft, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' },
+    chipActive: { borderColor: colors.brand, backgroundColor: colors.surface },
+    chipText: { color: colors.muted, fontWeight: '800', fontSize: 12 },
     bottomNav: { position: 'absolute', left: 10, right: 10, bottom: 10, minHeight: 70, borderRadius: 22, backgroundColor: colors.nav, borderWidth: 1, borderColor: colors.line, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingHorizontal: 6 },
     navItem: { flex: 1, minHeight: 58, borderRadius: 18, alignItems: 'center', justifyContent: 'center', gap: 3 },
     navItemActive: { backgroundColor: colors.soft },
