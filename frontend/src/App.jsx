@@ -28,7 +28,9 @@ import {
   UserPlus,
   Users,
   Wrench,
-  Wifi
+  Wifi,
+  X,
+  AlertCircle
 } from 'lucide-react';
 import { api, getCurrentUser, setToken } from './api';
 
@@ -117,7 +119,7 @@ function App() {
   const [tokenState, setTokenState] = useState(localStorage.getItem('lwasiva_token') || '');
   const [currentUser, setCurrentUser] = useState(getCurrentUser());
   const [theme, setTheme] = useState(localStorage.getItem('lwasiva_theme') || 'light');
-  const [toast, setToast] = useState('');
+  const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState({
     summary: emptySummary,
@@ -215,9 +217,9 @@ function App() {
     loadAll();
   }, [tokenState]);
 
-  function notify(message) {
-    setToast(message);
-    window.setTimeout(() => setToast(''), 3200);
+  function notify(message, type = 'success') {
+    setToast({ message, type });
+    window.setTimeout(() => setToast(null), 3600);
   }
 
   async function submit(handler, successMessage) {
@@ -226,7 +228,7 @@ function App() {
       notify(successMessage);
       await loadAll();
     } catch (error) {
-      notify(error.message);
+      notify(error.message, 'error');
     }
   }
 
@@ -319,7 +321,7 @@ function App() {
           </div>
         </header>
 
-        {toast && <div className="toast">{toast}</div>}
+        {toast && <Toast toast={toast} onClose={() => setToast(null)} />}
 
         <section className="content">
           {!isClient && active === 'admin-dashboard' && <Dashboard data={data} />}
@@ -338,6 +340,23 @@ function App() {
           {isClient && active === 'client-invoices' && <ClientInvoices data={data.clientSpace} />}
         </section>
       </main>
+    </div>
+  );
+}
+
+function Toast({ toast, onClose }) {
+  const isError = toast.type === 'error';
+  const Icon = isError ? AlertCircle : CheckCircle2;
+
+  return (
+    <div className={`toast ${isError ? 'error' : 'success'}`}>
+      <span className="toast-icon"><Icon size={20} /></span>
+      <span>{toast.message}</span>
+      {onClose && (
+        <button className="toast-close" onClick={onClose} title="Fermer">
+          <X size={16} />
+        </button>
+      )}
     </div>
   );
 }
@@ -367,7 +386,7 @@ function PublicShell({ active, setActive, toast, theme, setTheme, children }) {
           </button>
         </nav>
       </header>
-      {toast && <div className="toast">{toast}</div>}
+      {toast && <Toast toast={toast} />}
       {children}
     </div>
   );
@@ -579,7 +598,7 @@ function LoginPanel({ onLoggedIn, notify }) {
       const result = await api.login(form);
       onLoggedIn(result.token);
     } catch (error) {
-      notify(error.message);
+      notify(error.message, 'error');
     }
   }
 

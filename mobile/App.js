@@ -199,6 +199,7 @@ export default function App() {
   const [token, setTokenState] = useState('');
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [notice, setNotice] = useState(null);
   const [data, setData] = useState(initialData);
   const colors = palettes[theme];
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -206,6 +207,11 @@ export default function App() {
 
   function toggleTheme() {
     setTheme((value) => (value === 'light' ? 'dark' : 'light'));
+  }
+
+  function notify(title, message, type = 'success') {
+    setNotice({ title, message, type });
+    setTimeout(() => setNotice(null), 3600);
   }
 
   async function bootstrap() {
@@ -283,7 +289,7 @@ export default function App() {
       setUser(parsed);
       setScreen(parsed?.role === 'client' ? 'clientDashboard' : 'adminDashboard');
     } catch (error) {
-      Alert.alert('Connexion', error.message);
+      notify('Connexion impossible', error.message, 'error');
     }
   }
 
@@ -294,7 +300,7 @@ export default function App() {
     setScreen('home');
   }
 
-  const common = { colors, styles, screen, setScreen, theme, toggleTheme, loading, load };
+  const common = { colors, styles, screen, setScreen, theme, toggleTheme, loading, load, notify };
 
   let content;
   if (screen === 'login') {
@@ -311,11 +317,12 @@ export default function App() {
     <SafeAreaProvider>
       <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={colors.bg} />
       {content}
+      {notice && <Notice styles={styles} colors={colors} notice={notice} onClose={() => setNotice(null)} />}
     </SafeAreaProvider>
   );
 }
 
-function HomeScreen({ data, screen, setScreen, styles, colors, theme, toggleTheme, load }) {
+function HomeScreen({ data, screen, setScreen, styles, colors, theme, toggleTheme, load, notify }) {
   const [quote, setQuote] = useState({ fullName: '', phone: '', address: '', planId: '', intendedUsage: '' });
   const [contact, setContact] = useState({ fullName: '', phone: '', subject: '', message: '' });
 
@@ -323,9 +330,9 @@ function HomeScreen({ data, screen, setScreen, styles, colors, theme, toggleThem
     try {
       await api.createQuote(quote);
       setQuote({ fullName: '', phone: '', address: '', planId: '', intendedUsage: '' });
-      Alert.alert('Devis', 'Votre demande a ete envoyee a l admin');
+      notify('Devis envoye', 'Votre demande a ete envoyee a l administration');
     } catch (error) {
-      Alert.alert('Devis', error.message);
+      notify('Devis non envoye', error.message, 'error');
     }
   }
 
@@ -333,9 +340,9 @@ function HomeScreen({ data, screen, setScreen, styles, colors, theme, toggleThem
     try {
       await api.sendContact(contact);
       setContact({ fullName: '', phone: '', subject: '', message: '' });
-      Alert.alert('Contact', 'Votre message a ete envoye');
+      notify('Message envoye', 'Votre message a ete transmis a LWASIVA_NET');
     } catch (error) {
-      Alert.alert('Contact', error.message);
+      notify('Message non envoye', error.message, 'error');
     }
   }
 
@@ -444,8 +451,8 @@ function HomeScreen({ data, screen, setScreen, styles, colors, theme, toggleThem
 }
 
 function LoginScreen({ styles, colors, theme, toggleTheme, setScreen, onLogin }) {
-  const [email, setEmail] = useState('admin@lwasiva.net');
-  const [password, setPassword] = useState('Admin@2026');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -473,16 +480,16 @@ function LoginScreen({ styles, colors, theme, toggleTheme, setScreen, onLogin })
   );
 }
 
-function AdminScreen({ data, screen, setScreen, styles, colors, theme, toggleTheme, loading, load, logout }) {
+function AdminScreen({ data, screen, setScreen, styles, colors, theme, toggleTheme, loading, load, logout, notify }) {
   const summary = data.summary || {};
   const active = screen || 'adminDashboard';
   async function submit(action, message) {
     try {
       await action();
-      Alert.alert('Operation', message);
+      notify('Operation reussie', message);
       await load();
     } catch (error) {
-      Alert.alert('Erreur', error.message);
+      notify('Operation impossible', error.message, 'error');
     }
   }
 
@@ -984,6 +991,24 @@ function confirmDelete(onConfirm) {
   ]);
 }
 
+function Notice({ styles, colors, notice, onClose }) {
+  const isError = notice.type === 'error';
+  return (
+    <View style={styles.noticeWrap} pointerEvents="box-none">
+      <Pressable style={[styles.notice, isError && styles.noticeError]} onPress={onClose}>
+        <View style={[styles.noticeIcon, isError && styles.noticeIconError]}>
+          <Ionicons name={isError ? 'alert-circle-outline' : 'checkmark-circle-outline'} size={22} color="#fff" />
+        </View>
+        <View style={styles.noticeTextBox}>
+          <Text style={styles.noticeTitle}>{notice.title}</Text>
+          <Text style={styles.noticeMessage}>{notice.message}</Text>
+        </View>
+        <Ionicons name="close-outline" size={20} color={colors.muted} />
+      </Pressable>
+    </View>
+  );
+}
+
 function Empty({ styles, text }) {
   return <Text style={styles.muted}>{text}</Text>;
 }
@@ -1061,6 +1086,14 @@ function createStyles(colors) {
     chip: { minHeight: 38, maxWidth: 230, borderRadius: 12, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.soft, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' },
     chipActive: { borderColor: colors.brand, backgroundColor: colors.surface },
     chipText: { color: colors.muted, fontWeight: '800', fontSize: 12 },
+    noticeWrap: { position: 'absolute', left: 14, right: 14, top: 48, zIndex: 50 },
+    notice: { minHeight: 78, borderRadius: 18, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 10, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 18, shadowOffset: { width: 0, height: 8 }, elevation: 8 },
+    noticeError: { borderColor: colors.danger },
+    noticeIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: colors.brand, alignItems: 'center', justifyContent: 'center' },
+    noticeIconError: { backgroundColor: colors.danger },
+    noticeTextBox: { flex: 1, gap: 2 },
+    noticeTitle: { color: colors.ink, fontWeight: '900', fontSize: 15 },
+    noticeMessage: { color: colors.muted, lineHeight: 18, fontSize: 12 },
     bottomNav: { position: 'absolute', left: 10, right: 10, bottom: 10, minHeight: 70, borderRadius: 22, backgroundColor: colors.nav, borderWidth: 1, borderColor: colors.line, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingHorizontal: 6 },
     navItem: { flex: 1, minHeight: 58, borderRadius: 18, alignItems: 'center', justifyContent: 'center', gap: 3 },
     navItemActive: { backgroundColor: colors.soft },
