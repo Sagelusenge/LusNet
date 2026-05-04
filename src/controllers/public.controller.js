@@ -34,7 +34,7 @@ async function createFeedback(req, res) {
 }
 
 async function listPublicFeedback(req, res) {
-  const rows = await query('SELECT * FROM vw_public_feedback LIMIT 12');
+  const rows = await query('SELECT * FROM vw_public_feedback LIMIT 6');
   res.json({ success: true, data: rows });
 }
 
@@ -50,6 +50,20 @@ async function listAllFeedback(req, res) {
 
 async function updateFeedback(req, res) {
   const { status, isPublic } = req.body;
+  if ((status === 'approuve' || isPublic === true)) {
+    const rows = await query(
+      `SELECT COUNT(*) AS total
+       FROM client_feedback
+       WHERE is_public = TRUE
+         AND status = 'approuve'
+         AND id <> ?`,
+      [req.params.id]
+    );
+    if (Number(rows[0]?.total || 0) >= 6) {
+      throw new HttpError(400, 'Maximum 6 appreciations publiques. Retirez-en une avant d ajouter celle-ci.');
+    }
+  }
+
   await query(
     `UPDATE client_feedback
      SET status = COALESCE(?, status), is_public = COALESCE(?, is_public)

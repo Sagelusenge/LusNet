@@ -70,6 +70,12 @@ button:hover {
   transform: translateY(-1px);
 }
 
+button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+  transform: none;
+}
+
 .app-shell {
   display: flex;
   min-height: 100vh;
@@ -1080,6 +1086,38 @@ tbody tr:hover {
   background: var(--surface-soft);
   color: var(--muted);
   padding: 0;
+}
+
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  background: rgba(4, 24, 20, 0.18);
+  backdrop-filter: blur(3px);
+}
+
+.loading-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 14px 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+
+.loader {
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--line);
+  border-top-color: var(--brand);
+  border-radius: 999px;
+  animation: spin 800ms linear infinite;
 }
 
 @keyframes toast-in {

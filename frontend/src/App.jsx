@@ -121,6 +121,7 @@ function App() {
   const [theme, setTheme] = useState(localStorage.getItem('lwasiva_theme') || 'light');
   const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [data, setData] = useState({
     summary: emptySummary,
     plans: [],
@@ -136,6 +137,8 @@ function App() {
     quotes: [],
     users: [],
   notificationLogs: [],
+    appMessages: [],
+    adminAppMessages: [],
     publicFeedback: [],
     contactMessages: [],
     allFeedback: [],
@@ -164,12 +167,15 @@ function App() {
       }
 
       if (isClient) {
-        const clientSpace = await api.clientSpace().catch(() => ({ client: null, contracts: [], invoices: [], payments: [] }));
-        setData((previous) => ({ ...previous, plans: publicPlans, clientSpace }));
+        const [clientSpace, appMessages] = await Promise.all([
+          api.clientSpace().catch(() => ({ client: null, contracts: [], invoices: [], payments: [] })),
+          api.appMessages().catch(() => [])
+        ]);
+        setData((previous) => ({ ...previous, plans: publicPlans, clientSpace, appMessages }));
         return;
       }
 
-      const [summary, clients, contracts, balances, equipmentStatus, invoices, unpaidInvoices, payments, kits, tickets, quotes, users, notificationLogs, contactMessages, allFeedback] =
+      const [summary, clients, contracts, balances, equipmentStatus, invoices, unpaidInvoices, payments, kits, tickets, quotes, users, notificationLogs, appMessages, adminAppMessages, contactMessages, allFeedback] =
         await Promise.all([
           api.summary().catch(() => emptySummary),
           api.clients().catch(() => []),
@@ -184,6 +190,8 @@ function App() {
           api.quotes().catch(() => []),
           api.users().catch(() => []),
           api.notificationLogs().catch(() => []),
+          api.appMessages().catch(() => []),
+          api.adminAppMessages().catch(() => []),
           api.contactMessages().catch(() => []),
           api.allFeedback().catch(() => [])
         ]);
@@ -203,6 +211,8 @@ function App() {
         quotes,
         users,
         notificationLogs,
+        appMessages,
+        adminAppMessages,
         publicFeedback,
         contactMessages,
         allFeedback,
@@ -223,12 +233,15 @@ function App() {
   }
 
   async function submit(handler, successMessage) {
+    setBusy(true);
     try {
       await handler();
       notify(successMessage);
       await loadAll();
     } catch (error) {
       notify(error.message, 'error');
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -260,7 +273,7 @@ function App() {
         {active === 'login' ? (
           <LoginPanel onLoggedIn={onLoggedIn} notify={notify} />
         ) : (
-          <PublicHome plans={data.plans} feedback={data.publicFeedback} submit={submit} setActive={setActive} />
+          <PublicHome plans={data.plans} feedback={data.publicFeedback} submit={submit} setActive={setActive} busy={busy} />
         )}
       </PublicShell>
     );
@@ -322,6 +335,7 @@ function App() {
         </header>
 
         {toast && <Toast toast={toast} onClose={() => setToast(null)} />}
+        {busy && <LoadingOverlay />}
 
         <section className="content">
           {!isClient && active === 'admin-dashboard' && <Dashboard data={data} />}
@@ -334,6 +348,7 @@ function App() {
           {!isClient && active === 'equipment' && <Equipment data={data} submit={submit} />}
           {!isClient && active === 'support' && <Support data={data} submit={submit} />}
           {!isClient && active === 'notifications' && <Notifications data={data} submit={submit} />}
+          {!isClient && active === 'notifications' && <FeedbackAdmin data={data} submit={submit} />}
           {!isClient && active === 'users' && <UsersAdmin data={data} submit={submit} />}
           {isClient && active === 'client-space' && <ClientSpace data={data.clientSpace} />}
           {isClient && active === 'client-contracts' && <ClientContracts data={data.clientSpace} />}
@@ -357,6 +372,17 @@ function Toast({ toast, onClose }) {
           <X size={16} />
         </button>
       )}
+    </div>
+  );
+}
+
+function LoadingOverlay() {
+  return (
+    <div className="loading-overlay">
+      <div className="loading-box">
+        <span className="loader" />
+        <strong>Traitement en cours...</strong>
+      </div>
     </div>
   );
 }
@@ -392,7 +418,7 @@ function PublicShell({ active, setActive, toast, theme, setTheme, children }) {
   );
 }
 
-function PublicHome({ plans, feedback, submit, setActive }) {
+function PublicHome({ plans, feedback, submit, setActive, busy }) {
   const [form, setForm] = useState({
     fullName: '',
     clientType: 'particulier',
@@ -532,7 +558,7 @@ function PublicHome({ plans, feedback, submit, setActive }) {
             <TextInput label="Adresse installation" value={form.address} onChange={(address) => setForm({ ...form, address })} />
             <TextInput label="Usage prevu" value={form.intendedUsage} onChange={(intendedUsage) => setForm({ ...form, intendedUsage })} />
             <TextInput label="Message" value={form.message} onChange={(message) => setForm({ ...form, message })} />
-            <button className="primary-button"><Plus size={17} /> Envoyer</button>
+            <button className="primary-button" disabled={busy}><Plus size={17} /> {busy ? 'Envoi...' : 'Envoyer'}</button>
           </form>
         </div>
       </section>
@@ -553,7 +579,7 @@ function PublicHome({ plans, feedback, submit, setActive }) {
             <TextInput label="Email" value={contactForm.email} onChange={(email) => setContactForm({ ...contactForm, email })} />
             <TextInput label="Sujet" value={contactForm.subject} onChange={(subject) => setContactForm({ ...contactForm, subject })} />
             <TextInput label="Message" value={contactForm.message} onChange={(message) => setContactForm({ ...contactForm, message })} />
-            <button className="primary-button"><Send size={17} /> Envoyer</button>
+            <button className="primary-button" disabled={busy}><Send size={17} /> {busy ? 'Envoi...' : 'Envoyer'}</button>
           </form>
         </div>
 
@@ -571,7 +597,7 @@ function PublicHome({ plans, feedback, submit, setActive }) {
             <TextInput label="Quartier" value={feedbackForm.neighborhood} onChange={(neighborhood) => setFeedbackForm({ ...feedbackForm, neighborhood })} />
             <SelectInput label="Note" value={feedbackForm.rating} onChange={(rating) => setFeedbackForm({ ...feedbackForm, rating })} options={[1, 2, 3, 4, 5].map((value) => ({ value, label: `${value}/5` }))} />
             <TextInput label="Commentaire" value={feedbackForm.comment} onChange={(comment) => setFeedbackForm({ ...feedbackForm, comment })} />
-            <button className="primary-button"><MessageSquare size={17} /> Envoyer</button>
+            <button className="primary-button" disabled={busy}><MessageSquare size={17} /> {busy ? 'Envoi...' : 'Envoyer'}</button>
           </form>
         </div>
       </section>
@@ -651,6 +677,7 @@ function Dashboard({ data }) {
 
   return (
     <>
+      <TablePanel title="Messages de LWASIVA_NET" icon={MessageSquare} columns={['Titre', 'Message', 'Date']} rows={(data.appMessages || []).slice(0, 6).map((item) => [item.title, item.body, item.created_at])} />
       <div className="metric-grid">
         {cards.map(([label, value, Icon]) => (
           <div className="metric" key={label}>
@@ -662,7 +689,7 @@ function Dashboard({ data }) {
       </div>
       <div className="two-columns">
         <TablePanel title="Derniers devis" icon={ClipboardList} columns={['Numero', 'Client', 'Telephone', 'Statut']} rows={data.quotes.slice(0, 8).map((item) => [item.quote_number, item.full_name, item.phone, item.status])} />
-        <TablePanel title="Factures a suivre" icon={Receipt} columns={['Client', 'Telephone', 'Reste', 'Echeance']} rows={data.unpaidInvoices.slice(0, 8).map((item) => [item.client_name, item.client_phone, money(item.remaining_amount_usd), item.due_date])} />
+        <TablePanel title="Factures a suivre" icon={Receipt} columns={['Client', 'Telephone', 'Reste', 'Date limite']} rows={data.unpaidInvoices.slice(0, 8).map((item) => [item.client_name, item.client_phone, money(item.remaining_amount_usd), item.due_date])} />
       </div>
       <div className="two-columns">
         <TablePanel title="Messages contact" icon={Phone} columns={['Nom', 'Telephone', 'Sujet', 'Statut']} rows={data.contactMessages.slice(0, 8).map((item) => [item.full_name, item.phone, item.subject, item.status])} />
@@ -811,7 +838,7 @@ function printContractDocument(item) {
           <p>Tout abus peut entrainer la resiliation immediate, la coupure du signal, la confiscation du materiel non paye et des poursuites judiciaires.</p>
 
           <h2>Article 5 : Paiement</h2>
-          <p>L'abonnement mensuel est payable d'avance. Le Client doit payer deux (2) jours avant l'echeance fixee au <strong>${text(item.billing_due_day)}</strong> de chaque mois. Les paiements peuvent etre faits en especes ou via Mobile Money.</p>
+          <p>L'abonnement mensuel est payable d'avance. Le Client doit payer deux (2) jours avant le <strong>jour du mois choisi pour payer : ${text(item.billing_due_day)}</strong>. Les paiements peuvent etre faits en especes ou via Mobile Money.</p>
 
           <h2>Article 6 : Service et support</h2>
           <p>LWASIVA_NET fournit le service 24h/24 et 7j/7, sauf force majeure ou maintenance programmee. Une equipe technique intervient en cas de panne signalee.</p>
@@ -885,8 +912,31 @@ function UsersAdmin({ data, submit }) {
 }
 
 function Notifications({ data, submit }) {
+  const [form, setForm] = useState({ title: '', body: '', targetRole: 'all' });
   return (
     <>
+      <div className="panel">
+        <PanelHeader icon={MessageSquare} title="Message dans l'application" />
+        <form className="form-grid" onSubmit={(event) => { event.preventDefault(); submit(() => api.sendAppMessage(form), 'Message envoye aux utilisateurs'); }}>
+          <TextInput label="Titre" value={form.title} onChange={(title) => setForm({ ...form, title })} />
+          <TextInput label="Message" value={form.body} onChange={(body) => setForm({ ...form, body })} />
+          <SelectInput label="Recepteurs" value={form.targetRole} onChange={(targetRole) => setForm({ ...form, targetRole })} options={[
+            { value: 'all', label: 'Tout le monde' },
+            { value: 'client', label: 'Clients' },
+            { value: 'manager', label: 'Managers' },
+            { value: 'technician', label: 'Techniciens' },
+            { value: 'cashier', label: 'Caisse' },
+            { value: 'admin', label: 'Admins' }
+          ]} />
+          <button className="primary-button"><Send size={17} /> Envoyer dans l app</button>
+        </form>
+      </div>
+      <TablePanel
+        title="Messages envoyes dans l app"
+        icon={MessageSquare}
+        columns={['Titre', 'Pour', 'Destinataires', 'Lus']}
+        rows={data.adminAppMessages.map((item) => [item.title, item.target_role, item.recipients_count, item.read_count])}
+      />
       <div className="panel">
         <PanelHeader icon={Send} title="Rappels WhatsApp a J-5" />
         <div className="action-row">
@@ -916,6 +966,30 @@ function Notifications({ data, submit }) {
   );
 }
 
+function FeedbackAdmin({ data, submit }) {
+  const publicCount = data.allFeedback.filter((item) => item.is_public && item.status === 'approuve').length;
+  return (
+    <div className="panel table-panel">
+      <PanelHeader icon={MessageSquare} title={`Appreciations publiques (${publicCount}/6)`} />
+      <div className="quote-list">
+        {data.allFeedback.length === 0 ? <p className="muted">Aucune appreciation recue</p> : data.allFeedback.map((item) => (
+          <div className="quote-item" key={item.id}>
+            <div>
+              <strong>{item.full_name} - {item.rating}/5</strong>
+              <span>{item.neighborhood || 'Goma'} - {item.comment} - {item.status}</span>
+            </div>
+            <div className="quote-actions">
+              <button className="small-button" onClick={() => submit(() => api.updateFeedback(item.id, { status: 'approuve', isPublic: true }), 'Appreciation publiee')}>Publier</button>
+              <button className="small-button" onClick={() => submit(() => api.updateFeedback(item.id, { isPublic: false }), 'Appreciation retiree')}>Retirer</button>
+              <button className="small-button danger" onClick={() => submit(() => api.updateFeedback(item.id, { status: 'rejete', isPublic: false }), 'Appreciation rejetee')}>Rejeter</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ClientSpace({ data }) {
   const unpaid = data.invoices.filter((item) => item.status !== 'payee' && item.status !== 'annulee');
   const unpaidTotal = unpaid.reduce((sum, item) => sum + Number(item.total_amount_usd || 0), 0);
@@ -931,7 +1005,7 @@ function ClientSpace({ data }) {
       </div>
       <div className="two-columns">
         <TablePanel title="Mes contrats" icon={FileText} columns={['Numero', 'Bouquet', 'Debit', 'Statut']} rows={data.contracts.map((item) => [item.contract_number, item.plan_name, `${item.bandwidth_mbps} Mbps`, item.status])} />
-        <TablePanel title="Mes factures a payer" icon={Receipt} columns={['Numero', 'Total', 'Statut', 'Echeance']} rows={unpaid.map((item) => [item.invoice_number, money(item.total_amount_usd), item.status, item.due_date])} />
+        <TablePanel title="Mes factures a payer" icon={Receipt} columns={['Numero', 'Total', 'Statut', 'Date limite']} rows={unpaid.map((item) => [item.invoice_number, money(item.total_amount_usd), item.status, item.due_date])} />
       </div>
       <TablePanel title="Mes derniers paiements" icon={BadgeDollarSign} columns={['Reference', 'Montant', 'Methode', 'Date']} rows={data.payments.map((item) => [item.payment_reference, money(item.amount_usd), item.method, item.paid_at])} />
     </>
@@ -943,7 +1017,7 @@ function ClientContracts({ data }) {
 }
 
 function ClientInvoices({ data }) {
-  return <TablePanel title="Mes factures" icon={Receipt} columns={['Numero', 'Periode', 'Total', 'Statut', 'Echeance']} rows={data.invoices.map((item) => [item.invoice_number, `${item.period_start} - ${item.period_end}`, money(item.total_amount_usd), item.status, item.due_date])} />;
+  return <TablePanel title="Mes factures" icon={Receipt} columns={['Numero', 'Periode', 'Total', 'Statut', 'Date limite']} rows={data.invoices.map((item) => [item.invoice_number, `${item.period_start} - ${item.period_end}`, money(item.total_amount_usd), item.status, item.due_date])} />;
 }
 
 function Clients({ data, submit }) {
@@ -1015,7 +1089,7 @@ function Contracts({ data, submit }) {
         <SelectInput label="Client" value={form.clientId} onChange={(clientId) => setForm({ ...form, clientId })} options={data.clients.map((client) => ({ value: client.id, label: client.full_name }))} />
         <SelectInput label="Bouquet" value={form.planId} onChange={(planId) => setForm({ ...form, planId })} options={data.plans.map((plan) => ({ value: plan.id, label: `${plan.name} - ${money(plan.monthly_price_usd)}` }))} />
         <SelectInput label="Statut" value={form.status} onChange={(status) => setForm({ ...form, status })} options={['brouillon', 'essai', 'actif', 'suspendu']} />
-        <TextInput label="Jour echeance" type="number" value={form.billingDueDay} onChange={(billingDueDay) => setForm({ ...form, billingDueDay })} />
+        <TextInput label="Jour du mois pour payer" type="number" value={form.billingDueDay} onChange={(billingDueDay) => setForm({ ...form, billingDueDay })} />
         <TextInput label="Adresse installation" value={form.installationAddress} onChange={(installationAddress) => setForm({ ...form, installationAddress })} />
         {isEditing && <button className="small-button" type="button" onClick={() => setForm(emptyForm)}>Annuler</button>}
       </QuickForm>
@@ -1067,10 +1141,10 @@ function Invoices({ data, submit }) {
         <SelectInput label="Contrat" value={form.contractId} onChange={(contractId) => setForm({ ...form, contractId })} options={data.contracts.map((contract) => ({ value: contract.contract_id, label: `${contract.contract_number} - ${contract.client_name}` }))} />
         <TextInput label="Debut" type="date" value={form.periodStart} onChange={(periodStart) => setForm({ ...form, periodStart })} />
         <TextInput label="Fin" type="date" value={form.periodEnd} onChange={(periodEnd) => setForm({ ...form, periodEnd })} />
-        <TextInput label="Echeance" type="date" value={form.dueDate} onChange={(dueDate) => setForm({ ...form, dueDate })} />
-        <TextInput label="Tranche materiel" type="number" value={form.equipmentInstallmentAmountUsd} onChange={(equipmentInstallmentAmountUsd) => setForm({ ...form, equipmentInstallmentAmountUsd })} />
+        <TextInput label="Date limite de paiement" type="date" value={form.dueDate} onChange={(dueDate) => setForm({ ...form, dueDate })} />
+        <TextInput label="Paiement du kit internet" type="number" value={form.equipmentInstallmentAmountUsd} onChange={(equipmentInstallmentAmountUsd) => setForm({ ...form, equipmentInstallmentAmountUsd })} />
       </QuickForm>
-      <TablePanel title="Factures" icon={Receipt} columns={['Numero', 'Client', 'Total', 'Statut', 'Echeance']} rows={data.invoices.map((item) => [item.invoice_number, item.client_name, money(item.total_amount_usd), item.status, item.due_date])} />
+      <TablePanel title="Factures" icon={Receipt} columns={['Numero', 'Client', 'Total', 'Statut', 'Date limite']} rows={data.invoices.map((item) => [item.invoice_number, item.client_name, money(item.total_amount_usd), item.status, item.due_date])} />
     </>
   );
 }
@@ -1094,11 +1168,11 @@ function Equipment({ data, submit }) {
   const [form, setForm] = useState({ contractId: '', installmentNumber: 1, amountUsd: 20, dueDate: '' });
   return (
     <>
-      <QuickForm title="Nouvelle tranche materiel" icon={Boxes} onSubmit={() => submit(() => api.createInstallment(form), 'Tranche materiel creee')}>
+      <QuickForm title="Paiement du kit internet" icon={Boxes} onSubmit={() => submit(() => api.createInstallment(form), 'Paiement du kit cree')}>
         <SelectInput label="Contrat" value={form.contractId} onChange={(contractId) => setForm({ ...form, contractId })} options={data.contracts.map((contract) => ({ value: contract.contract_id, label: `${contract.contract_number} - ${contract.client_name}` }))} />
-        <TextInput label="Numero tranche" type="number" value={form.installmentNumber} onChange={(installmentNumber) => setForm({ ...form, installmentNumber })} />
+        <TextInput label="Numero du paiement" type="number" value={form.installmentNumber} onChange={(installmentNumber) => setForm({ ...form, installmentNumber })} />
         <TextInput label="Montant USD" type="number" value={form.amountUsd} onChange={(amountUsd) => setForm({ ...form, amountUsd })} />
-        <TextInput label="Echeance" type="date" value={form.dueDate} onChange={(dueDate) => setForm({ ...form, dueDate })} />
+        <TextInput label="Date limite de paiement" type="date" value={form.dueDate} onChange={(dueDate) => setForm({ ...form, dueDate })} />
       </QuickForm>
       <TablePanel title="Etat materiel" icon={Router} columns={['Contrat', 'Client', 'Kit', 'Paye', 'Reste']} rows={data.equipmentStatus.map((item) => [item.contract_number, item.client_name, item.equipment_kit || '-', money(item.equipment_paid_usd), money(item.equipment_remaining_usd)])} />
     </>

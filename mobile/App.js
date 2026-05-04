@@ -16,7 +16,17 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
 import { api, getToken, parseUser, setToken } from './src/api';
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true
+  })
+});
 
 const palettes = {
   light: {
@@ -100,6 +110,24 @@ function documentStyles() {
 
 function selectedMark(name, selected) {
   return name === selected ? '[X]' : '[ ]';
+}
+
+async function registerPushNotifications(notify) {
+  if (!Device.isDevice) return;
+  const current = await Notifications.getPermissionsAsync();
+  let status = current.status;
+  if (status !== 'granted') {
+    const requested = await Notifications.requestPermissionsAsync();
+    status = requested.status;
+  }
+  if (status !== 'granted') return;
+
+  const token = await Notifications.getExpoPushTokenAsync();
+  await api.registerPushToken({
+    expoPushToken: token.data,
+    deviceName: Device.deviceName || 'Telephone',
+    platform: Device.osName || 'mobile'
+  }).catch((error) => notify?.('Notifications', error.message, 'error'));
 }
 
 function quoteHtml(item) {
@@ -188,6 +216,8 @@ const initialData = {
   equipmentStatus: [],
   kits: [],
   notificationLogs: [],
+  appMessages: [],
+  adminAppMessages: [],
   contactMessages: [],
   allFeedback: [],
   clientSpace: { client: null, contracts: [], invoices: [], payments: [] }
@@ -200,6 +230,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState(null);
+  const [busy, setBusy] = useState(false);
   const [data, setData] = useState(initialData);
   const colors = palettes[theme];
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -237,14 +268,17 @@ export default function App() {
       }
 
       if (isClient) {
-        const clientSpace = await api.clientSpace().catch(() => ({ client: null, contracts: [], invoices: [], payments: [] }));
-        setData((old) => ({ ...old, plans, feedback, clientSpace }));
+        const [clientSpace, appMessages] = await Promise.all([
+          api.clientSpace().catch(() => ({ client: null, contracts: [], invoices: [], payments: [] })),
+          api.appMessages().catch(() => [])
+        ]);
+        setData((old) => ({ ...old, plans, feedback, clientSpace, appMessages }));
         return;
       }
 
       const [
         summary, clients, contracts, quotes, invoices, unpaidInvoices, payments, tickets, users,
-        balances, equipmentStatus, kits, notificationLogs, contactMessages, allFeedback
+        balances, equipmentStatus, kits, notificationLogs, appMessages, adminAppMessages, contactMessages, allFeedback
       ] = await Promise.all([
         api.summary().catch(() => null),
         api.clients().catch(() => []),
@@ -259,13 +293,15 @@ export default function App() {
         api.equipmentStatus().catch(() => []),
         api.kits().catch(() => []),
         api.notificationLogs().catch(() => []),
+        api.appMessages().catch(() => []),
+        api.adminAppMessages().catch(() => []),
         api.contactMessages().catch(() => []),
         api.allFeedback().catch(() => [])
       ]);
 
       setData((old) => ({
         ...old, plans, feedback, summary, clients, contracts, quotes, invoices, unpaidInvoices, payments, tickets,
-        users, balances, equipmentStatus, kits, notificationLogs, contactMessages, allFeedback
+        users, balances, equipmentStatus, kits, notificationLogs, appMessages, adminAppMessages, contactMessages, allFeedback
       }));
     } finally {
       setLoading(false);
@@ -288,6 +324,8 @@ export default function App() {
       setTokenState(result.token);
       setUser(parsed);
       setScreen(parsed?.role === 'client' ? 'clientDashboard' : 'adminDashboard');
+      await registerPushNotifications(notify);
+      notify('Connexion reussie', 'Bienvenue dans votre espace');
     } catch (error) {
       notify('Connexion impossible', error.message, 'error');
     }
@@ -300,7 +338,7 @@ export default function App() {
     setScreen('home');
   }
 
-  const common = { colors, styles, screen, setScreen, theme, toggleTheme, loading, load, notify };
+  const common = { colors, styles, screen, setScreen, theme, toggleTheme, loading, load, notify, busy, setBusy };
 
   let content;
   if (screen === 'login') {
@@ -308,7 +346,7 @@ export default function App() {
   } else if (screen.startsWith('admin')) {
     content = <AdminScreen {...common} data={data} logout={logout} />;
   } else if (screen.startsWith('client')) {
-    content = <ClientScreen {...common} data={data.clientSpace} logout={logout} />;
+    content = <ClientScreen {...common} data={{ ...data.clientSpace, appMessages: data.appMessages }} logout={logout} />;
   } else {
     content = <HomeScreen {...common} data={data} />;
   }
@@ -322,27 +360,47 @@ export default function App() {
   );
 }
 
-function HomeScreen({ data, screen, setScreen, styles, colors, theme, toggleTheme, load, notify }) {
+function HomeScreen({ data, screen, setScreen, styles, colors, theme, toggleTheme, load, notify, busy, setBusy }) {
   const [quote, setQuote] = useState({ fullName: '', phone: '', address: '', planId: '', intendedUsage: '' });
   const [contact, setContact] = useState({ fullName: '', phone: '', subject: '', message: '' });
+  const [feedbackForm, setFeedbackForm] = useState({ fullName: '', neighborhood: '', rating: '5', comment: '' });
 
   async function submitQuote() {
+    setBusy(true);
     try {
       await api.createQuote(quote);
       setQuote({ fullName: '', phone: '', address: '', planId: '', intendedUsage: '' });
       notify('Devis envoye', 'Votre demande a ete envoyee a l administration');
     } catch (error) {
       notify('Devis non envoye', error.message, 'error');
+    } finally {
+      setBusy(false);
     }
   }
 
   async function submitContact() {
+    setBusy(true);
     try {
       await api.sendContact(contact);
       setContact({ fullName: '', phone: '', subject: '', message: '' });
       notify('Message envoye', 'Votre message a ete transmis a LWASIVA_NET');
     } catch (error) {
       notify('Message non envoye', error.message, 'error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submitFeedback() {
+    setBusy(true);
+    try {
+      await api.sendFeedback(feedbackForm);
+      setFeedbackForm({ fullName: '', neighborhood: '', rating: '5', comment: '' });
+      notify('Merci', 'Votre appreciation sera visible apres validation');
+    } catch (error) {
+      notify('Avis non envoye', error.message, 'error');
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -396,11 +454,9 @@ function HomeScreen({ data, screen, setScreen, styles, colors, theme, toggleThem
               <Field styles={styles} colors={colors} label="Nom complet" value={quote.fullName} onChangeText={(fullName) => setQuote({ ...quote, fullName })} />
               <Field styles={styles} colors={colors} label="Telephone" value={quote.phone} onChangeText={(phone) => setQuote({ ...quote, phone })} keyboardType="phone-pad" />
               <Field styles={styles} colors={colors} label="Adresse" value={quote.address} onChangeText={(address) => setQuote({ ...quote, address })} />
+              <SelectChips styles={styles} colors={colors} label="Bouquet souhaite" value={quote.planId} options={data.plans.map((plan) => ({ value: String(plan.id), label: `${plan.name} - ${money(plan.monthly_price_usd)}` }))} onChange={(planId) => setQuote({ ...quote, planId })} />
               <Field styles={styles} colors={colors} label="Usage prevu" value={quote.intendedUsage} onChangeText={(intendedUsage) => setQuote({ ...quote, intendedUsage })} />
-              <Pressable style={styles.primaryButton} onPress={submitQuote}>
-                <Ionicons name="send-outline" size={18} color="#fff" />
-                <Text style={styles.primaryButtonText}>Envoyer le devis</Text>
-              </Pressable>
+              <LoadingButton styles={styles} label="Envoyer le devis" icon="send-outline" loading={busy} onPress={submitQuote} />
             </Card>
           </View>
         )}
@@ -415,6 +471,14 @@ function HomeScreen({ data, screen, setScreen, styles, colors, theme, toggleThem
                 <Text style={styles.cardStrong}>{item.full_name} - {item.neighborhood || 'Goma'}</Text>
               </Card>
             ))}
+            <Card styles={styles}>
+              <SectionTitle styles={styles} colors={colors} icon="create-outline" title="Laisser une appreciation" />
+              <Field styles={styles} colors={colors} label="Nom complet" value={feedbackForm.fullName} onChangeText={(fullName) => setFeedbackForm({ ...feedbackForm, fullName })} />
+              <Field styles={styles} colors={colors} label="Quartier" value={feedbackForm.neighborhood} onChangeText={(neighborhood) => setFeedbackForm({ ...feedbackForm, neighborhood })} />
+              <SelectChips styles={styles} colors={colors} label="Note" value={feedbackForm.rating} options={['1', '2', '3', '4', '5'].map((value) => ({ value, label: `${value}/5` }))} onChange={(rating) => setFeedbackForm({ ...feedbackForm, rating })} />
+              <Field styles={styles} colors={colors} label="Commentaire" value={feedbackForm.comment} onChangeText={(comment) => setFeedbackForm({ ...feedbackForm, comment })} multiline />
+              <LoadingButton styles={styles} label="Envoyer l appreciation" icon="send-outline" loading={busy} onPress={submitFeedback} />
+            </Card>
           </View>
         )}
 
@@ -426,10 +490,7 @@ function HomeScreen({ data, screen, setScreen, styles, colors, theme, toggleThem
               <Field styles={styles} colors={colors} label="Telephone" value={contact.phone} onChangeText={(phone) => setContact({ ...contact, phone })} keyboardType="phone-pad" />
               <Field styles={styles} colors={colors} label="Sujet" value={contact.subject} onChangeText={(subject) => setContact({ ...contact, subject })} />
               <Field styles={styles} colors={colors} label="Message" value={contact.message} onChangeText={(message) => setContact({ ...contact, message })} multiline />
-              <Pressable style={styles.primaryButton} onPress={submitContact}>
-                <Ionicons name="mail-outline" size={18} color="#fff" />
-                <Text style={styles.primaryButtonText}>Envoyer le message</Text>
-              </Pressable>
+              <LoadingButton styles={styles} label="Envoyer le message" icon="mail-outline" loading={busy} onPress={submitContact} />
             </Card>
           </View>
         )}
@@ -480,16 +541,19 @@ function LoginScreen({ styles, colors, theme, toggleTheme, setScreen, onLogin })
   );
 }
 
-function AdminScreen({ data, screen, setScreen, styles, colors, theme, toggleTheme, loading, load, logout, notify }) {
+function AdminScreen({ data, screen, setScreen, styles, colors, theme, toggleTheme, loading, load, logout, notify, setBusy }) {
   const summary = data.summary || {};
   const active = screen || 'adminDashboard';
   async function submit(action, message) {
+    setBusy(true);
     try {
       await action();
       notify('Operation reussie', message);
       await load();
     } catch (error) {
       notify('Operation impossible', error.message, 'error');
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -607,7 +671,7 @@ function ContractsAdmin({ styles, colors, data, submit }) {
         <SelectChips styles={styles} colors={colors} label="Client" value={form.clientId} options={data.clients.map((x) => ({ value: String(x.id), label: x.full_name }))} onChange={(clientId) => setForm({ ...form, clientId })} />
         <SelectChips styles={styles} colors={colors} label="Bouquet" value={form.planId} options={data.plans.map((x) => ({ value: String(x.id), label: `${x.name} - ${money(x.monthly_price_usd)}` }))} onChange={(planId) => setForm({ ...form, planId })} />
         <SelectChips styles={styles} colors={colors} label="Statut" value={form.status} options={['brouillon', 'essai', 'actif', 'suspendu']} onChange={(status) => setForm({ ...form, status })} />
-        <Field styles={styles} colors={colors} label="Jour echeance" value={form.billingDueDay} onChangeText={(billingDueDay) => setForm({ ...form, billingDueDay })} keyboardType="numeric" />
+        <Field styles={styles} colors={colors} label="Jour du mois pour payer" value={form.billingDueDay} onChangeText={(billingDueDay) => setForm({ ...form, billingDueDay })} keyboardType="numeric" />
         <Field styles={styles} colors={colors} label="Adresse installation" value={form.installationAddress} onChangeText={(installationAddress) => setForm({ ...form, installationAddress })} />
         <SaveRow styles={styles} colors={colors} editing={editing} onCancel={() => setForm(empty)} onSave={() => submit(() => editing ? api.updateContract(form.id, form) : api.createContract(form), editing ? 'Contrat modifie' : 'Contrat cree').then(() => setForm(empty))} />
       </Card>
@@ -637,7 +701,7 @@ function InvoicesAdmin({ styles, colors, data, submit }) {
         <SelectChips styles={styles} colors={colors} label="Contrat" value={form.contractId} options={data.contracts.map((x) => ({ value: String(x.contract_id), label: `${x.contract_number} - ${x.client_name}` }))} onChange={(contractId) => setForm({ ...form, contractId })} />
         <Field styles={styles} colors={colors} label="Debut AAAA-MM-JJ" value={form.periodStart} onChangeText={(periodStart) => setForm({ ...form, periodStart })} />
         <Field styles={styles} colors={colors} label="Fin AAAA-MM-JJ" value={form.periodEnd} onChangeText={(periodEnd) => setForm({ ...form, periodEnd })} />
-        <Field styles={styles} colors={colors} label="Echeance AAAA-MM-JJ" value={form.dueDate} onChangeText={(dueDate) => setForm({ ...form, dueDate })} />
+        <Field styles={styles} colors={colors} label="Date limite de paiement AAAA-MM-JJ" value={form.dueDate} onChangeText={(dueDate) => setForm({ ...form, dueDate })} />
         <Field styles={styles} colors={colors} label="Tranche materiel" value={form.equipmentInstallmentAmountUsd} onChangeText={(equipmentInstallmentAmountUsd) => setForm({ ...form, equipmentInstallmentAmountUsd })} keyboardType="numeric" />
         <Action styles={styles} colors={colors} primary label="Creer facture" icon="save-outline" onPress={() => submit(() => api.createInvoice(form), 'Facture creee')} />
       </Card>
@@ -673,6 +737,7 @@ function PaymentsAdmin({ styles, colors, data, submit }) {
 function MoreAdmin({ styles, colors, data, submit }) {
   return (
     <>
+      <BroadcastAdmin styles={styles} colors={colors} data={data} submit={submit} />
       <UsersAdmin styles={styles} colors={colors} data={data} submit={submit} />
       <SupportAdmin styles={styles} colors={colors} data={data} submit={submit} />
       <EquipmentAdmin styles={styles} colors={colors} data={data} submit={submit} />
@@ -682,6 +747,29 @@ function MoreAdmin({ styles, colors, data, submit }) {
       </Card>
       <List styles={styles} colors={colors} title="Messages contact" icon="mail-outline" items={data.contactMessages.map((x) => `${x.full_name} - ${x.phone} - ${x.subject}`)} />
       <List styles={styles} colors={colors} title="Historique WhatsApp" icon="logo-whatsapp" items={data.notificationLogs.map((x) => `${x.client_name} - ${x.phone} - ${x.status}`)} />
+    </>
+  );
+}
+
+function BroadcastAdmin({ styles, colors, data, submit }) {
+  const [form, setForm] = useState({ title: '', body: '', targetRole: 'all' });
+  return (
+    <>
+      <Card styles={styles}>
+        <SectionTitle styles={styles} colors={colors} icon="megaphone-outline" title="Message aux utilisateurs" />
+        <Field styles={styles} colors={colors} label="Titre" value={form.title} onChangeText={(title) => setForm({ ...form, title })} />
+        <Field styles={styles} colors={colors} label="Message" value={form.body} onChangeText={(body) => setForm({ ...form, body })} multiline />
+        <SelectChips styles={styles} colors={colors} label="Recepteurs" value={form.targetRole} options={[
+          { value: 'all', label: 'Tout le monde' },
+          { value: 'client', label: 'Clients' },
+          { value: 'manager', label: 'Managers' },
+          { value: 'technician', label: 'Techniciens' },
+          { value: 'cashier', label: 'Caisse' },
+          { value: 'admin', label: 'Admins' }
+        ]} onChange={(targetRole) => setForm({ ...form, targetRole })} />
+        <Action styles={styles} colors={colors} primary label="Envoyer a l app" icon="send-outline" onPress={() => submit(() => api.sendAppMessage(form), 'Message envoye dans les espaces utilisateurs')} />
+      </Card>
+      <List styles={styles} colors={colors} title="Messages envoyes" icon="mail-open-outline" items={data.adminAppMessages.map((x) => `${x.title} - ${x.recipients_count || 0} utilisateur(s)`)} />
     </>
   );
 }
@@ -746,7 +834,7 @@ function EquipmentAdmin({ styles, colors, data, submit }) {
         <SelectChips styles={styles} colors={colors} label="Contrat" value={form.contractId} options={data.contracts.map((x) => ({ value: String(x.contract_id), label: `${x.contract_number} - ${x.client_name}` }))} onChange={(contractId) => setForm({ ...form, contractId })} />
         <Field styles={styles} colors={colors} label="Numero tranche" value={form.installmentNumber} onChangeText={(installmentNumber) => setForm({ ...form, installmentNumber })} keyboardType="numeric" />
         <Field styles={styles} colors={colors} label="Montant USD" value={form.amountUsd} onChangeText={(amountUsd) => setForm({ ...form, amountUsd })} keyboardType="numeric" />
-        <Field styles={styles} colors={colors} label="Echeance AAAA-MM-JJ" value={form.dueDate} onChangeText={(dueDate) => setForm({ ...form, dueDate })} />
+        <Field styles={styles} colors={colors} label="Date limite de paiement AAAA-MM-JJ" value={form.dueDate} onChangeText={(dueDate) => setForm({ ...form, dueDate })} />
         <Action styles={styles} colors={colors} primary label="Creer tranche" icon="save-outline" onPress={() => submit(() => api.createInstallment(form), 'Tranche materiel creee')} />
       </Card>
       <List styles={styles} colors={colors} title="Etat materiel" icon="cube-outline" items={data.equipmentStatus.map((x) => `${x.contract_number} - ${x.client_name} - Reste ${money(x.equipment_remaining_usd)}`)} />
@@ -766,6 +854,7 @@ function ClientScreen({ data, screen, setScreen, styles, colors, theme, toggleTh
       <ScrollView refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={colors.brand} />} contentContainerStyle={styles.container}>
         {active === 'clientDashboard' && (
           <>
+            <List styles={styles} colors={colors} title="Messages de LWASIVA_NET" icon="notifications-outline" items={(data.appMessages || []).slice(0, 6).map((x) => `${x.title} - ${x.body}`)} />
             <Card styles={styles}>
               <Text style={styles.cardStrong}>{data.client?.full_name || 'Client'}</Text>
               <Text style={styles.muted}>{data.client?.phone || ''}</Text>
@@ -954,6 +1043,15 @@ function Action({ styles, colors, label, icon, onPress, danger = false, primary 
   );
 }
 
+function LoadingButton({ styles, label, icon, loading, onPress }) {
+  return (
+    <Pressable style={[styles.primaryButton, loading && styles.buttonDisabled]} onPress={loading ? undefined : onPress}>
+      {loading ? <ActivityIndicator color="#fff" /> : <Ionicons name={icon} size={18} color="#fff" />}
+      <Text style={styles.primaryButtonText}>{loading ? 'Chargement...' : label}</Text>
+    </Pressable>
+  );
+}
+
 function SaveRow({ styles, colors, editing, onSave, onCancel }) {
   return (
     <View style={styles.saveRow}>
@@ -1062,6 +1160,7 @@ function createStyles(colors) {
     inputTall: { minHeight: 92, textAlignVertical: 'top', paddingTop: 12 },
     primaryButton: { minHeight: 48, borderRadius: 14, backgroundColor: colors.brand, alignItems: 'center', justifyContent: 'center', marginTop: 4, flexDirection: 'row', gap: 8 },
     primaryButtonText: { color: '#fff', fontWeight: '900' },
+    buttonDisabled: { opacity: 0.72 },
     loginContent: { minHeight: '100%', justifyContent: 'center', padding: 18 },
     loginTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
     backButton: { flexDirection: 'row', alignItems: 'center', gap: 7 },

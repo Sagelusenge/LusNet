@@ -80,5 +80,10 @@ export const api = {
   updateTicketStatus: (id, body) => request(`/support/tickets/${id}/status`, { method: 'PATCH', body: JSON.stringify(body) }),
   notificationLogs: () => request('/notifications/whatsapp'),
   sendWhatsAppReminders: () => request('/notifications/whatsapp/send-j5', { method: 'POST' }),
+  registerPushToken: (body) => request('/notifications/push-token', { method: 'POST', body: JSON.stringify(body) }),
+  appMessages: () => request('/notifications/app/me'),
+  adminAppMessages: () => request('/notifications/app'),
+  sendAppMessage: (body) => request('/notifications/app', { method: 'POST', body: JSON.stringify(body) }),
+  markMessageRead: (id) => request(`/notifications/app/me/${id}/read`, { method: 'PATCH' }),
   clientSpace: () => request('/client-space/me')
 };
