@@ -218,6 +218,9 @@ const initialData = {
   notificationLogs: [],
   appMessages: [],
   adminAppMessages: [],
+  budgetSummary: { summary: { total_recettes_usd: 0, total_depenses_usd: 0, solde_usd: 0 }, byCategory: [] },
+  budgetCategories: [],
+  budgetEntries: [],
   contactMessages: [],
   allFeedback: [],
   clientSpace: { client: null, contracts: [], invoices: [], payments: [] }
@@ -278,7 +281,7 @@ export default function App() {
 
       const [
         summary, clients, contracts, quotes, invoices, unpaidInvoices, payments, tickets, users,
-        balances, equipmentStatus, kits, notificationLogs, appMessages, adminAppMessages, contactMessages, allFeedback
+        balances, equipmentStatus, kits, notificationLogs, appMessages, adminAppMessages, budgetSummary, budgetCategories, budgetEntries, contactMessages, allFeedback
       ] = await Promise.all([
         api.summary().catch(() => null),
         api.clients().catch(() => []),
@@ -295,13 +298,17 @@ export default function App() {
         api.notificationLogs().catch(() => []),
         api.appMessages().catch(() => []),
         api.adminAppMessages().catch(() => []),
+        api.budgetSummary().catch(() => ({ summary: { total_recettes_usd: 0, total_depenses_usd: 0, solde_usd: 0 }, byCategory: [] })),
+        api.budgetCategories().catch(() => []),
+        api.budgetEntries().catch(() => []),
         api.contactMessages().catch(() => []),
         api.allFeedback().catch(() => [])
       ]);
 
       setData((old) => ({
         ...old, plans, feedback, summary, clients, contracts, quotes, invoices, unpaidInvoices, payments, tickets,
-        users, balances, equipmentStatus, kits, notificationLogs, appMessages, adminAppMessages, contactMessages, allFeedback
+        users, balances, equipmentStatus, kits, notificationLogs, appMessages, adminAppMessages,
+        budgetSummary, budgetCategories, budgetEntries, contactMessages, allFeedback
       }));
     } finally {
       setLoading(false);
@@ -575,6 +582,7 @@ function AdminScreen({ data, screen, setScreen, styles, colors, theme, toggleThe
         {active === 'adminContracts' && <ContractsAdmin styles={styles} colors={colors} data={data} submit={submit} />}
         {active === 'adminMoney' && (
           <>
+            <BudgetAdmin styles={styles} colors={colors} data={data} submit={submit} />
             <InvoicesAdmin styles={styles} colors={colors} data={data} submit={submit} />
             <PaymentsAdmin styles={styles} colors={colors} data={data} submit={submit} />
           </>
@@ -730,6 +738,84 @@ function PaymentsAdmin({ styles, colors, data, submit }) {
         <Action styles={styles} colors={colors} primary label="Enregistrer paiement" icon="save-outline" onPress={() => submit(() => api.registerPayment(form), 'Paiement enregistre')} />
       </Card>
       <List styles={styles} colors={colors} title="Paiements" icon="cash-outline" items={data.payments.map((x) => `${x.payment_reference} - ${x.client_name || ''} - ${money(x.amount_usd)} - ${x.method}`)} />
+    </>
+  );
+}
+
+function BudgetAdmin({ styles, colors, data, submit }) {
+  const empty = {
+    id: '',
+    entryType: 'depense',
+    categoryId: '',
+    title: '',
+    amountUsd: '',
+    entryDate: new Date().toISOString().slice(0, 10),
+    paymentMethod: 'especes',
+    reference: '',
+    notes: ''
+  };
+  const [form, setForm] = useState(empty);
+  const [categoryForm, setCategoryForm] = useState({ name: '', type: 'depense', description: '' });
+  const editing = Boolean(form.id);
+  const summary = data.budgetSummary?.summary || {};
+  const categories = data.budgetCategories.filter((item) => item.type === form.entryType);
+
+  function edit(item) {
+    setForm({
+      id: item.id,
+      entryType: item.entry_type,
+      categoryId: String(item.category_id),
+      title: item.title,
+      amountUsd: String(item.amount_usd),
+      entryDate: item.entry_date,
+      paymentMethod: item.payment_method,
+      reference: item.reference || '',
+      notes: item.notes || ''
+    });
+  }
+
+  return (
+    <>
+      <View style={styles.statsRow}>
+        <MiniStat styles={styles} colors={colors} label="Recettes" value={money(summary.total_recettes_usd)} icon="trending-up-outline" />
+        <MiniStat styles={styles} colors={colors} label="Depenses" value={money(summary.total_depenses_usd)} icon="trending-down-outline" />
+        <MiniStat styles={styles} colors={colors} label="Solde" value={money(summary.solde_usd)} icon="wallet-outline" />
+      </View>
+
+      <Card styles={styles}>
+        <SectionTitle styles={styles} colors={colors} icon="wallet-outline" title={editing ? 'Modifier budget' : 'Nouvelle recette / depense'} />
+        <SelectChips styles={styles} colors={colors} label="Type" value={form.entryType} options={[
+          { value: 'recette', label: 'Recette / argent entre' },
+          { value: 'depense', label: 'Depense / argent sorti' }
+        ]} onChange={(entryType) => setForm({ ...form, entryType, categoryId: '' })} />
+        <SelectChips styles={styles} colors={colors} label="Categorie" value={form.categoryId} options={categories.map((item) => ({ value: String(item.id), label: item.name }))} onChange={(categoryId) => setForm({ ...form, categoryId })} />
+        <Field styles={styles} colors={colors} label="Libelle simple" value={form.title} onChangeText={(title) => setForm({ ...form, title })} />
+        <Field styles={styles} colors={colors} label="Montant USD" value={form.amountUsd} onChangeText={(amountUsd) => setForm({ ...form, amountUsd })} keyboardType="numeric" />
+        <Field styles={styles} colors={colors} label="Date AAAA-MM-JJ" value={form.entryDate} onChangeText={(entryDate) => setForm({ ...form, entryDate })} />
+        <SelectChips styles={styles} colors={colors} label="Methode" value={form.paymentMethod} options={['especes', 'airtel_money', 'mpesa', 'orange_money', 'banque', 'autre']} onChange={(paymentMethod) => setForm({ ...form, paymentMethod })} />
+        <Field styles={styles} colors={colors} label="Reference" value={form.reference} onChangeText={(reference) => setForm({ ...form, reference })} />
+        <Field styles={styles} colors={colors} label="Note" value={form.notes} onChangeText={(notes) => setForm({ ...form, notes })} />
+        <SaveRow styles={styles} colors={colors} editing={editing} onCancel={() => setForm(empty)} onSave={() => submit(() => editing ? api.updateBudgetEntry(form.id, form) : api.createBudgetEntry(form), editing ? 'Ligne budget modifiee' : 'Ligne budget ajoutee').then(() => setForm(empty))} />
+      </Card>
+
+      <Card styles={styles}>
+        <SectionTitle styles={styles} colors={colors} icon="add-circle-outline" title="Ajouter une categorie" />
+        <Field styles={styles} colors={colors} label="Nom categorie" value={categoryForm.name} onChangeText={(name) => setCategoryForm({ ...categoryForm, name })} />
+        <SelectChips styles={styles} colors={colors} label="Type" value={categoryForm.type} options={['recette', 'depense']} onChange={(type) => setCategoryForm({ ...categoryForm, type })} />
+        <Field styles={styles} colors={colors} label="Description" value={categoryForm.description} onChangeText={(description) => setCategoryForm({ ...categoryForm, description })} />
+        <Action styles={styles} colors={colors} primary label="Ajouter categorie" icon="save-outline" onPress={() => submit(() => api.createBudgetCategory(categoryForm), 'Categorie budget ajoutee')} />
+      </Card>
+
+      <Card styles={styles}>
+        <SectionTitle styles={styles} colors={colors} icon="list-outline" title="Recettes et depenses" />
+        {data.budgetEntries.length === 0 ? <Empty styles={styles} text="Aucune ligne budget" /> : data.budgetEntries.map((item) => (
+          <Record key={item.id} styles={styles} title={`${item.entry_type === 'recette' ? 'Recette' : 'Depense'} - ${item.title}`} text={`${item.category_name} - ${money(item.amount_usd)} - ${item.entry_date}`}>
+            <Action styles={styles} colors={colors} label="Modifier" icon="create-outline" onPress={() => edit(item)} />
+            <Action styles={styles} colors={colors} danger label="Supprimer" icon="trash-outline" onPress={() => confirmDelete(() => submit(() => api.deleteBudgetEntry(item.id), 'Ligne budget supprimee'))} />
+          </Record>
+        ))}
+      </Card>
+      <List styles={styles} colors={colors} title="Totaux par categorie" icon="bar-chart-outline" items={(data.budgetSummary?.byCategory || []).map((item) => `${item.entry_type} - ${item.category_name} - ${money(item.total_usd)}`)} />
     </>
   );
 }

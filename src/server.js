@@ -1,6 +1,7 @@
 const app = require('./app');
 const env = require('./config/env');
 const { pool } = require('./config/database');
+const { startReminderScheduler } = require('./services/scheduler.service');
 
 async function start() {
   try {
@@ -12,6 +13,7 @@ async function start() {
 
   app.listen(env.port, () => {
     console.log(`LWASIVA_NET API demarree sur http://localhost:${env.port}`);
+    startReminderScheduler();
   });
 }
 

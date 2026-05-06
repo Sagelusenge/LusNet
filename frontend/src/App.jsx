@@ -42,6 +42,7 @@ const adminNav = [
   { id: 'plans', label: 'Bouquets', icon: Gauge },
   { id: 'invoices', label: 'Factures', icon: Receipt },
   { id: 'payments', label: 'Paiements', icon: BadgeDollarSign },
+  { id: 'budget', label: 'Budget', icon: Building2 },
   { id: 'equipment', label: 'Materiel', icon: Router },
   { id: 'support', label: 'Support', icon: Ticket },
   { id: 'notifications', label: 'Notifications', icon: Send },
@@ -142,6 +143,9 @@ function App() {
     publicFeedback: [],
     contactMessages: [],
     allFeedback: [],
+    budgetSummary: { summary: { total_recettes_usd: 0, total_depenses_usd: 0, solde_usd: 0 }, byCategory: [] },
+    budgetCategories: [],
+    budgetEntries: [],
     clientSpace: { client: null, contracts: [], invoices: [], payments: [] }
   });
 
@@ -175,7 +179,7 @@ function App() {
         return;
       }
 
-      const [summary, clients, contracts, balances, equipmentStatus, invoices, unpaidInvoices, payments, kits, tickets, quotes, users, notificationLogs, appMessages, adminAppMessages, contactMessages, allFeedback] =
+      const [summary, clients, contracts, balances, equipmentStatus, invoices, unpaidInvoices, payments, kits, tickets, quotes, users, notificationLogs, appMessages, adminAppMessages, contactMessages, allFeedback, budgetSummary, budgetCategories, budgetEntries] =
         await Promise.all([
           api.summary().catch(() => emptySummary),
           api.clients().catch(() => []),
@@ -193,7 +197,10 @@ function App() {
           api.appMessages().catch(() => []),
           api.adminAppMessages().catch(() => []),
           api.contactMessages().catch(() => []),
-          api.allFeedback().catch(() => [])
+          api.allFeedback().catch(() => []),
+          api.budgetSummary().catch(() => ({ summary: { total_recettes_usd: 0, total_depenses_usd: 0, solde_usd: 0 }, byCategory: [] })),
+          api.budgetCategories().catch(() => []),
+          api.budgetEntries().catch(() => [])
         ]);
 
       setData({
@@ -216,6 +223,9 @@ function App() {
         publicFeedback,
         contactMessages,
         allFeedback,
+        budgetSummary,
+        budgetCategories,
+        budgetEntries,
         clientSpace: { client: null, contracts: [], invoices: [], payments: [] }
       });
     } finally {
@@ -345,6 +355,7 @@ function App() {
           {!isClient && active === 'plans' && <Plans data={data} />}
           {!isClient && active === 'invoices' && <Invoices data={data} submit={submit} />}
           {!isClient && active === 'payments' && <Payments data={data} submit={submit} />}
+          {!isClient && active === 'budget' && <Budget data={data} submit={submit} />}
           {!isClient && active === 'equipment' && <Equipment data={data} submit={submit} />}
           {!isClient && active === 'support' && <Support data={data} submit={submit} />}
           {!isClient && active === 'notifications' && <Notifications data={data} submit={submit} />}
@@ -1160,6 +1171,93 @@ function Payments({ data, submit }) {
         <TextInput label="Transaction" value={form.transactionNumber} onChange={(transactionNumber) => setForm({ ...form, transactionNumber })} />
       </QuickForm>
       <TablePanel title="Paiements" icon={BadgeDollarSign} columns={['Reference', 'Client', 'Montant', 'Methode', 'Date']} rows={data.payments.map((item) => [item.payment_reference, item.client_name, money(item.amount_usd), item.method, item.paid_at])} />
+    </>
+  );
+}
+
+function Budget({ data, submit }) {
+  const emptyForm = {
+    id: '',
+    entryType: 'depense',
+    categoryId: '',
+    title: '',
+    amountUsd: '',
+    entryDate: new Date().toISOString().slice(0, 10),
+    paymentMethod: 'especes',
+    reference: '',
+    notes: ''
+  };
+  const [form, setForm] = useState(emptyForm);
+  const [categoryForm, setCategoryForm] = useState({ name: '', type: 'depense', description: '' });
+  const isEditing = Boolean(form.id);
+  const summary = data.budgetSummary?.summary || {};
+  const categories = data.budgetCategories.filter((item) => item.type === form.entryType);
+
+  function edit(item) {
+    setForm({
+      id: item.id,
+      entryType: item.entry_type,
+      categoryId: item.category_id,
+      title: item.title,
+      amountUsd: item.amount_usd,
+      entryDate: item.entry_date,
+      paymentMethod: item.payment_method,
+      reference: item.reference || '',
+      notes: item.notes || ''
+    });
+  }
+
+  return (
+    <>
+      <div className="metric-grid">
+        <div className="metric"><BadgeDollarSign size={20} /><span>Recettes</span><strong>{money(summary.total_recettes_usd)}</strong></div>
+        <div className="metric"><Trash2 size={20} /><span>Depenses</span><strong>{money(summary.total_depenses_usd)}</strong></div>
+        <div className="metric"><Building2 size={20} /><span>Solde</span><strong>{money(summary.solde_usd)}</strong></div>
+      </div>
+
+      <QuickForm title={isEditing ? 'Modifier une ligne budget' : 'Nouvelle ligne budget'} icon={BadgeDollarSign} onSubmit={() => submit(() => isEditing ? api.updateBudgetEntry(form.id, form) : api.createBudgetEntry(form), isEditing ? 'Ligne budget modifiee' : 'Ligne budget ajoutee')}>
+        <SelectInput label="Type" value={form.entryType} onChange={(entryType) => setForm({ ...form, entryType, categoryId: '' })} options={[
+          { value: 'recette', label: 'Recette / argent entre' },
+          { value: 'depense', label: 'Depense / argent sorti' }
+        ]} />
+        <SelectInput label="Categorie" value={form.categoryId} onChange={(categoryId) => setForm({ ...form, categoryId })} options={categories.map((category) => ({ value: category.id, label: category.name }))} />
+        <TextInput label="Libelle simple" value={form.title} onChange={(title) => setForm({ ...form, title })} />
+        <TextInput label="Montant USD" type="number" value={form.amountUsd} onChange={(amountUsd) => setForm({ ...form, amountUsd })} />
+        <TextInput label="Date" type="date" value={form.entryDate} onChange={(entryDate) => setForm({ ...form, entryDate })} />
+        <SelectInput label="Methode" value={form.paymentMethod} onChange={(paymentMethod) => setForm({ ...form, paymentMethod })} options={['especes', 'airtel_money', 'mpesa', 'orange_money', 'banque', 'autre']} />
+        <TextInput label="Reference" value={form.reference} onChange={(reference) => setForm({ ...form, reference })} />
+        <TextInput label="Note" value={form.notes} onChange={(notes) => setForm({ ...form, notes })} />
+        {isEditing && <button className="small-button" type="button" onClick={() => setForm(emptyForm)}>Annuler</button>}
+      </QuickForm>
+
+      <QuickForm title="Nouvelle categorie budget" icon={Plus} onSubmit={() => submit(() => api.createBudgetCategory(categoryForm), 'Categorie budget ajoutee')}>
+        <TextInput label="Nom categorie" value={categoryForm.name} onChange={(name) => setCategoryForm({ ...categoryForm, name })} />
+        <SelectInput label="Type" value={categoryForm.type} onChange={(type) => setCategoryForm({ ...categoryForm, type })} options={[
+          { value: 'recette', label: 'Recette' },
+          { value: 'depense', label: 'Depense' }
+        ]} />
+        <TextInput label="Description" value={categoryForm.description} onChange={(description) => setCategoryForm({ ...categoryForm, description })} />
+      </QuickForm>
+
+      <div className="panel table-panel">
+        <PanelHeader icon={BadgeDollarSign} title="Recettes et depenses" />
+        <div className="quote-list">
+          {data.budgetEntries.length === 0 ? <p className="muted">Aucune ligne budget</p> : data.budgetEntries.map((item) => (
+            <div className="quote-item" key={item.id}>
+              <div>
+                <strong>{item.entry_type === 'recette' ? 'Recette' : 'Depense'} - {item.title}</strong>
+                <span>{item.category_name} - {money(item.amount_usd)} - {item.entry_date}</span>
+              </div>
+              <div className="quote-actions">
+                <button className="small-button" onClick={() => edit(item)}>Modifier</button>
+                <button className="small-button danger" onClick={() => submit(() => api.deleteBudgetEntry(item.id), 'Ligne budget supprimee')}>Supprimer</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <TablePanel title="Totaux par categorie" icon={Building2} columns={['Type', 'Categorie', 'Total']} rows={(data.budgetSummary?.byCategory || []).map((item) => [item.entry_type, item.category_name, money(item.total_usd)])} />
     </>
   );
 }

@@ -40,6 +40,13 @@ async function request(path, options = {}) {
 export const api = {
   login: (body) => request('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
   me: () => request('/auth/me'),
+  budgetSummary: () => request('/budget/summary'),
+  budgetCategories: (type = '') => request(`/budget/categories${type ? `?type=${encodeURIComponent(type)}` : ''}`),
+  createBudgetCategory: (body) => request('/budget/categories', { method: 'POST', body: JSON.stringify(body) }),
+  budgetEntries: () => request('/budget/entries'),
+  createBudgetEntry: (body) => request('/budget/entries', { method: 'POST', body: JSON.stringify(body) }),
+  updateBudgetEntry: (id, body) => request(`/budget/entries/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  deleteBudgetEntry: (id) => request(`/budget/entries/${id}`, { method: 'DELETE' }),
   users: () => request('/users'),
   createUser: (body) => request('/users', { method: 'POST', body: JSON.stringify(body) }),
   updateUser: (id, body) => request(`/users/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
