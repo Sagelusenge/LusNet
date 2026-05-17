@@ -84,28 +84,30 @@ button:disabled {
 .sidebar {
   position: sticky;
   top: 0;
-  width: 260px;
+  width: 232px;
   height: 100vh;
-  flex: 0 0 260px;
+  flex: 0 0 232px;
   background:
     linear-gradient(180deg, rgba(255,255,255,0.04), transparent 24rem),
     #0e2721;
   color: #f7fbfa;
-  padding: 20px 14px;
+  overflow-y: auto;
+  padding: 16px 12px;
+  scrollbar-width: thin;
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 8px 8px 22px;
+  padding: 6px 6px 16px;
 }
 
 .brand-mark {
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
+  width: 38px;
+  height: 38px;
   border-radius: 12px;
   background: var(--accent);
   color: #17130a;
@@ -120,25 +122,38 @@ button:disabled {
 .brand span {
   margin-top: 2px;
   color: #b8c8c3;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .nav-list {
   display: grid;
-  gap: 5px;
+  gap: 4px;
 }
 
 .nav-list button {
   display: flex;
   align-items: center;
-  gap: 11px;
-  min-height: 42px;
-  border: 0;
-  border-radius: 10px;
-  padding: 0 11px;
+  gap: 9px;
+  min-height: 38px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  padding: 0 10px;
   background: transparent;
   color: #dce9e5;
+  font-size: 14px;
+  font-weight: 760;
   text-align: left;
+}
+
+.nav-list button svg {
+  flex: 0 0 auto;
+}
+
+.nav-list button span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .nav-list button.active,
@@ -667,7 +682,7 @@ button:disabled {
 
 .testimonial-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  grid-template-columns: repeat(4, minmax(200px, 1fr));
   gap: 14px;
 }
 

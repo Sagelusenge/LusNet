@@ -45,6 +45,7 @@ const adminNav = [
   { id: 'budget', label: 'Budget', icon: Building2 },
   { id: 'equipment', label: 'Materiel', icon: Router },
   { id: 'support', label: 'Support', icon: Ticket },
+  { id: 'feedback', label: 'Appreciations', icon: MessageSquare },
   { id: 'notifications', label: 'Notifications', icon: Send },
   { id: 'users', label: 'Utilisateurs', icon: UserPlus }
 ];
@@ -358,8 +359,8 @@ function App() {
           {!isClient && active === 'budget' && <Budget data={data} submit={submit} />}
           {!isClient && active === 'equipment' && <Equipment data={data} submit={submit} />}
           {!isClient && active === 'support' && <Support data={data} submit={submit} />}
+          {!isClient && active === 'feedback' && <FeedbackAdmin data={data} submit={submit} />}
           {!isClient && active === 'notifications' && <Notifications data={data} submit={submit} />}
-          {!isClient && active === 'notifications' && <FeedbackAdmin data={data} submit={submit} />}
           {!isClient && active === 'users' && <UsersAdmin data={data} submit={submit} />}
           {isClient && active === 'client-space' && <ClientSpace data={data.clientSpace} />}
           {isClient && active === 'client-contracts' && <ClientContracts data={data.clientSpace} />}
@@ -539,7 +540,7 @@ function PublicHome({ plans, feedback, submit, setActive, busy }) {
         <div className="testimonial-grid">
           {feedback.length === 0 ? (
             <div className="testimonial-card"><strong>LWASIVA_NET</strong><p>Les appreciations validees par l'administration seront affichees ici.</p></div>
-          ) : feedback.map((item) => (
+          ) : feedback.slice(0, 4).map((item) => (
             <div className="testimonial-card" key={item.id}>
               <div className="stars">{'★'.repeat(Number(item.rating || 5))}</div>
               <p>{item.comment}</p>
@@ -981,16 +982,16 @@ function FeedbackAdmin({ data, submit }) {
   const publicCount = data.allFeedback.filter((item) => item.is_public && item.status === 'approuve').length;
   return (
     <div className="panel table-panel">
-      <PanelHeader icon={MessageSquare} title={`Appreciations publiques (${publicCount}/6)`} />
+      <PanelHeader icon={MessageSquare} title={`Appreciations publiques (${publicCount}/4)`} />
       <div className="quote-list">
         {data.allFeedback.length === 0 ? <p className="muted">Aucune appreciation recue</p> : data.allFeedback.map((item) => (
           <div className="quote-item" key={item.id}>
             <div>
               <strong>{item.full_name} - {item.rating}/5</strong>
-              <span>{item.neighborhood || 'Goma'} - {item.comment} - {item.status}</span>
+              <span>{item.neighborhood || 'Goma'} - {item.comment} - {item.status}{item.is_public ? ' - visible sur le site' : ''}</span>
             </div>
             <div className="quote-actions">
-              <button className="small-button" onClick={() => submit(() => api.updateFeedback(item.id, { status: 'approuve', isPublic: true }), 'Appreciation publiee')}>Publier</button>
+              <button className="small-button" onClick={() => submit(() => api.updateFeedback(item.id, { status: 'approuve', isPublic: true }), 'Appreciation approuvee')}>Approuver</button>
               <button className="small-button" onClick={() => submit(() => api.updateFeedback(item.id, { isPublic: false }), 'Appreciation retiree')}>Retirer</button>
               <button className="small-button danger" onClick={() => submit(() => api.updateFeedback(item.id, { status: 'rejete', isPublic: false }), 'Appreciation rejetee')}>Rejeter</button>
             </div>

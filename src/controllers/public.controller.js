@@ -34,7 +34,7 @@ async function createFeedback(req, res) {
 }
 
 async function listPublicFeedback(req, res) {
-  const rows = await query('SELECT * FROM vw_public_feedback LIMIT 6');
+  const rows = await query('SELECT * FROM vw_public_feedback LIMIT 4');
   res.json({ success: true, data: rows });
 }
 
@@ -59,8 +59,8 @@ async function updateFeedback(req, res) {
          AND id <> ?`,
       [req.params.id]
     );
-    if (Number(rows[0]?.total || 0) >= 6) {
-      throw new HttpError(400, 'Maximum 6 appreciations publiques. Retirez-en une avant d ajouter celle-ci.');
+    if (Number(rows[0]?.total || 0) >= 4) {
+      throw new HttpError(400, 'Maximum 4 appreciations publiques. Retirez-en une avant d ajouter celle-ci.');
     }
   }
 
