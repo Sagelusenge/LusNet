@@ -3,7 +3,7 @@ services:
     name: lwasiva-net-api
     env: node
     plan: free
-    buildCommand: npm install
+    buildCommand: npm install && npm run frontend:build
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
