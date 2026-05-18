@@ -420,22 +420,22 @@ function PublicShell({ active, setActive, toast, theme, setTheme, children }) {
           </button>
           <button className={active === 'home' ? 'active' : ''} onClick={() => setActive('home')}>
             <Home size={17} />
-            Accueil
+            <span>Accueil</span>
           </button>
           <button onClick={() => {
             setActive('home');
             setTimeout(() => document.getElementById('avis')?.scrollIntoView({ behavior: 'smooth' }), 0);
-          }}>
+          }} className="optional-nav">
             <MessageSquare size={17} />
-            Avis clients
+            <span>Avis clients</span>
           </button>
           <button className={active === 'login' ? 'active' : ''} onClick={() => setActive('login')}>
             <LogIn size={17} />
-            Connexion
+            <span>Connexion</span>
           </button>
           <a className="public-download-button" href={APK_DOWNLOAD_URL} target="_blank" rel="noreferrer">
             <Download size={17} />
-            APK
+            <span>APK</span>
           </a>
         </nav>
       </header>
