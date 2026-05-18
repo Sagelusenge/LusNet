@@ -36,7 +36,7 @@ import {
 } from 'lucide-react';
 import { api, getCurrentUser, setToken } from './api';
 
-const APK_DOWNLOAD_URL = 'https://expo.dev/artifacts/eas/dM1pfZwDBrDUEhTc2kvKy6.apk';
+const APK_DOWNLOAD_URL = 'https://expo.dev/artifacts/eas/hreS5w3oPoVVcU6kzQfDtF.apk';
 const PUBLIC_NAV_CRITICAL_CSS = `
 @media (max-width: 760px) {
   .public-header {
