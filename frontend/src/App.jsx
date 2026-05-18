@@ -5,6 +5,7 @@ import {
   Building2,
   CheckCircle2,
   ClipboardList,
+  Download,
   FileText,
   Gauge,
   Home,
@@ -22,6 +23,7 @@ import {
   MessageSquare,
   Router,
   ShieldCheck,
+  Smartphone,
   Sun,
   Ticket,
   Trash2,
@@ -33,6 +35,8 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { api, getCurrentUser, setToken } from './api';
+
+const APK_DOWNLOAD_URL = 'https://expo.dev/artifacts/eas/dM1pfZwDBrDUEhTc2kvKy6.apk';
 
 const adminNav = [
   { id: 'admin-dashboard', label: 'Dashboard', icon: Home },
@@ -429,6 +433,10 @@ function PublicShell({ active, setActive, toast, theme, setTheme, children }) {
             <LogIn size={17} />
             Connexion
           </button>
+          <a className="public-download-button" href={APK_DOWNLOAD_URL} target="_blank" rel="noreferrer">
+            <Download size={17} />
+            APK
+          </a>
         </nav>
       </header>
       {toast && <Toast toast={toast} />}
@@ -465,6 +473,10 @@ function PublicHome({ plans, feedback, submit, setActive, busy }) {
           </div>
           <div className="hero-actions">
             <a href="#devis" className="primary-link">Demander un devis</a>
+            <a href={APK_DOWNLOAD_URL} target="_blank" rel="noreferrer" className="app-download-link">
+              <Download size={18} />
+              Telecharger l'APK
+            </a>
             <button className="secondary-link" onClick={() => setActive('login')}>Espace client/admin</button>
           </div>
           <div className="public-update-note">
@@ -490,6 +502,18 @@ function PublicHome({ plans, feedback, submit, setActive, busy }) {
           <span>Technologie</span>
           <strong>Liaison sans fil</strong>
         </div>
+      </section>
+
+      <section className="public-section app-download-panel">
+        <div>
+          <span><Smartphone size={18} /> Application Android</span>
+          <h2>Installez LWASIVA_NET sur votre telephone</h2>
+          <p>Les clients peuvent suivre leur abonnement, leurs factures, les messages de l'administration et laisser une appreciation depuis l'application.</p>
+        </div>
+        <a href={APK_DOWNLOAD_URL} target="_blank" rel="noreferrer" className="app-download-link dark">
+          <Download size={19} />
+          Telecharger l'APK
+        </a>
       </section>
 
       <section className="public-section">

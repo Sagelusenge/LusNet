@@ -39,8 +39,8 @@ body {
   margin: 0;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background:
-    radial-gradient(circle at top left, rgba(8, 118, 93, 0.12), transparent 34rem),
-    linear-gradient(180deg, #f7fbfa, var(--bg));
+    radial-gradient(circle at top left, rgba(8, 118, 93, 0.12), transparent 30rem),
+    linear-gradient(180deg, #fbfefd 0, var(--bg) 58rem);
   color: var(--ink);
 }
 
@@ -220,9 +220,9 @@ button:disabled {
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  min-height: 76px;
-  padding: 14px 34px;
-  background: rgba(255, 255, 255, 0.84);
+  min-height: 72px;
+  padding: 12px 34px;
+  background: rgba(255, 255, 255, 0.9);
   border-bottom: 1px solid var(--line);
   backdrop-filter: blur(12px);
 }
@@ -261,6 +261,19 @@ button:disabled {
   color: var(--ink);
 }
 
+.public-download-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 38px;
+  border-radius: 999px;
+  padding: 0 15px;
+  background: var(--accent);
+  color: #17130a;
+  font-weight: 850;
+}
+
 .public-header nav button.active,
 .public-header nav button:hover {
   border-color: var(--brand);
@@ -273,13 +286,13 @@ button:disabled {
 }
 
 .hero {
-  min-height: 590px;
+  min-height: 610px;
   display: flex;
   align-items: center;
-  padding: 48px 34px;
+  padding: 58px 34px 74px;
   background:
-    linear-gradient(90deg, rgba(6, 34, 28, 0.92), rgba(6, 34, 28, 0.48)),
-    url("https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1800&q=80") center/cover;
+    linear-gradient(100deg, rgba(5, 30, 25, 0.94), rgba(6, 47, 38, 0.74) 48%, rgba(6, 47, 38, 0.36)),
+    url("/network-equipment.jpg") center/cover;
   color: #ffffff;
 }
 
@@ -294,7 +307,7 @@ button:disabled {
 
 .hero-content h1 {
   margin: 12px 0;
-  font-size: clamp(42px, 7vw, 78px);
+  font-size: clamp(44px, 7vw, 82px);
   line-height: 1;
   letter-spacing: 0;
 }
@@ -312,6 +325,27 @@ button:disabled {
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 26px;
+}
+
+.app-download-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  border-radius: 999px;
+  padding: 0 18px;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  background: #ffffff;
+  color: #074c3e;
+  font-weight: 850;
+}
+
+.app-download-link.dark {
+  background: var(--brand);
+  color: #ffffff;
+  border-color: var(--brand);
+  white-space: nowrap;
 }
 
 .public-update-note {
@@ -408,7 +442,7 @@ button:disabled {
   grid-template-columns: repeat(3, minmax(180px, 1fr));
   gap: 12px;
   width: min(1080px, calc(100% - 32px));
-  margin: -44px auto 30px;
+  margin: -52px auto 24px;
 }
 
 .public-contact-strip div {
@@ -441,6 +475,41 @@ button:disabled {
 
 .public-contact-strip strong {
   font-size: 15px;
+}
+
+.app-download-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(8, 118, 93, 0.12), transparent 55%),
+    var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.app-download-panel span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--brand-strong);
+  font-weight: 850;
+}
+
+.app-download-panel h2 {
+  margin: 8px 0 6px;
+  font-size: 24px;
+  line-height: 1.15;
+}
+
+.app-download-panel p {
+  max-width: 760px;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
 }
 
 .public-login {
@@ -1206,6 +1275,11 @@ tbody tr:hover {
   .photo-grid {
     grid-template-columns: 1fr 1fr;
   }
+
+  .app-download-panel {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 900px) {
@@ -1253,11 +1327,23 @@ tbody tr:hover {
   }
 
   .public-header {
+    align-items: flex-start;
     padding: 12px 16px;
   }
 
   .public-brand span {
     display: none;
+  }
+
+  .public-header nav {
+    gap: 6px;
+  }
+
+  .public-header nav button,
+  .public-download-button {
+    min-height: 36px;
+    padding: 0 10px;
+    font-size: 13px;
   }
 
   .login-page {
@@ -1308,6 +1394,19 @@ tbody tr:hover {
 
   .public-contact-strip {
     margin-top: -22px;
+  }
+
+  .app-download-panel {
+    padding: 18px;
+    border-radius: 16px;
+  }
+
+  .app-download-panel h2 {
+    font-size: 21px;
+  }
+
+  .app-download-panel .app-download-link {
+    width: 100%;
   }
 
   .photo-grid {
