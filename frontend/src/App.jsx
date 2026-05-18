@@ -418,6 +418,13 @@ function PublicShell({ active, setActive, toast, theme, setTheme, children }) {
             <Home size={17} />
             Accueil
           </button>
+          <button onClick={() => {
+            setActive('home');
+            setTimeout(() => document.getElementById('avis')?.scrollIntoView({ behavior: 'smooth' }), 0);
+          }}>
+            <MessageSquare size={17} />
+            Avis clients
+          </button>
           <button className={active === 'login' ? 'active' : ''} onClick={() => setActive('login')}>
             <LogIn size={17} />
             Connexion
@@ -459,6 +466,10 @@ function PublicHome({ plans, feedback, submit, setActive, busy }) {
           <div className="hero-actions">
             <a href="#devis" className="primary-link">Demander un devis</a>
             <button className="secondary-link" onClick={() => setActive('login')}>Espace client/admin</button>
+          </div>
+          <div className="public-update-note">
+            <MessageSquare size={18} />
+            <span>Nouveau: les clients peuvent laisser une appreciation, et l'administration choisit les 4 avis visibles.</span>
           </div>
         </div>
       </section>
@@ -520,8 +531,8 @@ function PublicHome({ plans, feedback, submit, setActive, busy }) {
           </div>
         </div>
         <div className="photo-grid">
-          <img src="https://images.unsplash.com/photo-1597424216809-3ba9864a6f1d?auto=format&fit=crop&w=900&q=80" alt="Technicien reseau" />
-          <img src="https://images.unsplash.com/photo-1606904825846-647eb07f5be2?auto=format&fit=crop&w=900&q=80" alt="Equipement Internet" />
+          <img src="/network-installation.jpg" alt="Installation reseau LWASIVA_NET" />
+          <img src="/network-equipment.jpg" alt="Equipement Internet LWASIVA_NET" />
         </div>
       </section>
 
@@ -532,10 +543,10 @@ function PublicHome({ plans, feedback, submit, setActive, busy }) {
         <div><Wifi size={20} /><strong>4. Activation</strong><span>Le service Internet est active pour le client.</span></div>
       </section>
 
-      <section className="public-section testimonials-section">
+      <section className="public-section testimonials-section" id="avis">
         <div className="section-heading">
           <MessageSquare size={22} />
-          <h2>Appreciations clients</h2>
+          <h2>Appreciations clients approuvees</h2>
         </div>
         <div className="testimonial-grid">
           {feedback.length === 0 ? (

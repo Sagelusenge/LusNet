@@ -244,6 +244,8 @@ button:disabled {
 .public-header nav {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .public-header nav button {
@@ -310,6 +312,30 @@ button:disabled {
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 26px;
+}
+
+.public-update-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 640px;
+  margin-top: 18px;
+  padding: 12px 14px;
+  border: 1px solid rgba(125, 255, 220, 0.42);
+  border-radius: 14px;
+  background: rgba(10, 45, 38, 0.62);
+  color: #ddfff6;
+  line-height: 1.45;
+}
+
+.public-update-note svg {
+  flex: 0 0 auto;
+  color: #7fffdc;
+}
+
+.hero-content .public-update-note span {
+  color: inherit;
+  font-weight: 700;
 }
 
 .hero-stats {
