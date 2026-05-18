@@ -37,6 +37,66 @@ import {
 import { api, getCurrentUser, setToken } from './api';
 
 const APK_DOWNLOAD_URL = 'https://expo.dev/artifacts/eas/dM1pfZwDBrDUEhTc2kvKy6.apk';
+const PUBLIC_NAV_CRITICAL_CSS = `
+@media (max-width: 760px) {
+  .public-header {
+    align-items: center !important;
+    gap: 10px !important;
+    min-height: 64px !important;
+    padding: 10px 14px !important;
+  }
+  .public-brand {
+    flex: 0 0 auto !important;
+    gap: 9px !important;
+  }
+  .public-brand .brand-mark {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 12px !important;
+  }
+  .public-brand strong {
+    font-size: 16px !important;
+    line-height: 1 !important;
+  }
+  .public-header nav {
+    display: grid !important;
+    grid-auto-flow: column !important;
+    grid-auto-columns: minmax(38px, auto) !important;
+    gap: 6px !important;
+    margin-left: auto !important;
+    overflow-x: auto !important;
+    overscroll-behavior-x: contain !important;
+    scrollbar-width: none !important;
+  }
+  .public-header nav::-webkit-scrollbar {
+    display: none !important;
+  }
+  .public-header nav button,
+  .public-download-button {
+    min-width: 38px !important;
+    min-height: 38px !important;
+    border-radius: 13px !important;
+    padding: 0 11px !important;
+    font-size: 13px !important;
+    white-space: nowrap !important;
+  }
+  .public-header nav .public-icon-button,
+  .public-header nav .optional-nav {
+    width: 38px !important;
+    padding: 0 !important;
+  }
+  .public-header nav .public-icon-button span,
+  .public-header nav .optional-nav span {
+    display: none !important;
+  }
+  .public-header nav button:not(.public-icon-button):not(.optional-nav) span,
+  .public-download-button span {
+    max-width: 78px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+}
+`;
 
 const adminNav = [
   { id: 'admin-dashboard', label: 'Dashboard', icon: Home },
@@ -406,6 +466,7 @@ function LoadingOverlay() {
 function PublicShell({ active, setActive, toast, theme, setTheme, children }) {
   return (
     <div className="public-shell">
+      <style>{PUBLIC_NAV_CRITICAL_CSS}</style>
       <header className="public-header">
         <div className="brand public-brand">
           <div className="brand-mark">LN</div>
