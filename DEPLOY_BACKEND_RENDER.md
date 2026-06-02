@@ -1,6 +1,6 @@
-# Heberger le backend sur Render
+# Heberger LWASIVA_NET sur Render
 
-La base MySQL est deja sur Aiven. Il reste a mettre l'API Node.js/Express en ligne.
+La base MySQL est deja sur Aiven. Le fichier `render.yaml` publie l'API Node.js/Express et le site web React.
 
 ## 1. Mettre le projet sur GitHub
 
@@ -21,14 +21,14 @@ Si la branche s'appelle `master`:
 git push -u origin master
 ```
 
-## 2. Creer le service Render
+## 2. Creer les services Render
 
 1. Aller sur `https://render.com`.
 2. Creer un compte ou se connecter.
-3. Cliquer **New** puis **Web Service**.
+3. Cliquer **New** puis **Blueprint**.
 4. Connecter le depot GitHub `lwasiva-net`.
 5. Render detectera `render.yaml`.
-6. Choisir le service `lwasiva-net-api`.
+6. Creer les services `lwasiva-net-api` et `lwasiva-net-web`.
 
 ## 3. Variables a mettre dans Render
 
@@ -37,7 +37,7 @@ Dans Render, ouvrir le service puis **Environment**.
 Mettre les valeurs Aiven:
 
 ```text
-DB_HOST=mysql-3e50d6ea-sagelusenge-7c93.l.aivencloud.com
+DB_HOST=mysql-a72aeaf-sagelusenge-7c93.a.aivencloud.com
 DB_PORT=18531
 DB_USER=avnadmin
 DB_PASSWORD=VOTRE_MOT_DE_PASSE_AIVEN
@@ -73,7 +73,27 @@ La reponse attendue:
 {"success":true,"message":"API LWASIVA_NET operationnelle"}
 ```
 
-## 5. Connecter l'application mobile
+## 5. Connecter le site web
+
+Le service `lwasiva-net-web` utilise cette variable:
+
+```text
+VITE_API_BASE_URL=https://lwasiva-net-api.onrender.com/api
+```
+
+Le build du site web est:
+
+```powershell
+npm.cmd run frontend:build
+```
+
+Render publie ensuite le dossier:
+
+```text
+dist/frontend
+```
+
+## 6. Connecter l'application mobile
 
 Dans `mobile/.env`, mettre:
 
@@ -88,4 +108,4 @@ cd C:\LwasivaNet\mobile
 npm.cmd start
 ```
 
-Pour creer une APK installable partout, utiliser EAS Build apres avoir mis cette URL publique.
+Apres modification, relancer Expo avec cette URL publique.

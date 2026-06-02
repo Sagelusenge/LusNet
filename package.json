@@ -13,6 +13,7 @@
     "frontend:preview": "node node_modules/vite/bin/vite.js preview --config frontend/vite.config.mjs --host 0.0.0.0",
     "db:init": "node scripts/init-db.js",
     "db:check": "node scripts/check-db.js",
+    "users:upsert-admin": "node scripts/upsert-admin-user.js",
     "notifications:whatsapp": "node scripts/send-whatsapp-reminders.js"
   },
   "keywords": [

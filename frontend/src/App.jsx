@@ -5,7 +5,6 @@ import {
   Building2,
   CheckCircle2,
   ClipboardList,
-  Download,
   FileText,
   Gauge,
   Home,
@@ -23,7 +22,6 @@ import {
   MessageSquare,
   Router,
   ShieldCheck,
-  Smartphone,
   Sun,
   Ticket,
   Trash2,
@@ -36,7 +34,6 @@ import {
 } from 'lucide-react';
 import { api, getCurrentUser, setToken } from './api';
 
-const APK_DOWNLOAD_URL = 'https://expo.dev/artifacts/eas/hreS5w3oPoVVcU6kzQfDtF.apk';
 const PUBLIC_NAV_CRITICAL_CSS = `
 @media (max-width: 760px) {
   .public-header {
@@ -71,8 +68,7 @@ const PUBLIC_NAV_CRITICAL_CSS = `
   .public-header nav::-webkit-scrollbar {
     display: none !important;
   }
-  .public-header nav button,
-  .public-download-button {
+  .public-header nav button {
     min-width: 38px !important;
     min-height: 38px !important;
     border-radius: 13px !important;
@@ -89,8 +85,7 @@ const PUBLIC_NAV_CRITICAL_CSS = `
   .public-header nav .optional-nav span {
     display: none !important;
   }
-  .public-header nav button:not(.public-icon-button):not(.optional-nav) span,
-  .public-download-button span {
+  .public-header nav button:not(.public-icon-button):not(.optional-nav) span {
     max-width: 78px !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
@@ -494,10 +489,6 @@ function PublicShell({ active, setActive, toast, theme, setTheme, children }) {
             <LogIn size={17} />
             <span>Connexion</span>
           </button>
-          <a className="public-download-button" href={APK_DOWNLOAD_URL} target="_blank" rel="noreferrer">
-            <Download size={17} />
-            <span>APK</span>
-          </a>
         </nav>
       </header>
       {toast && <Toast toast={toast} />}
@@ -534,10 +525,6 @@ function PublicHome({ plans, feedback, submit, setActive, busy }) {
           </div>
           <div className="hero-actions">
             <a href="#devis" className="primary-link">Demander un devis</a>
-            <a href={APK_DOWNLOAD_URL} target="_blank" rel="noreferrer" className="app-download-link">
-              <Download size={18} />
-              Telecharger l'APK
-            </a>
             <button className="secondary-link" onClick={() => setActive('login')}>Espace client/admin</button>
           </div>
           <div className="public-update-note">
@@ -563,18 +550,6 @@ function PublicHome({ plans, feedback, submit, setActive, busy }) {
           <span>Technologie</span>
           <strong>Liaison sans fil</strong>
         </div>
-      </section>
-
-      <section className="public-section app-download-panel">
-        <div>
-          <span><Smartphone size={18} /> Application Android</span>
-          <h2>Installez LWASIVA_NET sur votre telephone</h2>
-          <p>Les clients peuvent suivre leur abonnement, leurs factures, les messages de l'administration et laisser une appreciation depuis l'application.</p>
-        </div>
-        <a href={APK_DOWNLOAD_URL} target="_blank" rel="noreferrer" className="app-download-link dark">
-          <Download size={19} />
-          Telecharger l'APK
-        </a>
       </section>
 
       <section className="public-section">

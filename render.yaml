@@ -33,3 +33,15 @@ services:
         value: meta
       - key: WHATSAPP_FROM_NUMBER
         value: "243980208012"
+
+  - type: static
+    name: lwasiva-net-web
+    buildCommand: npm install && npm run frontend:build
+    staticPublishPath: dist/frontend
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://lwasiva-net-api.onrender.com/api
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

@@ -262,20 +262,6 @@ button:disabled {
   white-space: nowrap;
 }
 
-.public-download-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  min-height: 38px;
-  border-radius: 999px;
-  padding: 0 15px;
-  background: var(--accent);
-  color: #17130a;
-  font-weight: 850;
-  white-space: nowrap;
-}
-
 .public-header nav button.active,
 .public-header nav button:hover {
   border-color: var(--brand);
@@ -327,27 +313,6 @@ button:disabled {
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 26px;
-}
-
-.app-download-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 44px;
-  border-radius: 999px;
-  padding: 0 18px;
-  border: 1px solid rgba(255, 255, 255, 0.48);
-  background: #ffffff;
-  color: #074c3e;
-  font-weight: 850;
-}
-
-.app-download-link.dark {
-  background: var(--brand);
-  color: #ffffff;
-  border-color: var(--brand);
-  white-space: nowrap;
 }
 
 .public-update-note {
@@ -477,41 +442,6 @@ button:disabled {
 
 .public-contact-strip strong {
   font-size: 15px;
-}
-
-.app-download-panel {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 22px;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background:
-    linear-gradient(135deg, rgba(8, 118, 93, 0.12), transparent 55%),
-    var(--surface);
-  box-shadow: var(--shadow);
-}
-
-.app-download-panel span {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--brand-strong);
-  font-weight: 850;
-}
-
-.app-download-panel h2 {
-  margin: 8px 0 6px;
-  font-size: 24px;
-  line-height: 1.15;
-}
-
-.app-download-panel p {
-  max-width: 760px;
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.55;
 }
 
 .public-login {
@@ -1300,10 +1230,6 @@ tbody tr:hover {
     min-height: 390px;
   }
 
-  .app-download-panel {
-    align-items: flex-start;
-    flex-direction: column;
-  }
 }
 
 @media (max-width: 900px) {
@@ -1392,8 +1318,7 @@ tbody tr:hover {
     display: none;
   }
 
-  .public-header nav button,
-  .public-download-button {
+  .public-header nav button {
     min-width: 38px;
     min-height: 38px;
     border-radius: 13px;
@@ -1412,8 +1337,7 @@ tbody tr:hover {
     display: none;
   }
 
-  .public-header nav button:not(.public-icon-button):not(.optional-nav) span,
-  .public-download-button span {
+  .public-header nav button:not(.public-icon-button):not(.optional-nav) span {
     max-width: 78px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1477,19 +1401,6 @@ tbody tr:hover {
 
   .showcase-copy {
     padding: 0;
-  }
-
-  .app-download-panel {
-    padding: 18px;
-    border-radius: 16px;
-  }
-
-  .app-download-panel h2 {
-    font-size: 21px;
-  }
-
-  .app-download-panel .app-download-link {
-    width: 100%;
   }
 
   .photo-grid {
