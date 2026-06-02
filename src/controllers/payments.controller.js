@@ -3,7 +3,17 @@ const HttpError = require('../utils/http-error');
 
 async function listPayments(req, res) {
   const payments = await query(
-    `SELECT p.*, cl.full_name AS client_name, c.contract_number, i.invoice_number
+    `SELECT
+       p.*,
+       cl.full_name AS client_name,
+       cl.phone AS client_phone,
+       c.contract_number,
+       i.invoice_number,
+       i.total_amount_usd AS invoice_total_amount_usd,
+       i.status AS invoice_status,
+       i.period_start,
+       i.period_end,
+       i.due_date
      FROM payments p
      INNER JOIN clients cl ON cl.id = p.client_id
      INNER JOIN contracts c ON c.id = p.contract_id

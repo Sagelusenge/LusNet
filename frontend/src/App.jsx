@@ -1320,6 +1320,66 @@ function Invoices({ data, submit }) {
 
 function Payments({ data, submit }) {
   const [form, setForm] = useState({ invoiceId: '', amountUsd: '', method: 'especes', transactionNumber: '' });
+
+  function printPaymentStatement(item) {
+    const html = `
+      <html>
+        <head><title>${item.payment_reference}</title>${documentStyles()}</head>
+        <body>
+          <main class="doc">
+            <header class="doc-header">
+              <div>
+                <div class="brand-title">LWASIVA_NET</div>
+                <div class="brand-sub">Etat de paiement de facture</div>
+                <div class="brand-sub">Contact officiel : +243 980 208 012</div>
+              </div>
+              <div class="doc-title">
+                <h1>Recu de paiement</h1>
+                <span class="badge">${text(item.payment_reference)}</span>
+              </div>
+            </header>
+
+            <section class="grid">
+              <div class="box">
+                <h2>Client</h2>
+                <div class="field-line"><strong>Nom</strong><span>${text(item.client_name)}</span></div>
+                <div class="field-line"><strong>Telephone</strong><span>${text(item.client_phone)}</span></div>
+                <div class="field-line"><strong>Contrat</strong><span>${text(item.contract_number)}</span></div>
+              </div>
+              <div class="box">
+                <h2>Facture</h2>
+                <div class="field-line"><strong>Numero</strong><span>${text(item.invoice_number)}</span></div>
+                <div class="field-line"><strong>Periode</strong><span>${text(item.period_start)} - ${text(item.period_end)}</span></div>
+                <div class="field-line"><strong>Date limite</strong><span>${dateText(item.due_date)}</span></div>
+                <div class="field-line"><strong>Statut</strong><span>${text(item.invoice_status)}</span></div>
+              </div>
+            </section>
+
+            <section class="box">
+              <h2>Paiement recu</h2>
+              <table>
+                <tbody>
+                  <tr><td>Total facture</td><td><strong>${money(item.invoice_total_amount_usd)}</strong></td></tr>
+                  <tr><td>Montant paye</td><td><strong>${money(item.amount_usd)}</strong></td></tr>
+                  <tr><td>Methode</td><td>${text(item.method)}</td></tr>
+                  <tr><td>Transaction</td><td>${item.transaction_number || '-'}</td></tr>
+                  <tr><td>Date paiement</td><td>${text(item.paid_at)}</td></tr>
+                </tbody>
+              </table>
+              <p class="small">Ce document confirme uniquement le paiement reference ci-dessus. Le solde exact depend des paiements deja enregistres sur la facture.</p>
+            </section>
+
+            <section class="signature">
+              <div class="signature-box"><strong>Pour LWASIVA_NET</strong><p>Nom : KITSA LUSENGE LWASIVA Sage</p><p>Date : ..... / ..... / 202...</p></div>
+              <div class="signature-box"><strong>Client</strong><p>Nom : ${text(item.client_name)}</p><p>Signature : ................................</p></div>
+            </section>
+            <footer class="footer">LWASIVA_NET - Etat de paiement imprime par l'administration</footer>
+          </main>
+        </body>
+      </html>`;
+    printHtml(item.payment_reference, html);
+  }
+
   return (
     <>
       <QuickForm title="Nouveau paiement" icon={BadgeDollarSign} onSubmit={() => submit(() => api.registerPayment(form), 'Paiement enregistre')}>
@@ -1328,7 +1388,22 @@ function Payments({ data, submit }) {
         <SelectInput label="Methode" value={form.method} onChange={(method) => setForm({ ...form, method })} options={['especes', 'airtel_money', 'mpesa', 'orange_money', 'banque', 'autre']} />
         <TextInput label="Transaction" value={form.transactionNumber} onChange={(transactionNumber) => setForm({ ...form, transactionNumber })} />
       </QuickForm>
-      <TablePanel title="Paiements" icon={BadgeDollarSign} columns={['Reference', 'Client', 'Montant', 'Methode', 'Date']} rows={data.payments.map((item) => [item.payment_reference, item.client_name, money(item.amount_usd), item.method, item.paid_at])} />
+      <div className="panel table-panel">
+        <PanelHeader icon={BadgeDollarSign} title="Paiements" />
+        <div className="quote-list">
+          {data.payments.length === 0 ? <p className="muted">Aucun paiement</p> : data.payments.map((item) => (
+            <div className="quote-item" key={item.id}>
+              <div>
+                <strong>{item.payment_reference} - {item.client_name}</strong>
+                <span>{item.invoice_number || '-'} - {money(item.amount_usd)} - {item.method} - {item.paid_at}</span>
+              </div>
+              <div className="quote-actions">
+                <button className="icon-button" title="Imprimer l'etat de paiement" onClick={() => printPaymentStatement(item)}><Printer size={17} /></button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </>
   );
 }
