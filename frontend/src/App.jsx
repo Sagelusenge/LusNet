@@ -961,7 +961,7 @@ function printContractDocument(item) {
           <p>Tout abus peut entrainer la resiliation immediate, la coupure du signal, la confiscation du materiel non paye et des poursuites judiciaires.</p>
 
           <h2>Article 5 : Paiement</h2>
-          <p>L'abonnement mensuel est payable d'avance. Le Client doit payer deux (2) jours avant le <strong>jour du mois choisi pour payer : ${text(item.billing_due_day)}</strong>. Les paiements peuvent etre faits en especes ou via Mobile Money.</p>
+          <p>L'abonnement mensuel est payable d'avance. Le Client doit payer deux (2) jours avant le <strong>jour du mois choisi pour payer : ${text(item.billing_due_day)}</strong>. Les paiements peuvent etre faits en especes ou via Mobile Money.<br>En cas de retard de paiement de l’abonnement après un délai de 15 jours, le fournisseur se réserve le droit de rompre le contrat et de récupérer le matériel. </p>
 
           <h2>Article 6 : Service et support</h2>
           <p>LWASIVA_NET fournit le service 24h/24 et 7j/7, sauf force majeure ou maintenance programmee. Une equipe technique intervient en cas de panne signalee.</p>
