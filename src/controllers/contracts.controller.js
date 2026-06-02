@@ -5,6 +5,14 @@ function generateContractNumber() {
   return `CTR-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Date.now().toString().slice(-5)}`;
 }
 
+function normalizeDueDay(value) {
+  const dueDay = Number(value);
+  if (!Number.isInteger(dueDay) || dueDay < 1 || dueDay > 28) {
+    throw new HttpError(400, 'Le jour du mois pour payer doit etre entre 1 et 28');
+  }
+  return dueDay;
+}
+
 async function listContracts(req, res) {
   const rows = await query(
     `SELECT *
@@ -31,6 +39,7 @@ async function createContract(req, res) {
     trialEndsAt,
     minimumCommitmentMonths,
     billingDueDay,
+    otherPriceUsd,
     installationAddress,
     installationLatitude,
     installationLongitude,
@@ -41,12 +50,16 @@ async function createContract(req, res) {
     throw new HttpError(400, 'Client, bouquet et adresse installation sont obligatoires');
   }
 
+  const plans = await query('SELECT name FROM internet_plans WHERE id = ? LIMIT 1', [planId]);
+  const isOtherPlan = plans[0]?.name === 'Autre';
+  const customMonthlyPriceUsd = isOtherPlan ? Number(otherPriceUsd || 10) : null;
+
   const result = await query(
     `INSERT INTO contracts (
       contract_number, client_id, plan_id, status, signed_at, activated_at, trial_ends_at,
-      minimum_commitment_months, billing_due_day, installation_address,
-      installation_latitude, installation_longitude, notes, created_by
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      minimum_commitment_months, billing_due_day, custom_plan_name, custom_monthly_price_usd,
+      installation_address, installation_latitude, installation_longitude, notes, created_by
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       contractNumber || generateContractNumber(),
       clientId,
@@ -56,7 +69,9 @@ async function createContract(req, res) {
       activatedAt || null,
       trialEndsAt || null,
       minimumCommitmentMonths || null,
-      billingDueDay || null,
+      normalizeDueDay(billingDueDay || 5),
+      isOtherPlan ? 'Autre' : null,
+      customMonthlyPriceUsd,
       installationAddress,
       installationLatitude || null,
       installationLongitude || null,
@@ -83,9 +98,17 @@ async function updateContract(req, res) {
     trialEndsAt,
     minimumCommitmentMonths,
     billingDueDay,
+    otherPriceUsd,
     installationAddress,
     notes
   } = req.body;
+
+  let isOtherPlan = false;
+  if (planId) {
+    const plans = await query('SELECT name FROM internet_plans WHERE id = ? LIMIT 1', [planId]);
+    isOtherPlan = plans[0]?.name === 'Autre';
+  }
+  const shouldUpdateCustomPlan = Boolean(planId);
 
   await query(
     `UPDATE contracts
@@ -96,6 +119,8 @@ async function updateContract(req, res) {
          trial_ends_at = COALESCE(?, trial_ends_at),
          minimum_commitment_months = COALESCE(?, minimum_commitment_months),
          billing_due_day = COALESCE(?, billing_due_day),
+         custom_plan_name = CASE WHEN ? THEN ? ELSE custom_plan_name END,
+         custom_monthly_price_usd = CASE WHEN ? THEN ? ELSE custom_monthly_price_usd END,
          installation_address = COALESCE(?, installation_address),
          notes = COALESCE(?, notes)
      WHERE id = ?`,
@@ -106,7 +131,11 @@ async function updateContract(req, res) {
       activatedAt || null,
       trialEndsAt || null,
       minimumCommitmentMonths || null,
-      billingDueDay || null,
+      billingDueDay ? normalizeDueDay(billingDueDay) : null,
+      shouldUpdateCustomPlan,
+      isOtherPlan ? 'Autre' : null,
+      shouldUpdateCustomPlan,
+      isOtherPlan ? Number(otherPriceUsd || 10) : null,
       installationAddress || null,
       notes || null,
       req.params.id

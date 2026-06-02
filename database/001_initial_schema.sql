@@ -64,6 +64,8 @@ CREATE TABLE contracts (
   trial_ends_at DATE NULL,
   minimum_commitment_months INT UNSIGNED NULL,
   billing_due_day TINYINT UNSIGNED NULL,
+  custom_plan_name VARCHAR(120) NULL,
+  custom_monthly_price_usd DECIMAL(10,2) NULL,
   payment_deadline_days_before_due TINYINT UNSIGNED NOT NULL DEFAULT 2,
   installation_address TEXT NOT NULL,
   installation_latitude DECIMAL(10,7) NULL,

@@ -5,6 +5,7 @@ const env = require('../src/config/env');
 
 const files = [
   path.join(__dirname, '..', 'database', '001_initial_schema.sql'),
+  path.join(__dirname, '..', 'database', '009_contract_custom_plan.sql'),
   path.join(__dirname, '..', 'database', '002_views_procedures.sql'),
   path.join(__dirname, '..', 'database', '003_quote_requests_and_client_users.sql'),
   path.join(__dirname, '..', 'database', '004_whatsapp_notifications.sql'),

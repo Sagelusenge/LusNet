@@ -23,9 +23,9 @@ SELECT
   cl.phone AS client_phone,
   cl.address AS client_address,
   p.id AS plan_id,
-  p.name AS plan_name,
+  CASE WHEN p.name = 'Autre' THEN COALESCE(c.custom_plan_name, 'Autre') ELSE p.name END AS plan_name,
   p.bandwidth_mbps,
-  p.monthly_price_usd,
+  CASE WHEN p.name = 'Autre' THEN COALESCE(c.custom_monthly_price_usd, p.monthly_price_usd) ELSE p.monthly_price_usd END AS monthly_price_usd,
   c.installation_address
 FROM contracts c
 INNER JOIN clients cl ON cl.id = c.client_id
@@ -141,7 +141,10 @@ BEGIN
   DECLARE v_plan_price DECIMAL(10,2);
   DECLARE v_invoice_number VARCHAR(60);
 
-  SELECT ip.monthly_price_usd
+  SELECT CASE
+    WHEN ip.name = 'Autre' THEN COALESCE(c.custom_monthly_price_usd, ip.monthly_price_usd)
+    ELSE ip.monthly_price_usd
+  END
   INTO v_plan_price
   FROM contracts c
   INNER JOIN internet_plans ip ON ip.id = c.plan_id
