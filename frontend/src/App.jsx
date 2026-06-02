@@ -137,6 +137,16 @@ function todayInputDate() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function todayDisplayDate() {
+  return new Date().toLocaleDateString('fr-FR');
+}
+
+function currentDateTimeInput() {
+  const now = new Date();
+  const offset = now.getTimezoneOffset();
+  return new Date(now.getTime() - offset * 60000).toISOString().slice(0, 16);
+}
+
 function dateText(value) {
   return value || '..... / ..... / 202...';
 }
@@ -1506,7 +1516,7 @@ function Invoices({ data, submit }) {
 }
 
 function Payments({ data, submit }) {
-  const emptyForm = { id: '', invoiceId: '', amountUsd: '', method: 'especes', transactionNumber: '', paidAt: '', notes: '' };
+  const emptyForm = { id: '', invoiceId: '', amountUsd: '', method: 'especes', transactionNumber: '', paidAt: currentDateTimeInput(), notes: '' };
   const [form, setForm] = useState(emptyForm);
   const isEditing = Boolean(form.id);
 
@@ -1537,6 +1547,14 @@ function Payments({ data, submit }) {
   }
 
   function printPaymentStatement(item) {
+    const invoice = data.invoices.find((value) => String(value.id) === String(item.invoice_id)) || {};
+    const invoiceNumber = item.invoice_number || invoice.invoice_number;
+    const invoiceType = item.invoice_type || invoice.invoice_type;
+    const periodStart = item.period_start || invoice.period_start;
+    const periodEnd = item.period_end || invoice.period_end;
+    const dueDate = item.due_date || invoice.due_date;
+    const invoiceStatus = item.invoice_status || invoice.status;
+    const contractNumber = item.contract_number || invoice.contract_number;
     const html = `
       <html>
         <head><title>${item.payment_reference}</title>${documentStyles()}</head>
@@ -1559,15 +1577,15 @@ function Payments({ data, submit }) {
                 <h2>Client</h2>
                 <div class="field-line"><strong>Nom</strong><span>${text(item.client_name)}</span></div>
                 <div class="field-line"><strong>Telephone</strong><span>${text(item.client_phone)}</span></div>
-                <div class="field-line"><strong>Contrat</strong><span>${text(item.contract_number)}</span></div>
+                <div class="field-line"><strong>Contrat</strong><span>${text(contractNumber)}</span></div>
               </div>
               <div class="box">
                 <h2>Facture</h2>
-                <div class="field-line"><strong>Numero</strong><span>${text(item.invoice_number)}</span></div>
-                <div class="field-line"><strong>Type</strong><span>${invoiceTypeLabel(item.invoice_type)}</span></div>
-                <div class="field-line"><strong>Periode</strong><span>${text(item.period_start)} - ${text(item.period_end)}</span></div>
-                <div class="field-line"><strong>Date limite</strong><span>${dateText(item.due_date)}</span></div>
-                <div class="field-line"><strong>Statut</strong><span>${invoiceStatusLabel(item.invoice_status)}</span></div>
+                <div class="field-line"><strong>Numero</strong><span>${text(invoiceNumber)}</span></div>
+                <div class="field-line"><strong>Type</strong><span>${invoiceTypeLabel(invoiceType)}</span></div>
+                <div class="field-line"><strong>Periode</strong><span>${text(periodStart)} - ${text(periodEnd)}</span></div>
+                <div class="field-line"><strong>Date limite</strong><span>${dateText(dueDate)}</span></div>
+                <div class="field-line"><strong>Statut</strong><span>${invoiceStatusLabel(invoiceStatus)}</span></div>
               </div>
             </section>
 
@@ -1575,18 +1593,17 @@ function Payments({ data, submit }) {
               <h2>Paiement recu</h2>
               <table>
                 <tbody>
-                  <tr><td>Total facture</td><td><strong>${money(item.invoice_total_amount_usd)}</strong></td></tr>
                   <tr><td>Montant paye</td><td><strong>${money(item.amount_usd)}</strong></td></tr>
                   <tr><td>Methode</td><td>${text(item.method)}</td></tr>
                   <tr><td>Transaction</td><td>${item.transaction_number || '-'}</td></tr>
-                  <tr><td>Date paiement</td><td>${text(item.paid_at)}</td></tr>
+                  <tr><td>Date paiement</td><td>${todayDisplayDate()}</td></tr>
                 </tbody>
               </table>
               <p class="small">Ce document confirme uniquement le paiement reference ci-dessus. Le solde exact depend des paiements deja enregistres sur la facture.</p>
             </section>
 
             <section class="signature">
-              <div class="signature-box"><strong>Pour LWASIVA_NET</strong><p>Nom : KITSA LUSENGE LWASIVA Sage</p><p>Date : ..... / ..... / 202...</p></div>
+              <div class="signature-box"><strong>Pour LWASIVA_NET</strong><p>Nom : KITSA LUSENGE LWASIVA Sage</p><p>Date : ${todayDisplayDate()}</p></div>
               <div class="signature-box"><strong>Client</strong><p>Nom : ${text(item.client_name)}</p><p>Signature : ................................</p></div>
             </section>
             <footer class="footer">LWASIVA_NET - Etat de paiement imprime par l'administration</footer>
