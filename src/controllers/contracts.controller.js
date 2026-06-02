@@ -7,8 +7,8 @@ function generateContractNumber() {
 
 function normalizeDueDay(value) {
   const dueDay = Number(value);
-  if (!Number.isInteger(dueDay) || dueDay < 1 || dueDay > 28) {
-    throw new HttpError(400, 'Le jour du mois pour payer doit etre entre 1 et 28');
+  if (!Number.isInteger(dueDay) || dueDay < 1 || dueDay > 31) {
+    throw new HttpError(400, 'Le jour du mois pour payer doit etre entre 1 et 31');
   }
   return dueDay;
 }

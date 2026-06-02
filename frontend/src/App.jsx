@@ -147,7 +147,7 @@ function isOtherPlanName(name) {
 function clampDueDay(value) {
   const dueDay = Number(value);
   if (!Number.isFinite(dueDay)) return '';
-  return String(Math.min(28, Math.max(1, Math.trunc(dueDay))));
+  return String(Math.min(31, Math.max(1, Math.trunc(dueDay))));
 }
 
 function bandwidthText(item) {

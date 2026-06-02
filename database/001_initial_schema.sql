@@ -77,7 +77,7 @@ CREATE TABLE contracts (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT chk_contracts_due_day
-    CHECK (billing_due_day IS NULL OR billing_due_day BETWEEN 1 AND 28),
+    CHECK (billing_due_day IS NULL OR billing_due_day BETWEEN 1 AND 31),
   CONSTRAINT fk_contracts_client
     FOREIGN KEY (client_id) REFERENCES clients(id)
     ON DELETE RESTRICT,
