@@ -12,15 +12,15 @@ services:
       - key: PORT
         value: 10000
       - key: DB_HOST
-        sync: false
+        value: mysql-a72aeaf-sagelusenge-7c93.a.aivencloud.com
       - key: DB_PORT
-        sync: false
+        value: 18531
       - key: DB_USER
-        sync: false
+        value: avnadmin
       - key: DB_PASSWORD
         sync: false
       - key: DB_NAME
-        sync: false
+        value: defaultdb
       - key: DB_SSL
         value: "true"
       - key: JWT_SECRET
