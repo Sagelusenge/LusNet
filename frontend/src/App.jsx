@@ -172,12 +172,13 @@ function documentStyles() {
       .selected{background:#e8f7f2;font-weight:700}
       .signature{display:grid;grid-template-columns:1fr 1fr;gap:38px;margin-top:24px}
       .signature-box{min-height:128px;border-top:1px solid #111;padding-top:8px}
-      .operator-signature{min-height:128px;display:flex;flex-direction:column;align-items:flex-start}
-      .signature-line{height:24px;border-bottom:1px solid #111;margin:8px 0 4px;width:72%}
-      .stamp{position:relative;width:84px;height:84px;border:3px solid #08765d;border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;color:#08765d;font-weight:800;text-transform:uppercase;margin:4px 0 6px 42px}
-      .stamp:before{content:"";position:absolute;inset:7px;border:1.5px solid #08765d;border-radius:50%}
-      .stamp-inner{position:relative;z-index:1;display:grid;gap:1px;font-size:8.5px;line-height:1.08}
-      .stamp-inner strong{font-size:12.5px;letter-spacing:0}
+      .operator-signature{position:relative;min-height:128px;overflow:hidden}
+      .operator-signature>*:not(.stamp){position:relative;z-index:2}
+      .signature-line{height:28px;border-bottom:1px solid #111;margin:8px 0 4px;width:74%}
+      .stamp{position:absolute;left:86px;top:22px;z-index:1;width:104px;height:104px;border:3px solid rgba(8,118,93,.55);border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;color:rgba(8,118,93,.62);font-weight:800;text-transform:uppercase;transform:rotate(-10deg);opacity:.86}
+      .stamp:before{content:"";position:absolute;inset:8px;border:1.5px solid rgba(8,118,93,.55);border-radius:50%}
+      .stamp-inner{position:relative;z-index:1;display:grid;gap:1px;font-size:9px;line-height:1.08}
+      .stamp-inner strong{font-size:13.5px;letter-spacing:0}
       .stamp-inner em{font-style:normal;font-size:7.5px}
       .small{font-size:11px;color:#555}
       .footer{border-top:1px solid #cfd8d4;margin-top:18px;padding-top:8px;color:#555;font-size:11px;text-align:center}
@@ -951,6 +952,10 @@ function printContractDocument(item) {
           <section class="signature">
             <div class="signature-box operator-signature">
               <strong>Pour l'Operateur</strong>
+              <p>Nom : KITSA LUSENGE LWASIVA Sage</p>
+              <p>Email : sagelusenge@gmail.com</p>
+              <div class="signature-line"></div>
+              <p class="small">Signature manuscrite</p>
               <div class="stamp">
                 <div class="stamp-inner">
                   <strong>LWASIVA</strong>
@@ -959,10 +964,6 @@ function printContractDocument(item) {
                   <em>Votre FAI</em>
                 </div>
               </div>
-              <p>Nom : KITSA LUSENGE LWASIVA Sage</p>
-              <p>Email : sagelusenge@gmail.com</p>
-              <div class="signature-line"></div>
-              <p class="small">Signature manuscrite</p>
             </div>
             <div class="signature-box"><strong>Pour le Client</strong><p>Nom : ${text(item.client_name)}</p><p>Date : ..... / ..... / 202...</p><p>Signature precedee de la mention "Lu et approuve"</p></div>
           </section>
