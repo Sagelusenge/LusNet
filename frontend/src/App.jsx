@@ -132,6 +132,14 @@ function text(value) {
   return value || '.........................................';
 }
 
+function todayInputDate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function dateText(value) {
+  return value || '..... / ..... / 202...';
+}
+
 function printHtml(title, html) {
   const win = window.open('', '_blank');
   win.document.write(html);
@@ -896,6 +904,7 @@ function printContractDocument(item) {
             <div class="field-line"><strong>Client</strong><span>${text(item.client_name)}</span></div>
             <div class="field-line"><strong>Adresse</strong><span>${text(item.installation_address || item.client_address)}</span></div>
             <div class="field-line"><strong>Telephone</strong><span>${text(item.client_phone)}</span></div>
+            <div class="field-line"><strong>Mise en service</strong><span>${dateText(item.activated_at)}</span></div>
           </section>
 
           <h2>Article 1 : Objet du Contrat</h2>
@@ -934,7 +943,7 @@ function printContractDocument(item) {
           <p>LWASIVA_NET fournit le service 24h/24 et 7j/7, sauf force majeure ou maintenance programmee. Une equipe technique intervient en cas de panne signalee.</p>
 
           <h2>Article 7 : Duree et resiliation</h2>
-          <p>Le contrat est conclu pour une duree indeterminee. Une periode d'essai de sept (7) jours est accordee a compter de l'activation. Apres cette periode, la resiliation se fait avec un preavis de quinze (15) jours. Si le materiel n'est pas totalement paye, le solde devient immediatement exigible.</p>
+          <p>Le contrat est conclu pour une duree indeterminee. La date officielle de mise en service est le <strong>${dateText(item.activated_at)}</strong>. Une periode d'essai de sept (7) jours est accordee a compter de cette date. Apres cette periode, la resiliation se fait avec un preavis de quinze (15) jours. Si le materiel n'est pas totalement paye, le solde devient immediatement exigible.</p>
 
           <h2>Article 8 : Litiges</h2>
           <p>En cas de litige, les parties cherchent d'abord une solution amiable. A defaut, les tribunaux competents de la ville de Goma sont seuls habilites a trancher.</p>
@@ -1175,7 +1184,7 @@ function Clients({ data, submit }) {
 }
 
 function Contracts({ data, submit }) {
-  const emptyForm = { id: '', clientId: '', planId: '', installationAddress: '', status: 'essai', billingDueDay: 5 };
+  const emptyForm = { id: '', clientId: '', planId: '', installationAddress: '', status: 'essai', activatedAt: todayInputDate(), billingDueDay: 5 };
   const [form, setForm] = useState(emptyForm);
   const isEditing = Boolean(form.id);
 
@@ -1186,6 +1195,7 @@ function Contracts({ data, submit }) {
       planId: item.plan_id,
       installationAddress: item.installation_address,
       status: item.status,
+      activatedAt: item.activated_at || todayInputDate(),
       billingDueDay: item.billing_due_day || 5
     });
   }
@@ -1196,9 +1206,10 @@ function Contracts({ data, submit }) {
         <SelectInput label="Client" value={form.clientId} onChange={(clientId) => setForm({ ...form, clientId })} options={data.clients.map((client) => ({ value: client.id, label: client.full_name }))} />
         <SelectInput label="Bouquet" value={form.planId} onChange={(planId) => setForm({ ...form, planId })} options={data.plans.map((plan) => ({ value: plan.id, label: `${plan.name} - ${money(plan.monthly_price_usd)}` }))} />
         <SelectInput label="Statut" value={form.status} onChange={(status) => setForm({ ...form, status })} options={['brouillon', 'essai', 'actif', 'suspendu']} />
+        <TextInput label="Date de mise en service" type="date" value={form.activatedAt} onChange={(activatedAt) => setForm({ ...form, activatedAt })} />
         <TextInput label="Jour du mois pour payer" type="number" value={form.billingDueDay} onChange={(billingDueDay) => setForm({ ...form, billingDueDay })} />
         <TextInput label="Adresse installation" value={form.installationAddress} onChange={(installationAddress) => setForm({ ...form, installationAddress })} />
-        {isEditing && <button className="small-button" type="button" onClick={() => setForm(emptyForm)}>Annuler</button>}
+        {isEditing && <button className="small-button" type="button" onClick={() => setForm({ ...emptyForm, activatedAt: todayInputDate() })}>Annuler</button>}
       </QuickForm>
       <div className="panel table-panel">
         <PanelHeader icon={ClipboardList} title="Contrats en cours" />
@@ -1207,7 +1218,7 @@ function Contracts({ data, submit }) {
             <div className="quote-item" key={item.contract_id}>
               <div>
                 <strong>{item.contract_number} - {item.client_name}</strong>
-                <span>{item.plan_name} - {item.status} - {item.bandwidth_mbps} Mbps</span>
+                <span>{item.plan_name} - {item.status} - {item.bandwidth_mbps} Mbps - Mise en service: {dateText(item.activated_at)}</span>
               </div>
               <div className="quote-actions">
                 <button className="icon-button" title="Imprimer contrat" onClick={() => printContractDocument(item)}><Printer size={17} /></button>
