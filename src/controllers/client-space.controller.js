@@ -46,6 +46,33 @@ async function getMySpace(req, res) {
   });
 }
 
+async function updateMyProfile(req, res) {
+  ensureClient(req);
+
+  const { fullName, phone, email, address } = req.body;
+
+  if (!fullName || !phone || !address) {
+    throw new HttpError(400, 'Nom, telephone et adresse sont obligatoires');
+  }
+
+  await query(
+    `UPDATE clients
+     SET full_name = ?, phone = ?, email = ?, address = ?
+     WHERE id = ?`,
+    [fullName, phone, email || null, address, req.user.clientId]
+  );
+
+  await query(
+    `UPDATE users
+     SET full_name = ?, phone = ?, email = ?
+     WHERE id = ?`,
+    [fullName, phone, email || null, req.user.id]
+  );
+
+  res.json({ success: true, message: 'Profil client mis a jour' });
+}
+
 module.exports = {
-  getMySpace
+  getMySpace,
+  updateMyProfile
 };

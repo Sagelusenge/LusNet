@@ -179,12 +179,12 @@ function documentStyles() {
       th,td{border:1px solid #bfcac5;padding:6px;text-align:left;vertical-align:top}
       .selected{background:#e8f7f2;font-weight:700}
       .signature{display:grid;grid-template-columns:1fr 1fr;gap:38px;margin-top:24px}
-      .signature-box{min-height:128px;border-top:1px solid #111;padding-top:8px}
-      .operator-signature{position:relative;min-height:128px;overflow:hidden}
+      .signature-box{min-height:150px;border-top:1px solid #111;padding-top:8px}
+      .operator-signature{position:relative;min-height:150px;overflow:hidden}
       .operator-signature>*:not(.stamp){position:relative;z-index:2}
       .signature-line{height:28px;border-bottom:1px solid #111;margin:8px 0 4px;width:74%}
-      .stamp{position:absolute;left:58px;top:26px;z-index:1;width:106px;height:106px;border:3px solid rgba(0,0,0,.26);border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;color:rgba(0,0,0,.34);font-weight:800;text-transform:uppercase;transform:rotate(-10deg);opacity:.72}
-      .stamp:before{content:"";position:absolute;inset:8px;border:1.5px solid rgba(0,0,0,.24);border-radius:50%}
+      .stamp{position:absolute;left:58px;top:34px;z-index:1;width:106px;height:106px;border:3px solid rgba(0,0,0,.22);border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;color:rgba(0,0,0,.28);font-weight:800;text-transform:uppercase;transform:rotate(-10deg);opacity:.58}
+      .stamp:before{content:"";position:absolute;inset:8px;border:1.5px solid rgba(0,0,0,.22);border-radius:50%}
       .stamp-inner{position:relative;z-index:1;display:grid;gap:1px;font-size:8.5px;line-height:1.08}
       .stamp-inner strong{font-size:11.5px;letter-spacing:0}
       .stamp-inner em{font-style:normal;font-size:7.5px}
@@ -445,7 +445,7 @@ function App() {
           {!isClient && active === 'feedback' && <FeedbackAdmin data={data} submit={submit} />}
           {!isClient && active === 'notifications' && <Notifications data={data} submit={submit} />}
           {!isClient && active === 'users' && <UsersAdmin data={data} submit={submit} />}
-          {isClient && active === 'client-space' && <ClientSpace data={data.clientSpace} />}
+          {isClient && active === 'client-space' && <ClientSpace data={data.clientSpace} submit={submit} />}
           {isClient && active === 'client-contracts' && <ClientContracts data={data.clientSpace} />}
           {isClient && active === 'client-invoices' && <ClientInvoices data={data.clientSpace} />}
         </section>
@@ -1117,10 +1117,20 @@ function FeedbackAdmin({ data, submit }) {
   );
 }
 
-function ClientSpace({ data }) {
+function ClientSpace({ data, submit }) {
+  const [profileForm, setProfileForm] = useState({ fullName: '', phone: '', email: '', address: '' });
   const unpaid = data.invoices.filter((item) => item.status !== 'payee' && item.status !== 'annulee');
   const unpaidTotal = unpaid.reduce((sum, item) => sum + Number(item.total_amount_usd || 0), 0);
   const activeContract = data.contracts.find((item) => item.status === 'actif') || data.contracts[0];
+
+  useEffect(() => {
+    setProfileForm({
+      fullName: data.client?.full_name || '',
+      phone: data.client?.phone || '',
+      email: data.client?.email || '',
+      address: data.client?.address || ''
+    });
+  }, [data.client]);
 
   return (
     <>
@@ -1134,6 +1144,12 @@ function ClientSpace({ data }) {
         <TablePanel title="Mes contrats" icon={FileText} columns={['Numero', 'Bouquet', 'Debit', 'Statut']} rows={data.contracts.map((item) => [item.contract_number, item.plan_name, bandwidthText(item), item.status])} />
         <TablePanel title="Mes factures a payer" icon={Receipt} columns={['Numero', 'Total', 'Statut', 'Date limite']} rows={unpaid.map((item) => [item.invoice_number, money(item.total_amount_usd), item.status, item.due_date])} />
       </div>
+      <QuickForm title="Mon profil" icon={Users} onSubmit={() => submit(() => api.updateClientProfile(profileForm), 'Profil mis a jour')}>
+        <TextInput label="Nom complet" value={profileForm.fullName} onChange={(fullName) => setProfileForm({ ...profileForm, fullName })} />
+        <TextInput label="Telephone" value={profileForm.phone} onChange={(phone) => setProfileForm({ ...profileForm, phone })} />
+        <TextInput label="Email" value={profileForm.email} onChange={(email) => setProfileForm({ ...profileForm, email })} />
+        <TextInput label="Adresse" value={profileForm.address} onChange={(address) => setProfileForm({ ...profileForm, address })} />
+      </QuickForm>
       <TablePanel title="Mes derniers paiements" icon={BadgeDollarSign} columns={['Reference', 'Montant', 'Methode', 'Date']} rows={data.payments.map((item) => [item.payment_reference, money(item.amount_usd), item.method, item.paid_at])} />
     </>
   );

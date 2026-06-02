@@ -79,6 +79,7 @@ export const api = {
   sendFeedback: (body) => apiRequest('/public/feedback', { method: 'POST', body: JSON.stringify(body) }),
   updateFeedback: (id, body) => apiRequest(`/public/feedback/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   clientSpace: () => apiRequest('/client-space/me'),
+  updateClientProfile: (body) => apiRequest('/client-space/me', { method: 'PUT', body: JSON.stringify(body) }),
   summary: () => apiRequest('/dashboard/summary'),
   plans: () => apiRequest('/plans'),
   clients: (search = '') => apiRequest(`/clients${search ? `?search=${encodeURIComponent(search)}` : ''}`),
