@@ -26,6 +26,10 @@ SELECT
   CASE WHEN p.name = 'Autre' THEN COALESCE(c.custom_plan_name, 'Autre') ELSE p.name END AS plan_name,
   p.bandwidth_mbps,
   CASE WHEN p.name = 'Autre' THEN COALESCE(c.custom_monthly_price_usd, p.monthly_price_usd) ELSE p.monthly_price_usd END AS monthly_price_usd,
+  c.equipment_total_price_usd,
+  c.equipment_initial_payment_usd,
+  c.equipment_monthly_payment_usd,
+  c.equipment_paid_in_full,
   c.installation_address
 FROM contracts c
 INNER JOIN clients cl ON cl.id = c.client_id

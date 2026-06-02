@@ -13,7 +13,8 @@ const files = [
   path.join(__dirname, '..', 'database', '006_app_messages_push.sql'),
   path.join(__dirname, '..', 'database', '007_budget.sql'),
   path.join(__dirname, '..', 'database', '008_other_plan.sql'),
-  path.join(__dirname, '..', 'database', '010_contract_due_day_31.sql')
+  path.join(__dirname, '..', 'database', '010_contract_due_day_31.sql'),
+  path.join(__dirname, '..', 'database', '011_contract_equipment_terms.sql')
 ];
 
 function splitSqlStatements(sql) {

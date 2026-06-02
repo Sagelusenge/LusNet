@@ -40,6 +40,9 @@ async function createContract(req, res) {
     minimumCommitmentMonths,
     billingDueDay,
     otherPriceUsd,
+    equipmentInitialPaymentUsd,
+    equipmentMonthlyPaymentUsd,
+    equipmentPaidInFull = false,
     installationAddress,
     installationLatitude,
     installationLongitude,
@@ -58,8 +61,9 @@ async function createContract(req, res) {
     `INSERT INTO contracts (
       contract_number, client_id, plan_id, status, signed_at, activated_at, trial_ends_at,
       minimum_commitment_months, billing_due_day, custom_plan_name, custom_monthly_price_usd,
-      installation_address, installation_latitude, installation_longitude, notes, created_by
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      equipment_total_price_usd, equipment_initial_payment_usd, equipment_monthly_payment_usd,
+      equipment_paid_in_full, installation_address, installation_latitude, installation_longitude, notes, created_by
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       contractNumber || generateContractNumber(),
       clientId,
@@ -72,6 +76,10 @@ async function createContract(req, res) {
       normalizeDueDay(billingDueDay || 5),
       isOtherPlan ? 'Autre' : null,
       customMonthlyPriceUsd,
+      100,
+      Number(equipmentInitialPaymentUsd || (equipmentPaidInFull ? 100 : 20)),
+      equipmentPaidInFull ? null : (equipmentMonthlyPaymentUsd ? Number(equipmentMonthlyPaymentUsd) : null),
+      Boolean(equipmentPaidInFull),
       installationAddress,
       installationLatitude || null,
       installationLongitude || null,
@@ -99,6 +107,9 @@ async function updateContract(req, res) {
     minimumCommitmentMonths,
     billingDueDay,
     otherPriceUsd,
+    equipmentInitialPaymentUsd,
+    equipmentMonthlyPaymentUsd,
+    equipmentPaidInFull,
     installationAddress,
     notes
   } = req.body;
@@ -121,6 +132,9 @@ async function updateContract(req, res) {
          billing_due_day = COALESCE(?, billing_due_day),
          custom_plan_name = CASE WHEN ? THEN ? ELSE custom_plan_name END,
          custom_monthly_price_usd = CASE WHEN ? THEN ? ELSE custom_monthly_price_usd END,
+         equipment_initial_payment_usd = COALESCE(?, equipment_initial_payment_usd),
+         equipment_monthly_payment_usd = CASE WHEN ? THEN ? ELSE equipment_monthly_payment_usd END,
+         equipment_paid_in_full = COALESCE(?, equipment_paid_in_full),
          installation_address = COALESCE(?, installation_address),
          notes = COALESCE(?, notes)
      WHERE id = ?`,
@@ -136,6 +150,10 @@ async function updateContract(req, res) {
       isOtherPlan ? 'Autre' : null,
       shouldUpdateCustomPlan,
       isOtherPlan ? Number(otherPriceUsd || 10) : null,
+      equipmentInitialPaymentUsd ? Number(equipmentInitialPaymentUsd) : null,
+      typeof equipmentMonthlyPaymentUsd !== 'undefined',
+      equipmentMonthlyPaymentUsd ? Number(equipmentMonthlyPaymentUsd) : null,
+      typeof equipmentPaidInFull === 'boolean' ? equipmentPaidInFull : null,
       installationAddress || null,
       notes || null,
       req.params.id

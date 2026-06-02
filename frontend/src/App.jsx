@@ -901,6 +901,10 @@ function printContractDocument(item) {
   const isOtherPlan = selectedPlan === 'Autre';
   const selectedBandwidth = isOtherPlan ? 'Selon accord familial' : text(item.bandwidth_mbps ? `${item.bandwidth_mbps} Mbps` : '');
   const selectedPrice = money(item.monthly_price_usd);
+  const equipmentTotal = Number(item.equipment_total_price_usd || 100);
+  const equipmentInitial = Number(item.equipment_initial_payment_usd || 20);
+  const equipmentMonthly = item.equipment_monthly_payment_usd;
+  const equipmentPaidInFull = Boolean(item.equipment_paid_in_full);
   const html = `
     <html>
       <head><title>${item.contract_number}</title>${documentStyles()}</head>
@@ -943,11 +947,11 @@ function printContractDocument(item) {
           <p>LWASIVA_NET configure le service pour une connexion stable, une faible latence, le streaming video, les appels video et les telechargements rapides, dans la limite du bouquet choisi.</p>
 
           <h2>Article 3 : Equipements et paiement par tranches</h2>
-          <p>L'installation du kit de connexion est indispensable : antenne receptrice/CPE, routeur Wi-Fi, cablage et accessoires. La valeur totale du kit est fixee a <strong>100 USD</strong>.</p>
+          <p>L'installation du kit de connexion est indispensable : antenne receptrice/CPE, routeur Wi-Fi, cablage et accessoires. La valeur totale du kit est fixee a <strong>${money(equipmentTotal)}</strong>.</p>
           <table>
             <tbody>
-              <tr><td>Tranche 1 a l'installation</td><td><strong>20 USD</strong></td></tr>
-              <tr><td>Tranche mensuelle</td><td>................ USD, a payer avec l'abonnement</td></tr>
+              <tr><td>Tranche 1 a l'installation</td><td><strong>${money(equipmentInitial)}</strong></td></tr>
+              <tr><td>Tranche mensuelle</td><td>${equipmentPaidInFull ? 'Kit paye en totalite' : `${equipmentMonthly ? money(equipmentMonthly) : '................ USD'}, a payer avec l'abonnement`}</td></tr>
             </tbody>
           </table>
           <p><strong>Reserve de propriete :</strong> le materiel demeure la propriete de LWASIVA_NET jusqu'au paiement complet. En cas de non-paiement, LWASIVA_NET peut suspendre la connexion et recuperer le materiel.</p>
@@ -1218,7 +1222,7 @@ function Clients({ data, submit }) {
 }
 
 function Contracts({ data, submit }) {
-  const emptyForm = { id: '', clientId: '', planId: '', installationAddress: '', status: 'essai', activatedAt: todayInputDate(), billingDueDay: 5, otherPriceUsd: 10 };
+  const emptyForm = { id: '', clientId: '', planId: '', installationAddress: '', status: 'essai', activatedAt: todayInputDate(), billingDueDay: 5, otherPriceUsd: 10, equipmentInitialPaymentUsd: 20, equipmentMonthlyPaymentUsd: '', equipmentPaidInFull: false };
   const [form, setForm] = useState(emptyForm);
   const isEditing = Boolean(form.id);
   const selectedPlan = data.plans.find((plan) => String(plan.id) === String(form.planId));
@@ -1233,7 +1237,10 @@ function Contracts({ data, submit }) {
       status: item.status,
       activatedAt: item.activated_at || todayInputDate(),
       billingDueDay: item.billing_due_day || 5,
-      otherPriceUsd: isOtherPlanName(item.plan_name) ? item.monthly_price_usd : 10
+      otherPriceUsd: isOtherPlanName(item.plan_name) ? item.monthly_price_usd : 10,
+      equipmentInitialPaymentUsd: item.equipment_initial_payment_usd || 20,
+      equipmentMonthlyPaymentUsd: item.equipment_monthly_payment_usd || '',
+      equipmentPaidInFull: Boolean(item.equipment_paid_in_full)
     });
   }
 
@@ -1246,6 +1253,12 @@ function Contracts({ data, submit }) {
         {isOtherPlan && <TextInput label="Prix autre (USD)" type="number" value={form.otherPriceUsd} onChange={(otherPriceUsd) => setForm({ ...form, otherPriceUsd })} />}
         <TextInput label="Date de mise en service" type="date" value={form.activatedAt} onChange={(activatedAt) => setForm({ ...form, activatedAt })} />
         <TextInput label="Jour du mois pour payer" type="number" value={form.billingDueDay} onChange={(billingDueDay) => setForm({ ...form, billingDueDay: clampDueDay(billingDueDay) })} />
+        <SelectInput label="Paiement du kit" value={form.equipmentPaidInFull ? 'total' : 'tranches'} onChange={(value) => setForm({ ...form, equipmentPaidInFull: value === 'total', equipmentInitialPaymentUsd: value === 'total' ? 100 : form.equipmentInitialPaymentUsd })} options={[
+          { value: 'tranches', label: 'Paiement par tranches' },
+          { value: 'total', label: 'Kit paye totalement' }
+        ]} />
+        <TextInput label="Tranche initiale kit (USD)" type="number" value={form.equipmentInitialPaymentUsd} onChange={(equipmentInitialPaymentUsd) => setForm({ ...form, equipmentInitialPaymentUsd })} />
+        {!form.equipmentPaidInFull && <TextInput label="Tranche mensuelle kit (USD)" type="number" value={form.equipmentMonthlyPaymentUsd} onChange={(equipmentMonthlyPaymentUsd) => setForm({ ...form, equipmentMonthlyPaymentUsd })} />}
         <TextInput label="Adresse installation" value={form.installationAddress} onChange={(installationAddress) => setForm({ ...form, installationAddress })} />
         {isEditing && <button className="small-button" type="button" onClick={() => setForm({ ...emptyForm, activatedAt: todayInputDate() })}>Annuler</button>}
       </QuickForm>
