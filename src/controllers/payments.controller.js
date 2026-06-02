@@ -9,6 +9,7 @@ async function listPayments(req, res) {
        cl.phone AS client_phone,
        c.contract_number,
        i.invoice_number,
+       i.invoice_type,
        i.total_amount_usd AS invoice_total_amount_usd,
        i.status AS invoice_status,
        i.period_start,

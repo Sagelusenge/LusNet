@@ -155,6 +155,28 @@ function bandwidthText(item) {
   return isOtherPlanName(item?.plan_name || item?.name) ? 'Selon accord' : `${item?.bandwidth_mbps || 0} Mbps`;
 }
 
+function invoiceTypeLabel(value) {
+  const labels = {
+    facture: 'Facture',
+    proforma: 'Proforma',
+    avoir: 'Avoir'
+  };
+  return labels[value] || text(value);
+}
+
+function invoiceStatusLabel(value) {
+  const labels = {
+    brouillon: 'Brouillon',
+    non_reglee: 'Non reglee',
+    emise: 'Emise',
+    partielle: 'Partielle',
+    payee: 'Payee',
+    en_retard: 'En retard',
+    annulee: 'Annulee'
+  };
+  return labels[value] || text(value);
+}
+
 function printHtml(title, html) {
   const win = window.open('', '_blank');
   win.document.write(html);
@@ -803,7 +825,7 @@ function Dashboard({ data }) {
       </div>
       <div className="two-columns">
         <TablePanel title="Derniers devis" icon={ClipboardList} columns={['Numero', 'Client', 'Telephone', 'Statut']} rows={data.quotes.slice(0, 8).map((item) => [item.quote_number, item.full_name, item.phone, item.status])} />
-        <TablePanel title="Factures a suivre" icon={Receipt} columns={['Client', 'Telephone', 'Reste', 'Date limite']} rows={data.unpaidInvoices.slice(0, 8).map((item) => [item.client_name, item.client_phone, money(item.remaining_amount_usd), item.due_date])} />
+        <TablePanel title="Factures a suivre" icon={Receipt} columns={['Client', 'Telephone', 'Type', 'Reste', 'Date limite']} rows={data.unpaidInvoices.slice(0, 8).map((item) => [item.client_name, item.client_phone, invoiceTypeLabel(item.invoice_type), money(item.remaining_amount_usd), item.due_date])} />
       </div>
       <div className="two-columns">
         <TablePanel title="Messages contact" icon={Phone} columns={['Nom', 'Telephone', 'Sujet', 'Statut']} rows={data.contactMessages.slice(0, 8).map((item) => [item.full_name, item.phone, item.subject, item.status])} />
@@ -1153,7 +1175,7 @@ function ClientSpace({ data, submit }) {
       </div>
       <div className="two-columns">
         <TablePanel title="Mes contrats" icon={FileText} columns={['Numero', 'Bouquet', 'Debit', 'Statut']} rows={data.contracts.map((item) => [item.contract_number, item.plan_name, bandwidthText(item), item.status])} />
-        <TablePanel title="Mes factures a payer" icon={Receipt} columns={['Numero', 'Total', 'Statut', 'Date limite']} rows={unpaid.map((item) => [item.invoice_number, money(item.total_amount_usd), item.status, item.due_date])} />
+        <TablePanel title="Mes factures a payer" icon={Receipt} columns={['Numero', 'Type', 'Total', 'Statut', 'Date limite']} rows={unpaid.map((item) => [item.invoice_number, invoiceTypeLabel(item.invoice_type), money(item.total_amount_usd), invoiceStatusLabel(item.status), item.due_date])} />
       </div>
       <QuickForm title="Mon profil" icon={Users} onSubmit={() => submit(() => api.updateClientProfile(profileForm), 'Profil mis a jour')}>
         <TextInput label="Nom complet" value={profileForm.fullName} onChange={(fullName) => setProfileForm({ ...profileForm, fullName })} />
@@ -1171,7 +1193,7 @@ function ClientContracts({ data }) {
 }
 
 function ClientInvoices({ data }) {
-  return <TablePanel title="Mes factures" icon={Receipt} columns={['Numero', 'Periode', 'Total', 'Statut', 'Date limite']} rows={data.invoices.map((item) => [item.invoice_number, `${item.period_start} - ${item.period_end}`, money(item.total_amount_usd), item.status, item.due_date])} />;
+  return <TablePanel title="Mes factures" icon={Receipt} columns={['Numero', 'Type', 'Periode', 'Total', 'Statut', 'Date limite']} rows={data.invoices.map((item) => [item.invoice_number, invoiceTypeLabel(item.invoice_type), `${item.period_start} - ${item.period_end}`, money(item.total_amount_usd), invoiceStatusLabel(item.status), item.due_date])} />;
 }
 
 function Clients({ data, submit }) {
@@ -1303,17 +1325,28 @@ function Plans({ data }) {
 }
 
 function Invoices({ data, submit }) {
-  const [form, setForm] = useState({ contractId: '', periodStart: '', periodEnd: '', dueDate: '', equipmentInstallmentAmountUsd: 0, discountAmountUsd: 0 });
+  const [form, setForm] = useState({ contractId: '', invoiceType: 'facture', status: 'non_reglee', periodStart: '', periodEnd: '', dueDate: '', equipmentInstallmentAmountUsd: 0, discountAmountUsd: 0 });
   return (
     <>
       <QuickForm title="Facture mensuelle" icon={Receipt} onSubmit={() => submit(() => api.createInvoice(form), 'Facture creee')}>
         <SelectInput label="Contrat" value={form.contractId} onChange={(contractId) => setForm({ ...form, contractId })} options={data.contracts.map((contract) => ({ value: contract.contract_id, label: `${contract.contract_number} - ${contract.client_name}` }))} />
+        <SelectInput label="Type" value={form.invoiceType} onChange={(invoiceType) => setForm({ ...form, invoiceType })} options={[
+          { value: 'facture', label: 'Facture' },
+          { value: 'proforma', label: 'Proforma' },
+          { value: 'avoir', label: 'Avoir' }
+        ]} />
+        <SelectInput label="Statut" value={form.status} onChange={(status) => setForm({ ...form, status })} options={[
+          { value: 'brouillon', label: 'Brouillon' },
+          { value: 'non_reglee', label: 'Non reglee' },
+          { value: 'partielle', label: 'Partielle' },
+          { value: 'payee', label: 'Payee' }
+        ]} />
         <TextInput label="Debut" type="date" value={form.periodStart} onChange={(periodStart) => setForm({ ...form, periodStart })} />
         <TextInput label="Fin" type="date" value={form.periodEnd} onChange={(periodEnd) => setForm({ ...form, periodEnd })} />
         <TextInput label="Date limite de paiement" type="date" value={form.dueDate} onChange={(dueDate) => setForm({ ...form, dueDate })} />
         <TextInput label="Paiement du kit internet" type="number" value={form.equipmentInstallmentAmountUsd} onChange={(equipmentInstallmentAmountUsd) => setForm({ ...form, equipmentInstallmentAmountUsd })} />
       </QuickForm>
-      <TablePanel title="Factures" icon={Receipt} columns={['Numero', 'Client', 'Total', 'Statut', 'Date limite']} rows={data.invoices.map((item) => [item.invoice_number, item.client_name, money(item.total_amount_usd), item.status, item.due_date])} />
+      <TablePanel title="Factures" icon={Receipt} columns={['Numero', 'Type', 'Client', 'Total', 'Statut', 'Date limite']} rows={data.invoices.map((item) => [item.invoice_number, invoiceTypeLabel(item.invoice_type), item.client_name, money(item.total_amount_usd), invoiceStatusLabel(item.status), item.due_date])} />
     </>
   );
 }
@@ -1349,9 +1382,10 @@ function Payments({ data, submit }) {
               <div class="box">
                 <h2>Facture</h2>
                 <div class="field-line"><strong>Numero</strong><span>${text(item.invoice_number)}</span></div>
+                <div class="field-line"><strong>Type</strong><span>${invoiceTypeLabel(item.invoice_type)}</span></div>
                 <div class="field-line"><strong>Periode</strong><span>${text(item.period_start)} - ${text(item.period_end)}</span></div>
                 <div class="field-line"><strong>Date limite</strong><span>${dateText(item.due_date)}</span></div>
-                <div class="field-line"><strong>Statut</strong><span>${text(item.invoice_status)}</span></div>
+                <div class="field-line"><strong>Statut</strong><span>${invoiceStatusLabel(item.invoice_status)}</span></div>
               </div>
             </section>
 
@@ -1395,7 +1429,7 @@ function Payments({ data, submit }) {
             <div className="quote-item" key={item.id}>
               <div>
                 <strong>{item.payment_reference} - {item.client_name}</strong>
-                <span>{item.invoice_number || '-'} - {money(item.amount_usd)} - {item.method} - {item.paid_at}</span>
+                <span>{item.invoice_number || '-'} - {invoiceTypeLabel(item.invoice_type)} - {money(item.amount_usd)} - {item.method} - {item.paid_at}</span>
               </div>
               <div className="quote-actions">
                 <button className="icon-button" title="Imprimer l'etat de paiement" onClick={() => printPaymentStatement(item)}><Printer size={17} /></button>

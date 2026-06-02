@@ -62,6 +62,7 @@ CREATE OR REPLACE VIEW vw_unpaid_invoices AS
 SELECT
   i.id AS invoice_id,
   i.invoice_number,
+  i.invoice_type,
   i.contract_id,
   c.contract_number,
   cl.full_name AS client_name,
@@ -78,10 +79,11 @@ FROM invoices i
 INNER JOIN contracts c ON c.id = i.contract_id
 INNER JOIN clients cl ON cl.id = c.client_id
 LEFT JOIN payments p ON p.invoice_id = i.id
-WHERE i.status IN ('emise', 'partielle', 'en_retard')
+WHERE i.status IN ('non_reglee', 'emise', 'partielle', 'en_retard')
 GROUP BY
   i.id,
   i.invoice_number,
+  i.invoice_type,
   i.contract_id,
   c.contract_number,
   cl.full_name,
@@ -122,7 +124,7 @@ SELECT
   (SELECT COUNT(*) FROM clients) AS total_clients,
   (SELECT COUNT(*) FROM contracts WHERE status = 'actif') AS active_contracts,
   (SELECT COUNT(*) FROM contracts WHERE status = 'suspendu') AS suspended_contracts,
-  (SELECT COUNT(*) FROM invoices WHERE status IN ('emise', 'partielle', 'en_retard')) AS unpaid_invoices,
+  (SELECT COUNT(*) FROM invoices WHERE status IN ('non_reglee', 'emise', 'partielle', 'en_retard')) AS unpaid_invoices,
   (SELECT COALESCE(SUM(amount_usd), 0.00) FROM payments WHERE DATE(paid_at) = CURRENT_DATE) AS payments_today_usd,
   (SELECT COUNT(*) FROM support_tickets WHERE status IN ('ouvert', 'en_cours')) AS open_tickets;
 
@@ -188,7 +190,7 @@ BEGIN
     v_plan_price,
     COALESCE(p_equipment_installment_amount_usd, 0.00),
     COALESCE(p_discount_amount_usd, 0.00),
-    'emise'
+    'non_reglee'
   );
 
   SET p_invoice_id = LAST_INSERT_ID();
@@ -321,7 +323,7 @@ CREATE PROCEDURE sp_mark_late_invoices ()
 BEGIN
   UPDATE invoices
   SET status = 'en_retard'
-  WHERE status IN ('emise', 'partielle')
+  WHERE status IN ('non_reglee', 'emise', 'partielle')
     AND due_date < CURRENT_DATE;
 END$$
 

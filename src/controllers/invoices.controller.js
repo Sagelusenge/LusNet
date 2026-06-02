@@ -24,6 +24,8 @@ async function createMonthlyInvoice(req, res) {
     periodStart,
     periodEnd,
     dueDate,
+    invoiceType = 'facture',
+    status = 'non_reglee',
     equipmentInstallmentAmountUsd = 0,
     discountAmountUsd = 0
   } = req.body;
@@ -45,6 +47,12 @@ async function createMonthlyInvoice(req, res) {
       discountAmountUsd
     ]);
     const [[result]] = await connection.execute('SELECT @invoice_id AS invoiceId');
+    await connection.execute(
+      `UPDATE invoices
+       SET invoice_type = ?, status = ?
+       WHERE id = ?`,
+      [invoiceType, status, result.invoiceId]
+    );
 
     res.status(201).json({ success: true, data: result });
   } finally {

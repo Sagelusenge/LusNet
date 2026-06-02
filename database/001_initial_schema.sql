@@ -147,6 +147,7 @@ CREATE TABLE equipment_installments (
 CREATE TABLE invoices (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   invoice_number VARCHAR(60) NOT NULL UNIQUE,
+  invoice_type ENUM('facture', 'proforma', 'avoir') NOT NULL DEFAULT 'facture',
   contract_id BIGINT UNSIGNED NOT NULL,
   period_start DATE NOT NULL,
   period_end DATE NOT NULL,
@@ -158,7 +159,7 @@ CREATE TABLE invoices (
   total_amount_usd DECIMAL(10,2) AS (
     subscription_amount_usd + equipment_installment_amount_usd + penalty_amount_usd - discount_amount_usd
   ) STORED,
-  status ENUM('brouillon', 'emise', 'payee', 'partielle', 'en_retard', 'annulee') NOT NULL DEFAULT 'brouillon',
+  status ENUM('brouillon', 'non_reglee', 'emise', 'payee', 'partielle', 'en_retard', 'annulee') NOT NULL DEFAULT 'non_reglee',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT fk_invoices_contract
