@@ -35,6 +35,12 @@
   box-sizing: border-box;
 }
 
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -59,6 +65,7 @@ button,
 input,
 select {
   font: inherit;
+  min-width: 0;
 }
 
 button {
@@ -1246,6 +1253,11 @@ tbody tr:hover {
 }
 
 @media (max-width: 760px) {
+  body {
+    background:
+      linear-gradient(180deg, #fbfefd 0, var(--bg) 58rem);
+  }
+
   .sidebar {
     position: fixed;
     z-index: 30;
@@ -1285,7 +1297,9 @@ tbody tr:hover {
   }
 
   .content {
-    padding: 16px;
+    width: 100%;
+    padding: 14px 10px 22px;
+    overflow-x: hidden;
   }
 
   .form-grid,
@@ -1321,6 +1335,8 @@ tbody tr:hover {
   }
 
   .public-header nav {
+    min-width: 0;
+    max-width: calc(100vw - 78px);
     display: grid;
     grid-auto-flow: column;
     grid-auto-columns: minmax(38px, auto);
@@ -1361,16 +1377,19 @@ tbody tr:hover {
   }
 
   .login-page {
-    padding: 18px 12px;
+    width: 100%;
+    padding: 14px 10px;
   }
 
   .login-card {
+    width: 100%;
     border-radius: 16px;
   }
 
   .login-visual,
   .login-form-panel {
-    padding: 24px;
+    min-width: 0;
+    padding: 20px 16px;
   }
 
   .login-visual h1 {
@@ -1379,11 +1398,11 @@ tbody tr:hover {
 
   .hero {
     min-height: 520px;
-    padding: 34px 16px;
+    padding: 32px 12px;
   }
 
   .hero-content h1 {
-    font-size: 44px;
+    font-size: 40px;
   }
 
   .hero-content p {
@@ -1404,15 +1423,94 @@ tbody tr:hover {
   .quote-item {
     align-items: flex-start;
     flex-direction: column;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .quote-item > div:first-child {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .quote-actions {
+    width: 100%;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .quote-actions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .panel,
+  .table-panel,
+  .metric,
+  .plan,
+  .info-card,
+  .testimonial-card,
+  .public-contact-strip div,
+  .process-strip div {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .panel {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .panel-header {
+    min-width: 0;
+  }
+
+  .panel-header h2,
+  .quote-item strong,
+  .quote-item span,
+  .metric span,
+  .metric strong {
+    overflow-wrap: anywhere;
+  }
+
+  .table-wrap {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  table {
+    min-width: 560px;
   }
 
   .public-contact-strip {
+    width: calc(100% - 20px);
     margin-top: -22px;
+  }
+
+  .public-section {
+    width: calc(100% - 20px);
+    margin: 18px auto;
+  }
+
+  .hero-stats {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .hero-stats div,
+  .primary-link,
+  .secondary-link {
+    width: 100%;
+  }
+
+  .public-update-note {
+    width: 100%;
+    align-items: flex-start;
   }
 
   .service-showcase {
     gap: 18px;
-    padding: 18px;
+    padding: 14px;
     border-radius: 18px;
   }
 
@@ -1440,5 +1538,40 @@ tbody tr:hover {
   .action-row {
     align-items: flex-start;
     flex-direction: column;
+    width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .topbar {
+    padding: 12px 10px;
+  }
+
+  .topbar h1 {
+    font-size: 18px;
+  }
+
+  .content {
+    padding-inline: 8px;
+  }
+
+  .hero-content h1 {
+    font-size: 34px;
+  }
+
+  .login-visual h1 {
+    font-size: 30px;
+  }
+
+  .field input,
+  .field select,
+  .primary-button,
+  .secondary-button {
+    min-width: 0;
+    width: 100%;
+  }
+
+  table {
+    min-width: 500px;
   }
 }
