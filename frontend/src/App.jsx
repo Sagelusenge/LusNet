@@ -927,7 +927,7 @@ function printContractDocument(item) {
             <thead><tr><th>Choix</th><th>Bouquet</th><th>Debit</th><th>Usage recommande</th><th>Prix mensuel</th></tr></thead>
             <tbody>
               <tr class="${selectedPlan === 'Basic Home' ? 'selected' : ''}"><td>${selectedMark('Basic Home', selectedPlan)}</td><td>Basic Home</td><td>Jusqu'a 5 Mbps</td><td>Navigation, reseaux sociaux, video SD</td><td>15 USD</td></tr>
-              <tr class="${isOtherPlan ? 'selected' : ''}"><td>${selectedMark('Autre', selectedPlan)}</td><td>Autre</td><td>Selon accord</td><td>Tarif familial ou offre speciale</td><td>10 USD</td></tr>
+              ${isOtherPlan ? '<tr class="selected"><td>[X]</td><td>Autre</td><td>Selon accord</td><td>Tarif familial ou offre speciale</td><td>10 USD</td></tr>' : ''}
               <tr class="${selectedPlan === 'Stream Plus' ? 'selected' : ''}"><td>${selectedMark('Stream Plus', selectedPlan)}</td><td>Stream Plus</td><td>Jusqu'a 10 Mbps</td><td>Streaming HD, teletravail</td><td>20 USD</td></tr>
               <tr class="${selectedPlan === 'Pro Ultra' ? 'selected' : ''}"><td>${selectedMark('Pro Ultra', selectedPlan)}</td><td>Pro Ultra</td><td>Jusqu'a 30 Mbps</td><td>Streaming 4K, gaming, multi-utilisateurs</td><td>50 USD</td></tr>
             </tbody>
