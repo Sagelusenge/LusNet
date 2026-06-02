@@ -959,7 +959,7 @@ function printContractDocument(item) {
           <h2>Article 4 : Interdiction de revente</h2>
           <p>La connexion est personnelle et limitee au Client, a son foyer ou a son entreprise locale. Il est interdit de revendre la bande passante, de vendre des tickets Wi-Fi, de distribuer le service vers d'autres parcelles ou de sous-louer l'acces Internet.</p>
           <p>Tout abus peut entrainer la resiliation immediate, la coupure du signal, la confiscation du materiel non paye et des poursuites judiciaires.</p>
-<br>
+<br><br>
           <h2>Article 5 : Paiement</h2>
           <p>L'abonnement mensuel est payable d'avance. Le Client doit payer deux (2) jours avant le <strong>jour du mois choisi pour payer : ${text(item.billing_due_day)}</strong>. Les paiements peuvent etre faits en especes ou via Mobile Money.<br>En cas de retard de paiement de l’abonnement après un délai de 15 jours, le fournisseur se réserve le droit de rompre le contrat et de récupérer le matériel. </p>
 
