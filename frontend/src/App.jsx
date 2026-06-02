@@ -12,6 +12,7 @@ import {
   LogIn,
   LogOut,
   Menu,
+  Pencil,
   Phone,
   Plus,
   Printer,
@@ -504,9 +505,8 @@ function PublicShell({ active, setActive, toast, theme, setTheme, children }) {
           <button className="public-icon-button" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} title="Changer le theme">
             {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
           </button>
-          <button className={active === 'home' ? 'active' : ''} onClick={() => setActive('home')}>
+          <button className={`public-icon-button ${active === 'home' ? 'active' : ''}`} onClick={() => setActive('home')} title="Accueil">
             <Home size={17} />
-            <span>Accueil</span>
           </button>
           <button onClick={() => {
             setActive('home');
@@ -884,10 +884,10 @@ function Quotes({ data, submit }) {
             </div>
             <div className="quote-actions">
               <button className="icon-button" title="Imprimer" onClick={() => printQuote(item)}><Printer size={17} /></button>
-              <button className="small-button" onClick={() => submit(() => api.updateQuoteStatus(item.id, { status: 'valide', adminNotes: item.admin_notes || '' }), 'Devis valide')}>Valider</button>
-              <button className="small-button" onClick={() => submit(() => api.updateQuoteStatus(item.id, { status: 'rejete', adminNotes: item.admin_notes || '' }), 'Devis rejete')}>Rejeter</button>
+              <button className="icon-button" title="Valider" onClick={() => submit(() => api.updateQuoteStatus(item.id, { status: 'valide', adminNotes: item.admin_notes || '' }), 'Devis valide')}><CheckCircle2 size={17} /></button>
+              <button className="icon-button" title="Rejeter" onClick={() => submit(() => api.updateQuoteStatus(item.id, { status: 'rejete', adminNotes: item.admin_notes || '' }), 'Devis rejete')}><X size={17} /></button>
               <button className="small-button" onClick={() => submit(() => api.convertQuoteToClient(item.id), 'Client cree depuis le devis')}>Creer client</button>
-              <button className="small-button danger" onClick={() => submit(() => api.deleteQuote(item.id), 'Devis supprime')}>Supprimer</button>
+              <button className="icon-button danger" title="Supprimer" onClick={() => submit(() => api.deleteQuote(item.id), 'Devis supprime')}><Trash2 size={17} /></button>
             </div>
           </div>
         ))}
@@ -1033,9 +1033,9 @@ function UsersAdmin({ data, submit }) {
                 <span>{item.email} - {item.client_name || 'Aucun client lie'} - {item.is_active ? 'Actif' : 'Bloque'}</span>
               </div>
               <div className="quote-actions">
-                <button className="small-button" onClick={() => editUser(item)}>Modifier</button>
+                <button className="icon-button" title="Modifier" onClick={() => editUser(item)}><Pencil size={17} /></button>
                 <button className="small-button" onClick={() => submit(() => api.updateUser(item.id, { isActive: !item.is_active }), item.is_active ? 'Utilisateur bloque' : 'Utilisateur active')}>{item.is_active ? 'Bloquer' : 'Activer'}</button>
-                <button className="small-button danger" onClick={() => submit(() => api.deleteUser(item.id), 'Utilisateur supprime')}>Supprimer</button>
+                <button className="icon-button danger" title="Supprimer" onClick={() => submit(() => api.deleteUser(item.id), 'Utilisateur supprime')}><Trash2 size={17} /></button>
               </div>
             </div>
           ))}
@@ -1113,9 +1113,9 @@ function FeedbackAdmin({ data, submit }) {
               <span>{item.neighborhood || 'Goma'} - {item.comment} - {item.status}{item.is_public ? ' - visible sur le site' : ''}</span>
             </div>
             <div className="quote-actions">
-              <button className="small-button" onClick={() => submit(() => api.updateFeedback(item.id, { status: 'approuve', isPublic: true }), 'Appreciation approuvee')}>Approuver</button>
-              <button className="small-button" onClick={() => submit(() => api.updateFeedback(item.id, { isPublic: false }), 'Appreciation retiree')}>Retirer</button>
-              <button className="small-button danger" onClick={() => submit(() => api.updateFeedback(item.id, { status: 'rejete', isPublic: false }), 'Appreciation rejetee')}>Rejeter</button>
+              <button className="icon-button" title="Approuver" onClick={() => submit(() => api.updateFeedback(item.id, { status: 'approuve', isPublic: true }), 'Appreciation approuvee')}><CheckCircle2 size={17} /></button>
+              <button className="icon-button" title="Retirer" onClick={() => submit(() => api.updateFeedback(item.id, { isPublic: false }), 'Appreciation retiree')}><X size={17} /></button>
+              <button className="icon-button danger" title="Rejeter" onClick={() => submit(() => api.updateFeedback(item.id, { status: 'rejete', isPublic: false }), 'Appreciation rejetee')}><Trash2 size={17} /></button>
             </div>
           </div>
         ))}
@@ -1206,8 +1206,8 @@ function Clients({ data, submit }) {
                 <span>{item.phone} - {item.address}</span>
               </div>
               <div className="quote-actions">
-                <button className="small-button" onClick={() => editClient(item)}>Modifier</button>
-                <button className="small-button danger" onClick={() => submit(() => api.deleteClient(item.id), 'Client supprime')}>Supprimer</button>
+                <button className="icon-button" title="Modifier" onClick={() => editClient(item)}><Pencil size={17} /></button>
+                <button className="icon-button danger" title="Supprimer" onClick={() => submit(() => api.deleteClient(item.id), 'Client supprime')}><Trash2 size={17} /></button>
               </div>
             </div>
           ))}
@@ -1260,10 +1260,10 @@ function Contracts({ data, submit }) {
               </div>
               <div className="quote-actions">
                 <button className="icon-button" title="Imprimer contrat" onClick={() => printContractDocument(item)}><Printer size={17} /></button>
-                <button className="small-button" onClick={() => editContract(item)}>Modifier</button>
-                <button className="small-button" onClick={() => submit(() => api.updateContract(item.contract_id, { status: 'actif' }), 'Contrat active')}>Activer</button>
-                <button className="small-button" onClick={() => submit(() => api.updateContract(item.contract_id, { status: 'suspendu' }), 'Contrat suspendu')}>Suspendre</button>
-                <button className="small-button danger" onClick={() => submit(() => api.deleteContract(item.contract_id), 'Contrat supprime')}>Supprimer</button>
+                <button className="icon-button" title="Modifier" onClick={() => editContract(item)}><Pencil size={17} /></button>
+                <button className="icon-button" title="Activer" onClick={() => submit(() => api.updateContract(item.contract_id, { status: 'actif' }), 'Contrat active')}><CheckCircle2 size={17} /></button>
+                <button className="icon-button" title="Suspendre" onClick={() => submit(() => api.updateContract(item.contract_id, { status: 'suspendu' }), 'Contrat suspendu')}><X size={17} /></button>
+                <button className="icon-button danger" title="Supprimer" onClick={() => submit(() => api.deleteContract(item.contract_id), 'Contrat supprime')}><Trash2 size={17} /></button>
               </div>
             </div>
           ))}
@@ -1394,8 +1394,8 @@ function Budget({ data, submit }) {
                 <span>{item.category_name} - {money(item.amount_usd)} - {item.entry_date}</span>
               </div>
               <div className="quote-actions">
-                <button className="small-button" onClick={() => edit(item)}>Modifier</button>
-                <button className="small-button danger" onClick={() => submit(() => api.deleteBudgetEntry(item.id), 'Ligne budget supprimee')}>Supprimer</button>
+                <button className="icon-button" title="Modifier" onClick={() => edit(item)}><Pencil size={17} /></button>
+                <button className="icon-button danger" title="Supprimer" onClick={() => submit(() => api.deleteBudgetEntry(item.id), 'Ligne budget supprimee')}><Trash2 size={17} /></button>
               </div>
             </div>
           ))}
