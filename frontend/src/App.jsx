@@ -1409,9 +1409,9 @@ function Invoices({ data, submit }) {
 
   function printInvoice(item) {
     const rows = [
-      ['Installation / equipement initial', item.installation_amount_usd],
+      ['Installation', item.installation_amount_usd],
       ['Abonnement Internet', item.subscription_amount_usd],
-      ['Paiement materiel', item.equipment_installment_amount_usd],
+      ['Paiement acompte materiel', item.equipment_installment_amount_usd],
       ['Penalite', item.penalty_amount_usd],
       ['Remise', positiveAmount(item.discount_amount_usd) ? -Number(item.discount_amount_usd) : 0]
     ].filter(([, amount]) => positiveAmount(Math.abs(Number(amount || 0))) > 0);
