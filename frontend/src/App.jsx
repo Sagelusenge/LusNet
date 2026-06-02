@@ -140,6 +140,14 @@ function dateText(value) {
   return value || '..... / ..... / 202...';
 }
 
+function isOtherPlanName(name) {
+  return name === 'Autre';
+}
+
+function bandwidthText(item) {
+  return isOtherPlanName(item?.plan_name || item?.name) ? 'Selon accord' : `${item?.bandwidth_mbps || 0} Mbps`;
+}
+
 function printHtml(title, html) {
   const win = window.open('', '_blank');
   win.document.write(html);
@@ -514,6 +522,7 @@ function PublicShell({ active, setActive, toast, theme, setTheme, children }) {
 }
 
 function PublicHome({ plans, feedback, submit, setActive, busy }) {
+  const publicPlans = plans.filter((plan) => !isOtherPlanName(plan.name));
   const [form, setForm] = useState({
     fullName: '',
     clientType: 'particulier',
@@ -574,11 +583,11 @@ function PublicHome({ plans, feedback, submit, setActive, busy }) {
           <h2>Nos offres Internet</h2>
         </div>
         <div className="plan-grid">
-          {plans.map((plan) => (
+          {publicPlans.map((plan) => (
             <div className="plan" key={plan.id}>
               <div><Router size={22} /><strong>{plan.name}</strong></div>
               <span>{plan.recommended_usage}</span>
-              <p>{plan.bandwidth_mbps} Mbps</p>
+              <p>{bandwidthText(plan)}</p>
               <b>{money(plan.monthly_price_usd)} / mois</b>
             </div>
           ))}
@@ -653,7 +662,7 @@ function PublicHome({ plans, feedback, submit, setActive, busy }) {
             <SelectInput label="Type" value={form.clientType} onChange={(clientType) => setForm({ ...form, clientType })} options={['particulier', 'entreprise']} />
             <TextInput label="Telephone" value={form.phone} onChange={(phone) => setForm({ ...form, phone })} />
             <TextInput label="Email" value={form.email} onChange={(email) => setForm({ ...form, email })} />
-            <SelectInput label="Bouquet souhaite" value={form.planId} onChange={(planId) => setForm({ ...form, planId })} options={plans.map((plan) => ({ value: plan.id, label: `${plan.name} - ${money(plan.monthly_price_usd)}` }))} />
+            <SelectInput label="Bouquet souhaite" value={form.planId} onChange={(planId) => setForm({ ...form, planId })} options={publicPlans.map((plan) => ({ value: plan.id, label: `${plan.name} - ${money(plan.monthly_price_usd)}` }))} />
             <TextInput label="Adresse installation" value={form.address} onChange={(address) => setForm({ ...form, address })} />
             <TextInput label="Usage prevu" value={form.intendedUsage} onChange={(intendedUsage) => setForm({ ...form, intendedUsage })} />
             <TextInput label="Message" value={form.message} onChange={(message) => setForm({ ...form, message })} />
@@ -883,6 +892,8 @@ function Quotes({ data, submit }) {
 
 function printContractDocument(item) {
   const selectedPlan = item.plan_name || '.........................................';
+  const isOtherPlan = selectedPlan === 'Autre';
+  const selectedBandwidth = isOtherPlan ? 'Selon accord familial' : text(item.bandwidth_mbps ? `${item.bandwidth_mbps} Mbps` : '');
   const html = `
     <html>
       <head><title>${item.contract_number}</title>${documentStyles()}</head>
@@ -916,11 +927,12 @@ function printContractDocument(item) {
             <thead><tr><th>Choix</th><th>Bouquet</th><th>Debit</th><th>Usage recommande</th><th>Prix mensuel</th></tr></thead>
             <tbody>
               <tr class="${selectedPlan === 'Basic Home' ? 'selected' : ''}"><td>${selectedMark('Basic Home', selectedPlan)}</td><td>Basic Home</td><td>Jusqu'a 5 Mbps</td><td>Navigation, reseaux sociaux, video SD</td><td>15 USD</td></tr>
+              <tr class="${isOtherPlan ? 'selected' : ''}"><td>${selectedMark('Autre', selectedPlan)}</td><td>Autre</td><td>Selon accord</td><td>Tarif familial ou offre speciale</td><td>10 USD</td></tr>
               <tr class="${selectedPlan === 'Stream Plus' ? 'selected' : ''}"><td>${selectedMark('Stream Plus', selectedPlan)}</td><td>Stream Plus</td><td>Jusqu'a 10 Mbps</td><td>Streaming HD, teletravail</td><td>20 USD</td></tr>
               <tr class="${selectedPlan === 'Pro Ultra' ? 'selected' : ''}"><td>${selectedMark('Pro Ultra', selectedPlan)}</td><td>Pro Ultra</td><td>Jusqu'a 30 Mbps</td><td>Streaming 4K, gaming, multi-utilisateurs</td><td>50 USD</td></tr>
             </tbody>
           </table>
-          <p>Le Client souscrit au bouquet <strong>${selectedPlan}</strong>, avec un debit de <strong>${text(item.bandwidth_mbps ? `${item.bandwidth_mbps} Mbps` : '')}</strong> et un tarif mensuel de <strong>${money(item.monthly_price_usd)}</strong>.</p>
+          <p>Le Client souscrit au bouquet <strong>${selectedPlan}</strong>, avec un debit de <strong>${selectedBandwidth}</strong> et un tarif mensuel de <strong>${money(item.monthly_price_usd)}</strong>.</p>
           <p>LWASIVA_NET configure le service pour une connexion stable, une faible latence, le streaming video, les appels video et les telechargements rapides, dans la limite du bouquet choisi.</p>
 
           <h2>Article 3 : Equipements et paiement par tranches</h2>
@@ -1118,7 +1130,7 @@ function ClientSpace({ data }) {
         <div className="metric"><BadgeDollarSign size={20} /><span>Reste a payer</span><strong>{money(unpaidTotal)}</strong></div>
       </div>
       <div className="two-columns">
-        <TablePanel title="Mes contrats" icon={FileText} columns={['Numero', 'Bouquet', 'Debit', 'Statut']} rows={data.contracts.map((item) => [item.contract_number, item.plan_name, `${item.bandwidth_mbps} Mbps`, item.status])} />
+        <TablePanel title="Mes contrats" icon={FileText} columns={['Numero', 'Bouquet', 'Debit', 'Statut']} rows={data.contracts.map((item) => [item.contract_number, item.plan_name, bandwidthText(item), item.status])} />
         <TablePanel title="Mes factures a payer" icon={Receipt} columns={['Numero', 'Total', 'Statut', 'Date limite']} rows={unpaid.map((item) => [item.invoice_number, money(item.total_amount_usd), item.status, item.due_date])} />
       </div>
       <TablePanel title="Mes derniers paiements" icon={BadgeDollarSign} columns={['Reference', 'Montant', 'Methode', 'Date']} rows={data.payments.map((item) => [item.payment_reference, money(item.amount_usd), item.method, item.paid_at])} />
@@ -1127,7 +1139,7 @@ function ClientSpace({ data }) {
 }
 
 function ClientContracts({ data }) {
-  return <TablePanel title="Mes contrats" icon={FileText} columns={['Numero', 'Bouquet', 'Debit', 'Statut', 'Adresse']} rows={data.contracts.map((item) => [item.contract_number, item.plan_name, `${item.bandwidth_mbps} Mbps`, item.status, item.installation_address])} />;
+  return <TablePanel title="Mes contrats" icon={FileText} columns={['Numero', 'Bouquet', 'Debit', 'Statut', 'Adresse']} rows={data.contracts.map((item) => [item.contract_number, item.plan_name, bandwidthText(item), item.status, item.installation_address])} />;
 }
 
 function ClientInvoices({ data }) {
@@ -1185,6 +1197,8 @@ function Contracts({ data, submit }) {
   const emptyForm = { id: '', clientId: '', planId: '', installationAddress: '', status: 'essai', activatedAt: todayInputDate(), billingDueDay: 5 };
   const [form, setForm] = useState(emptyForm);
   const isEditing = Boolean(form.id);
+  const selectedPlan = data.plans.find((plan) => String(plan.id) === String(form.planId));
+  const isOtherPlan = selectedPlan?.name === 'Autre';
 
   function editContract(item) {
     setForm({
@@ -1204,6 +1218,7 @@ function Contracts({ data, submit }) {
         <SelectInput label="Client" value={form.clientId} onChange={(clientId) => setForm({ ...form, clientId })} options={data.clients.map((client) => ({ value: client.id, label: client.full_name }))} />
         <SelectInput label="Bouquet" value={form.planId} onChange={(planId) => setForm({ ...form, planId })} options={data.plans.map((plan) => ({ value: plan.id, label: `${plan.name} - ${money(plan.monthly_price_usd)}` }))} />
         <SelectInput label="Statut" value={form.status} onChange={(status) => setForm({ ...form, status })} options={['brouillon', 'essai', 'actif', 'suspendu']} />
+        {isOtherPlan && <TextInput label="Prix autre (USD)" type="number" value={10} onChange={() => {}} />}
         <TextInput label="Date de mise en service" type="date" value={form.activatedAt} onChange={(activatedAt) => setForm({ ...form, activatedAt })} />
         <TextInput label="Jour du mois pour payer" type="number" value={form.billingDueDay} onChange={(billingDueDay) => setForm({ ...form, billingDueDay })} />
         <TextInput label="Adresse installation" value={form.installationAddress} onChange={(installationAddress) => setForm({ ...form, installationAddress })} />
@@ -1216,7 +1231,7 @@ function Contracts({ data, submit }) {
             <div className="quote-item" key={item.contract_id}>
               <div>
                 <strong>{item.contract_number} - {item.client_name}</strong>
-                <span>{item.plan_name} - {item.status} - {item.bandwidth_mbps} Mbps - Mise en service: {dateText(item.activated_at)}</span>
+                <span>{item.plan_name} - {item.status} - {bandwidthText(item)} - Mise en service: {dateText(item.activated_at)}</span>
               </div>
               <div className="quote-actions">
                 <button className="icon-button" title="Imprimer contrat" onClick={() => printContractDocument(item)}><Printer size={17} /></button>
@@ -1241,7 +1256,7 @@ function Plans({ data }) {
         <div className="plan" key={plan.id}>
           <div><Router size={22} /><strong>{plan.name}</strong></div>
           <span>{plan.recommended_usage}</span>
-          <p>{plan.bandwidth_mbps} Mbps</p>
+          <p>{bandwidthText(plan)}</p>
           <b>{money(plan.monthly_price_usd)} / mois</b>
         </div>
       ))}

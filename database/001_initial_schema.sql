@@ -254,6 +254,7 @@ CREATE INDEX idx_tickets_status_priority ON support_tickets(status, priority);
 INSERT INTO internet_plans (name, bandwidth_mbps, recommended_usage, monthly_price_usd)
 VALUES
   ('Basic Home', 5, 'Navigation, reseaux sociaux, video SD', 15.00),
+  ('Autre', 0, 'Tarif familial ou offre speciale', 10.00),
   ('Stream Plus', 10, 'Streaming HD, teletravail, appels video', 20.00),
   ('Pro Ultra', 30, 'Streaming 4K, gaming, multi-utilisateurs', 50.00);
 
