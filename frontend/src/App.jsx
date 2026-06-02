@@ -180,7 +180,7 @@ function invoiceStatusLabel(value) {
     non_reglee: 'Non reglee',
     emise: 'Emise',
     partielle: 'Partielle',
-    payee: 'Payee',
+    payee: 'Reglee',
     en_retard: 'En retard',
     annulee: 'Annulee'
   };

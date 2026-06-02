@@ -186,6 +186,7 @@ async function registerPayment(req, res) {
     if (updateFields.length > 0) {
       await connection.execute(`UPDATE payments SET ${updateFields.join(', ')} WHERE id = ?`, [...updateValues, result.paymentId]);
     }
+    await refreshInvoiceStatus(connection, invoiceId);
     await syncPaymentBudgetEntry(connection, result.paymentId);
 
     res.status(201).json({ success: true, data: result });
