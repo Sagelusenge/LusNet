@@ -172,9 +172,9 @@ function documentStyles() {
       .selected{background:#e8f7f2;font-weight:700}
       .signature{display:grid;grid-template-columns:1fr 1fr;gap:38px;margin-top:24px}
       .signature-box{min-height:128px;border-top:1px solid #111;padding-top:8px}
-      .operator-signature{min-height:128px}
+      .operator-signature{min-height:128px;display:flex;flex-direction:column;align-items:flex-start}
       .signature-line{height:24px;border-bottom:1px solid #111;margin:8px 0 4px;width:72%}
-      .stamp{position:relative;width:84px;height:84px;border:3px solid #08765d;border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;color:#08765d;font-weight:800;text-transform:uppercase;margin:0 0 6px 10px}
+      .stamp{position:relative;width:84px;height:84px;border:3px solid #08765d;border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;color:#08765d;font-weight:800;text-transform:uppercase;margin:4px 0 6px 42px}
       .stamp:before{content:"";position:absolute;inset:7px;border:1.5px solid #08765d;border-radius:50%}
       .stamp-inner{position:relative;z-index:1;display:grid;gap:1px;font-size:8.5px;line-height:1.08}
       .stamp-inner strong{font-size:12.5px;letter-spacing:0}
@@ -960,7 +960,6 @@ function printContractDocument(item) {
                 </div>
               </div>
               <p>Nom : KITSA LUSENGE LWASIVA Sage</p>
-              <p>Tel : +243 980 208 012</p>
               <p>Email : sagelusenge@gmail.com</p>
               <div class="signature-line"></div>
               <p class="small">Signature manuscrite</p>
