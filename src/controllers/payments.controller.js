@@ -3,6 +3,97 @@ const HttpError = require('../utils/http-error');
 
 const allowedMethods = new Set(['especes', 'airtel_money', 'mpesa', 'orange_money', 'banque', 'autre']);
 
+function budgetDate(value) {
+  return value ? String(value).replace('T', ' ').slice(0, 10) : new Date().toISOString().slice(0, 10);
+}
+
+async function getSubscriberPaymentCategoryId(connection) {
+  const [[existing]] = await connection.execute(
+    'SELECT id FROM budget_categories WHERE name = ? AND type = ? LIMIT 1',
+    ['Paiement abonnes', 'recette']
+  );
+
+  if (existing) return existing.id;
+
+  const [result] = await connection.execute(
+    'INSERT INTO budget_categories (name, type, description) VALUES (?, ?, ?)',
+    ['Paiement abonnes', 'recette', 'Paiements mensuels des clients abonnes']
+  );
+
+  return result.insertId;
+}
+
+async function getPaymentBudgetPayload(connection, paymentId) {
+  const [[payment]] = await connection.execute(
+    `SELECT
+       p.id,
+       p.payment_reference,
+       p.amount_usd,
+       p.paid_at,
+       p.method,
+       p.transaction_number,
+       p.notes,
+       p.received_by,
+       cl.full_name AS client_name,
+       i.invoice_number
+     FROM payments p
+     INNER JOIN clients cl ON cl.id = p.client_id
+     LEFT JOIN invoices i ON i.id = p.invoice_id
+     WHERE p.id = ?`,
+    [paymentId]
+  );
+
+  return payment;
+}
+
+async function syncPaymentBudgetEntry(connection, paymentId) {
+  const payment = await getPaymentBudgetPayload(connection, paymentId);
+  if (!payment) return;
+
+  const categoryId = await getSubscriberPaymentCategoryId(connection);
+  const title = `Paiement client - ${payment.client_name}`;
+  const notes = [
+    payment.invoice_number ? `Facture: ${payment.invoice_number}` : '',
+    payment.transaction_number ? `Transaction: ${payment.transaction_number}` : '',
+    payment.notes || ''
+  ].filter(Boolean).join(' | ') || null;
+
+  const [[existing]] = await connection.execute(
+    'SELECT id FROM budget_entries WHERE entry_type = ? AND reference = ? LIMIT 1',
+    ['recette', payment.payment_reference]
+  );
+
+  if (existing) {
+    await connection.execute(
+      `UPDATE budget_entries
+       SET category_id = ?,
+           title = ?,
+           amount_usd = ?,
+           entry_date = ?,
+           payment_method = ?,
+           notes = ?,
+           created_by = COALESCE(created_by, ?)
+       WHERE id = ?`,
+      [categoryId, title, payment.amount_usd, budgetDate(payment.paid_at), payment.method, notes, payment.received_by || null, existing.id]
+    );
+  } else {
+    await connection.execute(
+      `INSERT INTO budget_entries (
+        entry_type, category_id, title, amount_usd, entry_date, payment_method, reference, notes, created_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ['recette', categoryId, title, payment.amount_usd, budgetDate(payment.paid_at), payment.method, payment.payment_reference, notes, payment.received_by || null]
+    );
+  }
+}
+
+async function deletePaymentBudgetEntry(connection, paymentReference) {
+  if (!paymentReference) return;
+  await connection.execute(
+    'DELETE FROM budget_entries WHERE entry_type = ? AND reference = ?',
+    ['recette', paymentReference]
+  );
+}
+
 async function refreshInvoiceStatus(connection, invoiceId) {
   if (!invoiceId) return;
 
@@ -95,6 +186,7 @@ async function registerPayment(req, res) {
     if (updateFields.length > 0) {
       await connection.execute(`UPDATE payments SET ${updateFields.join(', ')} WHERE id = ?`, [...updateValues, result.paymentId]);
     }
+    await syncPaymentBudgetEntry(connection, result.paymentId);
 
     res.status(201).json({ success: true, data: result });
   } finally {
@@ -142,6 +234,7 @@ async function updatePayment(req, res) {
 
     await connection.execute(`UPDATE payments SET ${fields.join(', ')} WHERE id = ?`, [...values, id]);
     await refreshInvoiceStatus(connection, payment.invoice_id);
+    await syncPaymentBudgetEntry(connection, id);
 
     res.json({ success: true, message: 'Paiement modifie' });
   } finally {
@@ -153,10 +246,11 @@ async function deletePayment(req, res) {
   const connection = await getConnection();
 
   try {
-    const [[payment]] = await connection.execute('SELECT invoice_id FROM payments WHERE id = ?', [req.params.id]);
+    const [[payment]] = await connection.execute('SELECT invoice_id, payment_reference FROM payments WHERE id = ?', [req.params.id]);
     if (!payment) throw new HttpError(404, 'Paiement introuvable');
 
     await connection.execute('DELETE FROM payments WHERE id = ?', [req.params.id]);
+    await deletePaymentBudgetEntry(connection, payment.payment_reference);
     await refreshInvoiceStatus(connection, payment.invoice_id);
 
     res.json({ success: true, message: 'Paiement supprime' });
