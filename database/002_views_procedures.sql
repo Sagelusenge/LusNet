@@ -132,6 +132,13 @@ SELECT
 -- PROCEDURES STOCKEES
 -- ============================================================
 
+DROP PROCEDURE IF EXISTS sp_create_monthly_invoice;
+DROP PROCEDURE IF EXISTS sp_register_payment;
+DROP PROCEDURE IF EXISTS sp_suspend_contract;
+DROP PROCEDURE IF EXISTS sp_restore_contract;
+DROP PROCEDURE IF EXISTS sp_mark_late_invoices;
+DROP PROCEDURE IF EXISTS sp_open_support_ticket;
+
 DELIMITER $$
 
 CREATE PROCEDURE sp_create_monthly_invoice (
@@ -176,6 +183,7 @@ BEGIN
     period_start,
     period_end,
     due_date,
+    installation_amount_usd,
     subscription_amount_usd,
     equipment_installment_amount_usd,
     discount_amount_usd,
@@ -187,6 +195,7 @@ BEGIN
     p_period_start,
     p_period_end,
     p_due_date,
+    0.00,
     v_plan_price,
     COALESCE(p_equipment_installment_amount_usd, 0.00),
     COALESCE(p_discount_amount_usd, 0.00),

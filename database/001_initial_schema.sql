@@ -152,12 +152,13 @@ CREATE TABLE invoices (
   period_start DATE NOT NULL,
   period_end DATE NOT NULL,
   due_date DATE NOT NULL,
+  installation_amount_usd DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   subscription_amount_usd DECIMAL(10,2) NOT NULL,
   equipment_installment_amount_usd DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   penalty_amount_usd DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   discount_amount_usd DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   total_amount_usd DECIMAL(10,2) AS (
-    subscription_amount_usd + equipment_installment_amount_usd + penalty_amount_usd - discount_amount_usd
+    installation_amount_usd + subscription_amount_usd + equipment_installment_amount_usd + penalty_amount_usd - discount_amount_usd
   ) STORED,
   status ENUM('brouillon', 'non_reglee', 'emise', 'payee', 'partielle', 'en_retard', 'annulee') NOT NULL DEFAULT 'non_reglee',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

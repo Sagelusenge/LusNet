@@ -7,5 +7,7 @@ const router = express.Router();
 
 router.get('/', asyncHandler(paymentsController.listPayments));
 router.post('/', authenticate, asyncHandler(paymentsController.registerPayment));
+router.put('/:id', authenticate, asyncHandler(paymentsController.updatePayment));
+router.delete('/:id', authenticate, asyncHandler(paymentsController.deletePayment));
 
 module.exports = router;

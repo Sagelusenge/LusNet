@@ -192,23 +192,34 @@ function documentStyles() {
       *{box-sizing:border-box}
       body{font-family:Arial,sans-serif;color:#111;line-height:1.45;font-size:12.5px;margin:0}
       .doc{max-width:820px;margin:0 auto}
+      .compact-doc{max-width:680px}
       .doc-header{display:flex;justify-content:space-between;gap:18px;border-bottom:3px solid #08765d;padding-bottom:12px;margin-bottom:14px}
+      .compact-header{padding-bottom:8px;margin-bottom:8px}
       .brand-title{font-size:24px;font-weight:800;color:#044a3c;letter-spacing:0}
+      .compact-doc .brand-title{font-size:20px}
       .brand-sub{color:#555;margin-top:3px}
       .doc-title{text-align:right}
       .doc-title h1{font-size:18px;margin:0 0 6px;text-transform:uppercase}
       .badge{display:inline-block;padding:5px 9px;border-radius:999px;background:#fff3d1;color:#5c3d00;font-weight:700}
       .box{border:1px solid #cfd8d4;border-radius:8px;padding:10px 12px;margin:10px 0;background:#fbfdfc}
+      .compact-box,.compact-doc .box{padding:8px 10px;margin:7px 0}
       .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+      .compact-grid{gap:8px}
       .field-line{display:flex;gap:6px;margin:4px 0}.field-line strong{min-width:130px;color:#044a3c}
+      .compact-doc .field-line strong{min-width:78px}
       h2{font-size:13px;color:#044a3c;margin:14px 0 6px;text-transform:uppercase}
+      .compact-doc h2{font-size:12px;margin:6px 0 4px}
       p{margin:6px 0}
       table{width:100%;border-collapse:collapse;margin:8px 0 12px}
+      .compact-doc table{margin:4px 0}
       th{background:#08765d;color:#fff}
       th,td{border:1px solid #bfcac5;padding:6px;text-align:left;vertical-align:top}
+      .compact-doc th,.compact-doc td{padding:4px 6px}
       .selected{background:#e8f7f2;font-weight:700}
       .signature{display:grid;grid-template-columns:1fr 1fr;gap:38px;margin-top:24px}
+      .compact-signature{gap:24px;margin-top:12px}
       .signature-box{min-height:150px;border-top:1px solid #111;padding-top:8px}
+      .compact-signature .signature-box{min-height:76px}
       .operator-signature{position:relative;min-height:150px;overflow:hidden}
       .operator-signature>*:not(.stamp){position:relative;z-index:2}
       .signature-line{height:28px;border-bottom:1px solid #111;margin:8px 0 4px;width:74%}
@@ -225,6 +236,19 @@ function documentStyles() {
 
 function selectedMark(name, current) {
   return name === current ? '[X]' : '[ ]';
+}
+
+function dateInputValue(value) {
+  return value ? String(value).slice(0, 10) : '';
+}
+
+function dateTimeInputValue(value) {
+  return value ? String(value).replace(' ', 'T').slice(0, 16) : '';
+}
+
+function positiveAmount(value) {
+  const amount = Number(value || 0);
+  return Number.isFinite(amount) && amount > 0 ? amount : 0;
 }
 
 function App() {
@@ -1325,11 +1349,119 @@ function Plans({ data }) {
 }
 
 function Invoices({ data, submit }) {
-  const [form, setForm] = useState({ contractId: '', invoiceType: 'facture', status: 'non_reglee', periodStart: '', periodEnd: '', dueDate: '', equipmentInstallmentAmountUsd: 0, discountAmountUsd: 0 });
+  const emptyForm = { id: '', contractId: '', invoiceType: 'facture', status: 'non_reglee', periodStart: '', periodEnd: '', dueDate: '', installationAmountUsd: '', subscriptionAmountUsd: '', equipmentInstallmentAmountUsd: '', penaltyAmountUsd: '', discountAmountUsd: '' };
+  const [form, setForm] = useState(emptyForm);
+  const isEditing = Boolean(form.id);
+
+  function setContract(contractId) {
+    const contract = data.contracts.find((item) => String(item.contract_id) === String(contractId));
+    const hasExistingInvoice = data.invoices.some((item) => String(item.contract_id) === String(contractId));
+    setForm({
+      ...form,
+      contractId,
+      subscriptionAmountUsd: contract?.monthly_price_usd || '',
+      installationAmountUsd: !hasExistingInvoice ? contract?.equipment_initial_payment_usd || '' : ''
+    });
+  }
+
+  function editInvoice(item) {
+    setForm({
+      id: item.id,
+      contractId: item.contract_id,
+      invoiceType: item.invoice_type || 'facture',
+      status: item.status || 'non_reglee',
+      periodStart: dateInputValue(item.period_start),
+      periodEnd: dateInputValue(item.period_end),
+      dueDate: dateInputValue(item.due_date),
+      installationAmountUsd: item.installation_amount_usd || '',
+      subscriptionAmountUsd: item.subscription_amount_usd || '',
+      equipmentInstallmentAmountUsd: item.equipment_installment_amount_usd || '',
+      penaltyAmountUsd: item.penalty_amount_usd || '',
+      discountAmountUsd: item.discount_amount_usd || ''
+    });
+  }
+
+  function saveInvoice() {
+    const body = {
+      ...form,
+      contractId: form.contractId,
+      installationAmountUsd: form.installationAmountUsd || 0,
+      subscriptionAmountUsd: form.subscriptionAmountUsd || undefined,
+      equipmentInstallmentAmountUsd: form.equipmentInstallmentAmountUsd || 0,
+      penaltyAmountUsd: form.penaltyAmountUsd || 0,
+      discountAmountUsd: form.discountAmountUsd || 0
+    };
+
+    const action = isEditing ? () => api.updateInvoice(form.id, body) : () => api.createInvoice(body);
+    submit(action, isEditing ? 'Facture modifiee' : 'Facture creee');
+    setForm(emptyForm);
+  }
+
+  function printInvoice(item) {
+    const rows = [
+      ['Installation / equipement initial', item.installation_amount_usd],
+      ['Abonnement Internet', item.subscription_amount_usd],
+      ['Paiement materiel', item.equipment_installment_amount_usd],
+      ['Penalite', item.penalty_amount_usd],
+      ['Remise', positiveAmount(item.discount_amount_usd) ? -Number(item.discount_amount_usd) : 0]
+    ].filter(([, amount]) => positiveAmount(Math.abs(Number(amount || 0))) > 0);
+    const paidAmount = Number(item.paid_amount_usd || 0);
+    const remainingAmount = Number(item.total_amount_usd || 0) - paidAmount;
+    const html = `
+      <html>
+        <head><title>${text(item.invoice_number)}</title>${documentStyles()}</head>
+        <body>
+          <main class="doc compact-doc">
+            <header class="doc-header compact-header">
+              <div>
+                <div class="brand-title">LWASIVA_NET</div>
+                <div class="brand-sub">Contact officiel : +243 980 208 012</div>
+              </div>
+              <div class="doc-title">
+                <h1>${invoiceTypeLabel(item.invoice_type)}</h1>
+                <span class="badge">${text(item.invoice_number)}</span>
+              </div>
+            </header>
+            <section class="grid compact-grid">
+              <div class="box">
+                <h2>Client</h2>
+                <div class="field-line"><strong>Nom</strong><span>${text(item.client_name)}</span></div>
+                <div class="field-line"><strong>Telephone</strong><span>${text(item.client_phone)}</span></div>
+                <div class="field-line"><strong>Contrat</strong><span>${text(item.contract_number)}</span></div>
+              </div>
+              <div class="box">
+                <h2>Periode</h2>
+                <div class="field-line"><strong>Du</strong><span>${dateText(item.period_start)}</span></div>
+                <div class="field-line"><strong>Au</strong><span>${dateText(item.period_end)}</span></div>
+                <div class="field-line"><strong>Echeance</strong><span>${dateText(item.due_date)}</span></div>
+                <div class="field-line"><strong>Statut</strong><span>${invoiceStatusLabel(item.status)}</span></div>
+              </div>
+            </section>
+            <section class="box compact-box">
+              <h2>Details</h2>
+              <table>
+                <tbody>
+                  ${rows.map(([label, amount]) => `<tr><td>${text(label)}</td><td><strong>${money(amount)}</strong></td></tr>`).join('')}
+                  <tr><td>Total</td><td><strong>${money(item.total_amount_usd)}</strong></td></tr>
+                  ${paidAmount > 0 ? `<tr><td>Deja paye</td><td><strong>${money(paidAmount)}</strong></td></tr>` : ''}
+                  ${paidAmount > 0 ? `<tr><td>Reste</td><td><strong>${money(remainingAmount)}</strong></td></tr>` : ''}
+                </tbody>
+              </table>
+            </section>
+            <section class="signature compact-signature">
+              <div class="signature-box"><strong>LWASIVA_NET</strong><p>Nom : KITSA LUSENGE LWASIVA Sage</p></div>
+              <div class="signature-box"><strong>Client</strong><p>Nom : ${text(item.client_name)}</p></div>
+            </section>
+          </main>
+        </body>
+      </html>`;
+    printHtml(item.invoice_number, html);
+  }
+
   return (
     <>
-      <QuickForm title="Facture mensuelle" icon={Receipt} onSubmit={() => submit(() => api.createInvoice(form), 'Facture creee')}>
-        <SelectInput label="Contrat" value={form.contractId} onChange={(contractId) => setForm({ ...form, contractId })} options={data.contracts.map((contract) => ({ value: contract.contract_id, label: `${contract.contract_number} - ${contract.client_name}` }))} />
+      <QuickForm title={isEditing ? 'Modifier facture' : 'Facture mensuelle'} icon={Receipt} onSubmit={saveInvoice}>
+        <SelectInput label="Contrat" value={form.contractId} onChange={setContract} options={data.contracts.map((contract) => ({ value: contract.contract_id, label: `${contract.contract_number} - ${contract.client_name}` }))} />
         <SelectInput label="Type" value={form.invoiceType} onChange={(invoiceType) => setForm({ ...form, invoiceType })} options={[
           { value: 'facture', label: 'Facture' },
           { value: 'proforma', label: 'Proforma' },
@@ -1344,15 +1476,65 @@ function Invoices({ data, submit }) {
         <TextInput label="Debut" type="date" value={form.periodStart} onChange={(periodStart) => setForm({ ...form, periodStart })} />
         <TextInput label="Fin" type="date" value={form.periodEnd} onChange={(periodEnd) => setForm({ ...form, periodEnd })} />
         <TextInput label="Date limite de paiement" type="date" value={form.dueDate} onChange={(dueDate) => setForm({ ...form, dueDate })} />
-        <TextInput label="Paiement du kit internet" type="number" value={form.equipmentInstallmentAmountUsd} onChange={(equipmentInstallmentAmountUsd) => setForm({ ...form, equipmentInstallmentAmountUsd })} />
+        <TextInput label="Installation / equipement initial" type="number" value={form.installationAmountUsd} onChange={(installationAmountUsd) => setForm({ ...form, installationAmountUsd })} />
+        <TextInput label="Abonnement USD" type="number" value={form.subscriptionAmountUsd} onChange={(subscriptionAmountUsd) => setForm({ ...form, subscriptionAmountUsd })} />
+        <TextInput label="Paiement materiel USD" type="number" value={form.equipmentInstallmentAmountUsd} onChange={(equipmentInstallmentAmountUsd) => setForm({ ...form, equipmentInstallmentAmountUsd })} />
+        <TextInput label="Penalite USD" type="number" value={form.penaltyAmountUsd} onChange={(penaltyAmountUsd) => setForm({ ...form, penaltyAmountUsd })} />
+        <TextInput label="Remise USD" type="number" value={form.discountAmountUsd} onChange={(discountAmountUsd) => setForm({ ...form, discountAmountUsd })} />
+        {isEditing && <button type="button" className="secondary-button" onClick={() => setForm(emptyForm)}><X size={17} /> Annuler</button>}
       </QuickForm>
-      <TablePanel title="Factures" icon={Receipt} columns={['Numero', 'Type', 'Client', 'Total', 'Statut', 'Date limite']} rows={data.invoices.map((item) => [item.invoice_number, invoiceTypeLabel(item.invoice_type), item.client_name, money(item.total_amount_usd), invoiceStatusLabel(item.status), item.due_date])} />
+      <div className="panel table-panel">
+        <PanelHeader icon={Receipt} title="Factures" />
+        <div className="quote-list">
+          {data.invoices.length === 0 ? <p className="muted">Aucune facture</p> : data.invoices.map((item) => (
+            <div className="quote-item" key={item.id}>
+              <div>
+                <strong>{item.invoice_number} - {item.client_name}</strong>
+                <span>{invoiceTypeLabel(item.invoice_type)} - {invoiceStatusLabel(item.status)} - Total {money(item.total_amount_usd)} - Reste {money(Number(item.total_amount_usd || 0) - Number(item.paid_amount_usd || 0))}</span>
+              </div>
+              <div className="quote-actions">
+                <button className="icon-button" title="Imprimer facture" onClick={() => printInvoice(item)}><Printer size={17} /></button>
+                <button className="icon-button" title="Modifier" onClick={() => editInvoice(item)}><Pencil size={17} /></button>
+                <button className="icon-button danger" title="Supprimer" onClick={() => submit(() => api.deleteInvoice(item.id), 'Facture supprimee')}><Trash2 size={17} /></button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </>
   );
 }
 
 function Payments({ data, submit }) {
-  const [form, setForm] = useState({ invoiceId: '', amountUsd: '', method: 'especes', transactionNumber: '' });
+  const emptyForm = { id: '', invoiceId: '', amountUsd: '', method: 'especes', transactionNumber: '', paidAt: '', notes: '' };
+  const [form, setForm] = useState(emptyForm);
+  const isEditing = Boolean(form.id);
+
+  function editPayment(item) {
+    setForm({
+      id: item.id,
+      invoiceId: item.invoice_id || '',
+      amountUsd: item.amount_usd || '',
+      method: item.method || 'especes',
+      transactionNumber: item.transaction_number || '',
+      paidAt: dateTimeInputValue(item.paid_at),
+      notes: item.notes || ''
+    });
+  }
+
+  function savePayment() {
+    const body = {
+      invoiceId: form.invoiceId,
+      amountUsd: form.amountUsd,
+      method: form.method,
+      transactionNumber: form.transactionNumber,
+      paidAt: form.paidAt || undefined,
+      notes: form.notes || undefined
+    };
+    const action = isEditing ? () => api.updatePayment(form.id, body) : () => api.registerPayment(body);
+    submit(action, isEditing ? 'Paiement modifie' : 'Paiement enregistre');
+    setForm(emptyForm);
+  }
 
   function printPaymentStatement(item) {
     const html = `
@@ -1416,11 +1598,14 @@ function Payments({ data, submit }) {
 
   return (
     <>
-      <QuickForm title="Nouveau paiement" icon={BadgeDollarSign} onSubmit={() => submit(() => api.registerPayment(form), 'Paiement enregistre')}>
+      <QuickForm title={isEditing ? 'Modifier paiement' : 'Nouveau paiement'} icon={BadgeDollarSign} onSubmit={savePayment}>
         <SelectInput label="Facture" value={form.invoiceId} onChange={(invoiceId) => setForm({ ...form, invoiceId })} options={data.invoices.map((invoice) => ({ value: invoice.id, label: `${invoice.invoice_number} - ${money(invoice.total_amount_usd)}` }))} />
         <TextInput label="Montant USD" type="number" value={form.amountUsd} onChange={(amountUsd) => setForm({ ...form, amountUsd })} />
         <SelectInput label="Methode" value={form.method} onChange={(method) => setForm({ ...form, method })} options={['especes', 'airtel_money', 'mpesa', 'orange_money', 'banque', 'autre']} />
         <TextInput label="Transaction" value={form.transactionNumber} onChange={(transactionNumber) => setForm({ ...form, transactionNumber })} />
+        <TextInput label="Date paiement" type="datetime-local" value={form.paidAt} onChange={(paidAt) => setForm({ ...form, paidAt })} />
+        <TextInput label="Note" value={form.notes} onChange={(notes) => setForm({ ...form, notes })} />
+        {isEditing && <button type="button" className="secondary-button" onClick={() => setForm(emptyForm)}><X size={17} /> Annuler</button>}
       </QuickForm>
       <div className="panel table-panel">
         <PanelHeader icon={BadgeDollarSign} title="Paiements" />
@@ -1433,6 +1618,8 @@ function Payments({ data, submit }) {
               </div>
               <div className="quote-actions">
                 <button className="icon-button" title="Imprimer l'etat de paiement" onClick={() => printPaymentStatement(item)}><Printer size={17} /></button>
+                <button className="icon-button" title="Modifier" onClick={() => editPayment(item)}><Pencil size={17} /></button>
+                <button className="icon-button danger" title="Supprimer" onClick={() => submit(() => api.deletePayment(item.id), 'Paiement supprime')}><Trash2 size={17} /></button>
               </div>
             </div>
           ))}

@@ -6,16 +6,17 @@ const env = require('../src/config/env');
 const files = [
   path.join(__dirname, '..', 'database', '001_initial_schema.sql'),
   path.join(__dirname, '..', 'database', '009_contract_custom_plan.sql'),
+  path.join(__dirname, '..', 'database', '010_contract_due_day_31.sql'),
+  path.join(__dirname, '..', 'database', '011_contract_equipment_terms.sql'),
   path.join(__dirname, '..', 'database', '012_invoice_type_status.sql'),
+  path.join(__dirname, '..', 'database', '013_invoice_installation_amount.sql'),
   path.join(__dirname, '..', 'database', '002_views_procedures.sql'),
   path.join(__dirname, '..', 'database', '003_quote_requests_and_client_users.sql'),
   path.join(__dirname, '..', 'database', '004_whatsapp_notifications.sql'),
   path.join(__dirname, '..', 'database', '005_contact_feedback.sql'),
   path.join(__dirname, '..', 'database', '006_app_messages_push.sql'),
   path.join(__dirname, '..', 'database', '007_budget.sql'),
-  path.join(__dirname, '..', 'database', '008_other_plan.sql'),
-  path.join(__dirname, '..', 'database', '010_contract_due_day_31.sql'),
-  path.join(__dirname, '..', 'database', '011_contract_equipment_terms.sql')
+  path.join(__dirname, '..', 'database', '008_other_plan.sql')
 ];
 
 function splitSqlStatements(sql) {
