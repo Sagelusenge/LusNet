@@ -965,6 +965,7 @@ function printContractDocument(item) {
             <div class="signature-box operator-signature">
               <strong>Pour l'Operateur</strong>
               <p>Nom : KITSA LUSENGE LWASIVA Sage</p>
+              <p>Tel : +243 980 208 012</p>
               <p>Email : sagelusenge@gmail.com</p>
               <div class="signature-line"></div>
               <p class="small">Signature manuscrite</p>
