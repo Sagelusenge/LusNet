@@ -601,8 +601,13 @@ function PublicHome({ plans, feedback, submit, setActive, busy }) {
   return (
     <>
       <section className="hero">
+        <div className="hero-ambient" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </div>
         <div className="hero-content">
-          <span>Goma, Nord-Kivu, RDC</span>
+          <span className="hero-kicker">Goma, Nord-Kivu, RDC</span>
           <h1>LWASIVA_NET</h1>
           <p>Connexion Internet sans fil pour foyers, entreprises locales, streaming, teletravail, appels video et usages professionnels.</p>
           <div className="hero-stats">
@@ -619,20 +624,45 @@ function PublicHome({ plans, feedback, submit, setActive, busy }) {
             <span>Nouveau: les clients peuvent laisser une appreciation, et l'administration choisit les 4 avis visibles.</span>
           </div>
         </div>
+        <div className="hero-network" aria-hidden="true">
+          <div className="network-card signal-card">
+            <Wifi size={26} />
+            <strong>Signal stable</strong>
+            <span>Goma centre</span>
+          </div>
+          <div className="network-map">
+            <span className="network-line line-a" />
+            <span className="network-line line-b" />
+            <span className="network-line line-c" />
+            <span className="network-node node-main"><Router size={28} /></span>
+            <span className="network-node node-a" />
+            <span className="network-node node-b" />
+            <span className="network-node node-c" />
+            <span className="network-node node-d" />
+            <span className="signal-ring ring-one" />
+            <span className="signal-ring ring-two" />
+            <span className="signal-ring ring-three" />
+          </div>
+          <div className="network-card speed-card">
+            <Gauge size={25} />
+            <strong>30 Mbps</strong>
+            <span>Streaming, appels, travail</span>
+          </div>
+        </div>
       </section>
 
       <section className="public-contact-strip">
-        <div>
+        <div className="reveal-card">
           <Phone size={18} />
           <span>Contact officiel</span>
           <strong>+243 980 208 012</strong>
         </div>
-        <div>
+        <div className="reveal-card">
           <ShieldCheck size={18} />
           <span>Zone</span>
           <strong>Goma, Nord-Kivu</strong>
         </div>
-        <div>
+        <div className="reveal-card">
           <Wifi size={18} />
           <span>Technologie</span>
           <strong>Liaison sans fil</strong>
@@ -645,8 +675,8 @@ function PublicHome({ plans, feedback, submit, setActive, busy }) {
           <h2>Nos offres Internet</h2>
         </div>
         <div className="plan-grid">
-          {publicPlans.map((plan) => (
-            <div className="plan" key={plan.id}>
+          {publicPlans.map((plan, index) => (
+            <div className="plan reveal-card" style={{ '--delay': `${index * 90}ms` }} key={plan.id}>
               <div><Router size={22} /><strong>{plan.name}</strong></div>
               <span>{plan.recommended_usage}</span>
               <p>{bandwidthText(plan)}</p>
@@ -684,10 +714,10 @@ function PublicHome({ plans, feedback, submit, setActive, busy }) {
       </section>
 
       <section className="public-section process-strip">
-        <div><ClipboardList size={20} /><strong>1. Demande</strong><span>Le client envoie son devis depuis l'accueil.</span></div>
-        <div><ShieldCheck size={20} /><strong>2. Validation</strong><span>L'administration verifie et valide la demande.</span></div>
-        <div><FileText size={20} /><strong>3. Contrat</strong><span>Le contrat final est imprime depuis l'espace admin.</span></div>
-        <div><Wifi size={20} /><strong>4. Activation</strong><span>Le service Internet est active pour le client.</span></div>
+        <div className="reveal-card"><ClipboardList size={20} /><strong>1. Demande</strong><span>Le client envoie son devis depuis l'accueil.</span></div>
+        <div className="reveal-card"><ShieldCheck size={20} /><strong>2. Validation</strong><span>L'administration verifie et valide la demande.</span></div>
+        <div className="reveal-card"><FileText size={20} /><strong>3. Contrat</strong><span>Le contrat final est imprime depuis l'espace admin.</span></div>
+        <div className="reveal-card"><Wifi size={20} /><strong>4. Activation</strong><span>Le service Internet est active pour le client.</span></div>
       </section>
 
       <section className="public-section testimonials-section" id="avis">
@@ -777,7 +807,7 @@ function PublicHome({ plans, feedback, submit, setActive, busy }) {
 
 function InfoCard({ icon: Icon, title, text }) {
   return (
-    <div className="info-card">
+    <div className="info-card reveal-card">
       <Icon size={22} />
       <h3>{title}</h3>
       <p>{text}</p>
