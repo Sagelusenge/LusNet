@@ -13,10 +13,18 @@ async function listTickets(req, res) {
 }
 
 async function openTicket(req, res) {
-  const { clientId, contractId, title, description, priority = 'normale', assignedTo } = req.body;
+  const { contractId, title, description, priority = 'normale', assignedTo } = req.body;
+  const clientId = req.user.role === 'client' ? req.user.clientId : req.body.clientId;
 
   if (!clientId || !title || !description) {
     throw new HttpError(400, 'Client, titre et description sont obligatoires');
+  }
+
+  if (req.user.role === 'client' && contractId) {
+    const contracts = await query('SELECT id FROM contracts WHERE id = ? AND client_id = ?', [contractId, clientId]);
+    if (contracts.length === 0) {
+      throw new HttpError(403, 'Contrat non autorise pour ce client');
+    }
   }
 
   const connection = await getConnection();

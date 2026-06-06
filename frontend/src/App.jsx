@@ -112,7 +112,8 @@ const adminNav = [
 const clientNav = [
   { id: 'client-space', label: 'Mon espace', icon: Home },
   { id: 'client-contracts', label: 'Mes contrats', icon: FileText },
-  { id: 'client-invoices', label: 'Mes factures', icon: Receipt }
+  { id: 'client-invoices', label: 'Mes factures', icon: Receipt },
+  { id: 'client-complaints', label: 'Reclamations', icon: Ticket }
 ];
 
 const emptySummary = {
@@ -260,6 +261,10 @@ function positiveAmount(value) {
   return Number.isFinite(amount) && amount > 0 ? amount : 0;
 }
 
+function invoiceRemaining(item) {
+  return Math.max(0, Number(item?.total_amount_usd || 0) - Number(item?.paid_amount_usd || 0));
+}
+
 function App() {
   const [active, setActive] = useState(localStorage.getItem('lwasiva_token') ? 'admin-dashboard' : 'home');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -292,7 +297,7 @@ function App() {
     budgetSummary: { summary: { total_recettes_usd: 0, total_depenses_usd: 0, solde_usd: 0 }, byCategory: [] },
     budgetCategories: [],
     budgetEntries: [],
-    clientSpace: { client: null, contracts: [], invoices: [], payments: [] }
+    clientSpace: { client: null, contracts: [], invoices: [], payments: [], tickets: [] }
   });
 
   const isLoggedIn = Boolean(tokenState);
@@ -318,7 +323,7 @@ function App() {
 
       if (isClient) {
         const [clientSpace, appMessages] = await Promise.all([
-          api.clientSpace().catch(() => ({ client: null, contracts: [], invoices: [], payments: [] })),
+          api.clientSpace().catch(() => ({ client: null, contracts: [], invoices: [], payments: [], tickets: [] })),
           api.appMessages().catch(() => [])
         ]);
         setData((previous) => ({ ...previous, plans: publicPlans, clientSpace, appMessages }));
@@ -372,7 +377,7 @@ function App() {
         budgetSummary,
         budgetCategories,
         budgetEntries,
-        clientSpace: { client: null, contracts: [], invoices: [], payments: [] }
+        clientSpace: { client: null, contracts: [], invoices: [], payments: [], tickets: [] }
       });
     } finally {
       setLoading(false);
@@ -508,9 +513,10 @@ function App() {
           {!isClient && active === 'feedback' && <FeedbackAdmin data={data} submit={submit} />}
           {!isClient && active === 'notifications' && <Notifications data={data} submit={submit} />}
           {!isClient && active === 'users' && <UsersAdmin data={data} submit={submit} />}
-          {isClient && active === 'client-space' && <ClientSpace data={data.clientSpace} submit={submit} />}
+          {isClient && active === 'client-space' && <ClientSpace data={data.clientSpace} messages={data.appMessages} submit={submit} />}
           {isClient && active === 'client-contracts' && <ClientContracts data={data.clientSpace} />}
           {isClient && active === 'client-invoices' && <ClientInvoices data={data.clientSpace} />}
+          {isClient && active === 'client-complaints' && <ClientComplaints data={data.clientSpace} submit={submit} />}
         </section>
       </main>
     </div>
@@ -1215,11 +1221,13 @@ function FeedbackAdmin({ data, submit }) {
   );
 }
 
-function ClientSpace({ data, submit }) {
+function ClientSpace({ data, messages = [], submit }) {
   const [profileForm, setProfileForm] = useState({ fullName: '', phone: '', email: '', address: '' });
   const unpaid = data.invoices.filter((item) => item.status !== 'payee' && item.status !== 'annulee');
-  const unpaidTotal = unpaid.reduce((sum, item) => sum + Number(item.total_amount_usd || 0), 0);
+  const unpaidTotal = unpaid.reduce((sum, item) => sum + invoiceRemaining(item), 0);
   const activeContract = data.contracts.find((item) => item.status === 'actif') || data.contracts[0];
+  const openTickets = (data.tickets || []).filter((item) => item.status !== 'resolu' && item.status !== 'ferme');
+  const latestMessage = messages[0];
 
   useEffect(() => {
     setProfileForm({
@@ -1237,10 +1245,35 @@ function ClientSpace({ data, submit }) {
         <div className="metric"><Wifi size={20} /><span>Bouquet</span><strong>{activeContract?.plan_name || '-'}</strong></div>
         <div className="metric"><Receipt size={20} /><span>Factures a payer</span><strong>{unpaid.length}</strong></div>
         <div className="metric"><BadgeDollarSign size={20} /><span>Reste a payer</span><strong>{money(unpaidTotal)}</strong></div>
+        <div className="metric"><Ticket size={20} /><span>Reclamations ouvertes</span><strong>{openTickets.length}</strong></div>
+        <div className="metric"><MessageSquare size={20} /><span>Messages recus</span><strong>{messages.length}</strong></div>
+      </div>
+      <div className="two-columns">
+        <div className="panel client-summary-panel">
+          <PanelHeader icon={ShieldCheck} title="Etat du service" />
+          <div className="client-status-list">
+            <div><span>Contrat actif</span><strong>{activeContract?.contract_number || '-'}</strong></div>
+            <div><span>Adresse</span><strong>{activeContract?.installation_address || data.client?.address || '-'}</strong></div>
+            <div><span>Statut</span><strong>{activeContract?.status || 'Aucun contrat'}</strong></div>
+            <div><span>Debit</span><strong>{activeContract ? bandwidthText(activeContract) : '-'}</strong></div>
+          </div>
+        </div>
+        <div className="panel client-summary-panel">
+          <PanelHeader icon={MessageSquare} title="Dernier message" />
+          {latestMessage ? (
+            <div className="client-message-card">
+              <strong>{latestMessage.title}</strong>
+              <p>{latestMessage.body}</p>
+              <span>{latestMessage.created_at}</span>
+            </div>
+          ) : (
+            <p className="muted">Aucun message pour le moment.</p>
+          )}
+        </div>
       </div>
       <div className="two-columns">
         <TablePanel title="Mes contrats" icon={FileText} columns={['Numero', 'Bouquet', 'Debit', 'Statut']} rows={data.contracts.map((item) => [item.contract_number, item.plan_name, bandwidthText(item), item.status])} />
-        <TablePanel title="Mes factures a payer" icon={Receipt} columns={['Numero', 'Type', 'Total', 'Statut', 'Date limite']} rows={unpaid.map((item) => [item.invoice_number, invoiceTypeLabel(item.invoice_type), money(item.total_amount_usd), invoiceStatusLabel(item.status), item.due_date])} />
+        <TablePanel title="Mes factures a payer" icon={Receipt} columns={['Numero', 'Type', 'Reste', 'Statut', 'Date limite']} rows={unpaid.map((item) => [item.invoice_number, invoiceTypeLabel(item.invoice_type), money(invoiceRemaining(item)), invoiceStatusLabel(item.status), item.due_date])} />
       </div>
       <QuickForm title="Mon profil" icon={Users} onSubmit={() => submit(() => api.updateClientProfile(profileForm), 'Profil mis a jour')}>
         <TextInput label="Nom complet" value={profileForm.fullName} onChange={(fullName) => setProfileForm({ ...profileForm, fullName })} />
@@ -1248,6 +1281,8 @@ function ClientSpace({ data, submit }) {
         <TextInput label="Email" value={profileForm.email} onChange={(email) => setProfileForm({ ...profileForm, email })} />
         <TextInput label="Adresse" value={profileForm.address} onChange={(address) => setProfileForm({ ...profileForm, address })} />
       </QuickForm>
+      <ClientComplaintForm data={data} submit={submit} />
+      <TablePanel title="Mes reclamations recentes" icon={Ticket} columns={['Titre', 'Contrat', 'Priorite', 'Statut']} rows={(data.tickets || []).slice(0, 5).map((item) => [item.title, item.contract_number || '-', item.priority, item.status])} />
       <TablePanel title="Mes derniers paiements" icon={BadgeDollarSign} columns={['Reference', 'Montant', 'Methode', 'Date']} rows={data.payments.map((item) => [item.payment_reference, money(item.amount_usd), item.method, item.paid_at])} />
     </>
   );
@@ -1258,7 +1293,60 @@ function ClientContracts({ data }) {
 }
 
 function ClientInvoices({ data }) {
-  return <TablePanel title="Mes factures" icon={Receipt} columns={['Numero', 'Type', 'Periode', 'Total', 'Statut', 'Date limite']} rows={data.invoices.map((item) => [item.invoice_number, invoiceTypeLabel(item.invoice_type), `${item.period_start} - ${item.period_end}`, money(item.total_amount_usd), invoiceStatusLabel(item.status), item.due_date])} />;
+  return <TablePanel title="Mes factures" icon={Receipt} columns={['Numero', 'Type', 'Periode', 'Total', 'Reste', 'Statut', 'Date limite']} rows={data.invoices.map((item) => [item.invoice_number, invoiceTypeLabel(item.invoice_type), `${item.period_start} - ${item.period_end}`, money(item.total_amount_usd), money(invoiceRemaining(item)), invoiceStatusLabel(item.status), item.due_date])} />;
+}
+
+function ClientComplaintForm({ data, submit }) {
+  const emptyForm = { contractId: '', title: '', priority: 'normale', description: '' };
+  const [form, setForm] = useState(emptyForm);
+
+  function saveComplaint() {
+    const body = {
+      clientId: data.client?.id,
+      contractId: form.contractId || undefined,
+      title: form.title,
+      priority: form.priority,
+      description: form.description
+    };
+    submit(() => api.openTicket(body), 'Reclamation envoyee au support');
+    setForm(emptyForm);
+  }
+
+  return (
+    <QuickForm title="Nouvelle reclamation" icon={Ticket} onSubmit={saveComplaint}>
+      <SelectInput label="Contrat concerne" value={form.contractId} onChange={(contractId) => setForm({ ...form, contractId })} options={data.contracts.map((contract) => ({ value: contract.id, label: `${contract.contract_number} - ${contract.plan_name}` }))} />
+      <TextInput label="Sujet" value={form.title} onChange={(title) => setForm({ ...form, title })} />
+      <SelectInput label="Priorite" value={form.priority} onChange={(priority) => setForm({ ...form, priority })} options={[
+        { value: 'basse', label: 'Basse' },
+        { value: 'normale', label: 'Normale' },
+        { value: 'haute', label: 'Haute' },
+        { value: 'urgente', label: 'Urgente' }
+      ]} />
+      <TextAreaInput label="Description" value={form.description} onChange={(description) => setForm({ ...form, description })} />
+    </QuickForm>
+  );
+}
+
+function ClientComplaints({ data, submit }) {
+  return (
+    <>
+      <ClientComplaintForm data={data} submit={submit} />
+      <div className="panel table-panel">
+        <PanelHeader icon={Ticket} title="Suivi de mes reclamations" />
+        <div className="quote-list">
+          {(data.tickets || []).length === 0 ? <p className="muted">Aucune reclamation envoyee.</p> : (data.tickets || []).map((item) => (
+            <div className="quote-item" key={item.id}>
+              <div>
+                <strong>{item.title}</strong>
+                <span>{item.contract_number || 'Sans contrat'} - Priorite {item.priority} - Statut {item.status}</span>
+              </div>
+              <span className="status-chip">{item.opened_at || '-'}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
 }
 
 function Clients({ data, submit }) {
@@ -1821,6 +1909,15 @@ function TextInput({ label, value, onChange, type = 'text' }) {
     <label className="field">
       <span>{label}</span>
       <input type={type} value={value ?? ''} onChange={(event) => onChange(event.target.value)} />
+    </label>
+  );
+}
+
+function TextAreaInput({ label, value, onChange }) {
+  return (
+    <label className="field field-wide">
+      <span>{label}</span>
+      <textarea value={value ?? ''} onChange={(event) => onChange(event.target.value)} />
     </label>
   );
 }

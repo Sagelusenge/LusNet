@@ -34,6 +34,14 @@ async function getMySpace(req, res) {
      ORDER BY paid_at DESC`,
     [req.user.clientId]
   );
+  const tickets = await query(
+    `SELECT st.*, c.contract_number
+     FROM support_tickets st
+     LEFT JOIN contracts c ON c.id = st.contract_id
+     WHERE st.client_id = ?
+     ORDER BY st.opened_at DESC`,
+    [req.user.clientId]
+  );
 
   res.json({
     success: true,
@@ -41,7 +49,8 @@ async function getMySpace(req, res) {
       client: clients[0] || null,
       contracts,
       invoices,
-      payments
+      payments,
+      tickets
     }
   });
 }
