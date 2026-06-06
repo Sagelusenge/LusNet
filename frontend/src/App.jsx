@@ -59,8 +59,9 @@ const PUBLIC_NAV_CRITICAL_CSS = `
   .public-header nav {
     display: grid !important;
     grid-auto-flow: column !important;
-    grid-auto-columns: minmax(38px, auto) !important;
-    gap: 6px !important;
+    grid-auto-columns: max-content !important;
+    align-items: center !important;
+    gap: 7px !important;
     margin-left: auto !important;
     overflow-x: auto !important;
     overscroll-behavior-x: contain !important;
@@ -70,24 +71,22 @@ const PUBLIC_NAV_CRITICAL_CSS = `
     display: none !important;
   }
   .public-header nav button {
-    min-width: 38px !important;
-    min-height: 38px !important;
-    border-radius: 13px !important;
-    padding: 0 11px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    border-radius: 14px !important;
+    padding: 0 12px !important;
     font-size: 13px !important;
     white-space: nowrap !important;
   }
-  .public-header nav .public-icon-button,
-  .public-header nav .optional-nav {
-    width: 38px !important;
+  .public-header nav .public-icon-button {
+    width: 40px !important;
     padding: 0 !important;
   }
-  .public-header nav .public-icon-button span,
-  .public-header nav .optional-nav span {
+  .public-header nav .public-icon-button span {
     display: none !important;
   }
-  .public-header nav button:not(.public-icon-button):not(.optional-nav) span {
-    max-width: 78px !important;
+  .public-header nav .nav-pill span {
+    max-width: 92px !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
   }
@@ -448,11 +447,12 @@ function App() {
         </div>
 
         <nav className="nav-list">
-          {navItems.map((item) => {
+          {navItems.map((item, index) => {
             const Icon = item.icon;
             return (
               <button
                 key={item.id}
+                style={{ '--nav-index': index }}
                 className={active === item.id ? 'active' : ''}
                 onClick={() => {
                   setActive(item.id);
@@ -557,21 +557,22 @@ function PublicShell({ active, setActive, toast, theme, setTheme, children }) {
             <span>Internet haut debit a Goma</span>
           </div>
         </div>
-        <nav>
-          <button className="public-icon-button" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} title="Changer le theme">
+        <nav className="public-nav" aria-label="Navigation publique">
+          <button className="public-icon-button theme-toggle" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} title="Changer le theme">
             {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
           </button>
-          <button className={`public-icon-button ${active === 'home' ? 'active' : ''}`} onClick={() => setActive('home')} title="Accueil">
+          <button className={`nav-pill ${active === 'home' ? 'active' : ''}`} onClick={() => setActive('home')} title="Accueil">
             <Home size={17} />
+            <span>Accueil</span>
           </button>
           <button onClick={() => {
             setActive('home');
             setTimeout(() => document.getElementById('avis')?.scrollIntoView({ behavior: 'smooth' }), 0);
-          }} className="optional-nav">
+          }} className="nav-pill optional-nav">
             <MessageSquare size={17} />
-            <span>Avis clients</span>
+            <span>Avis</span>
           </button>
-          <button className={active === 'login' ? 'active' : ''} onClick={() => setActive('login')}>
+          <button className={`nav-pill login-nav ${active === 'login' ? 'active' : ''}`} onClick={() => setActive('login')}>
             <LogIn size={17} />
             <span>Connexion</span>
           </button>
