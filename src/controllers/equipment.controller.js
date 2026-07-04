@@ -1,3 +1,4 @@
+const net = require('node:net');
 const { query } = require('../config/database');
 const HttpError = require('../utils/http-error');
 
@@ -20,12 +21,54 @@ async function createKit(req, res) {
   res.status(201).json({ success: true, data: { id: result.insertId } });
 }
 
+function validateNetworkIdentity(ipAddress, macAddress) {
+  if (!ipAddress || net.isIP(String(ipAddress).trim()) === 0) {
+    throw new HttpError(400, 'Une adresse IP valide est obligatoire');
+  }
+
+  if (macAddress && !/^([0-9A-F]{2}[:-]){5}[0-9A-F]{2}$/i.test(String(macAddress).trim())) {
+    throw new HttpError(400, 'Adresse MAC invalide');
+  }
+}
+
+async function ensureIpAvailable(ipAddress, excludedId = null) {
+  const rows = await query(
+    `SELECT id FROM contract_equipment
+     WHERE ip_address = ? AND (? IS NULL OR id <> ?)
+     LIMIT 1`,
+    [ipAddress, excludedId, excludedId]
+  );
+
+  if (rows.length > 0) {
+    throw new HttpError(409, 'Cette adresse IP est deja affectee');
+  }
+}
+
+async function listAssignments(req, res) {
+  const rows = await query(
+    `SELECT ce.*, c.contract_number, c.status AS contract_status, c.activated_at,
+            cl.id AS client_id, cl.client_code, cl.full_name AS client_name, cl.phone AS client_phone,
+            ip.name AS plan_name, ek.name AS kit_name
+     FROM contract_equipment ce
+     INNER JOIN contracts c ON c.id = ce.contract_id
+     INNER JOIN clients cl ON cl.id = c.client_id
+     INNER JOIN internet_plans ip ON ip.id = c.plan_id
+     INNER JOIN equipment_kits ek ON ek.id = ce.equipment_kit_id
+     ORDER BY cl.full_name ASC, ce.installed_at DESC, ce.id DESC`
+  );
+
+  res.json({ success: true, data: rows });
+}
+
 async function assignEquipment(req, res) {
   const {
     contractId,
     equipmentKitId,
+    equipmentName,
     cpeSerialNumber,
     routerSerialNumber,
+    ipAddress,
+    macAddress,
     installedAt,
     installedBy,
     ownershipStatus = 'propriete_operateur',
@@ -33,20 +76,28 @@ async function assignEquipment(req, res) {
     notes
   } = req.body;
 
-  if (!contractId || !equipmentKitId) {
-    throw new HttpError(400, 'Contrat et kit materiel sont obligatoires');
+  if (!contractId || !equipmentKitId || !equipmentName) {
+    throw new HttpError(400, 'Contrat, kit et nom de l equipement sont obligatoires');
   }
+
+  const normalizedIp = String(ipAddress || '').trim();
+  const normalizedMac = macAddress ? String(macAddress).trim().toUpperCase().replace(/-/g, ':') : null;
+  validateNetworkIdentity(normalizedIp, normalizedMac);
+  await ensureIpAvailable(normalizedIp);
 
   const result = await query(
     `INSERT INTO contract_equipment (
-      contract_id, equipment_kit_id, cpe_serial_number, router_serial_number,
-      installed_at, installed_by, ownership_status, condition_status, notes
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      contract_id, equipment_kit_id, equipment_name, cpe_serial_number, router_serial_number,
+      ip_address, mac_address, installed_at, installed_by, ownership_status, condition_status, notes
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       contractId,
       equipmentKitId,
+      equipmentName,
       cpeSerialNumber || null,
       routerSerialNumber || null,
+      normalizedIp,
+      normalizedMac,
       installedAt || null,
       installedBy || req.user?.id || null,
       ownershipStatus,
@@ -56,6 +107,62 @@ async function assignEquipment(req, res) {
   );
 
   res.status(201).json({ success: true, data: { id: result.insertId } });
+}
+
+async function updateAssignment(req, res) {
+  const {
+    contractId,
+    equipmentKitId,
+    equipmentName,
+    cpeSerialNumber,
+    routerSerialNumber,
+    ipAddress,
+    macAddress,
+    installedAt,
+    ownershipStatus = 'propriete_operateur',
+    conditionStatus = 'bon',
+    notes
+  } = req.body;
+
+  if (!contractId || !equipmentKitId || !equipmentName) {
+    throw new HttpError(400, 'Contrat, kit et nom de l equipement sont obligatoires');
+  }
+
+  const normalizedIp = String(ipAddress || '').trim();
+  const normalizedMac = macAddress ? String(macAddress).trim().toUpperCase().replace(/-/g, ':') : null;
+  validateNetworkIdentity(normalizedIp, normalizedMac);
+  await ensureIpAvailable(normalizedIp, req.params.id);
+
+  const result = await query(
+    `UPDATE contract_equipment
+     SET contract_id = ?, equipment_kit_id = ?, equipment_name = ?,
+         cpe_serial_number = ?, router_serial_number = ?, ip_address = ?, mac_address = ?,
+         installed_at = ?, ownership_status = ?, condition_status = ?, notes = ?
+     WHERE id = ?`,
+    [
+      contractId,
+      equipmentKitId,
+      equipmentName,
+      cpeSerialNumber || null,
+      routerSerialNumber || null,
+      normalizedIp,
+      normalizedMac,
+      installedAt || null,
+      ownershipStatus,
+      conditionStatus,
+      notes || null,
+      req.params.id
+    ]
+  );
+
+  if (result.affectedRows === 0) throw new HttpError(404, 'Affectation materiel introuvable');
+  res.json({ success: true, message: 'Affectation materiel mise a jour' });
+}
+
+async function deleteAssignment(req, res) {
+  const result = await query('DELETE FROM contract_equipment WHERE id = ?', [req.params.id]);
+  if (result.affectedRows === 0) throw new HttpError(404, 'Affectation materiel introuvable');
+  res.json({ success: true, message: 'Affectation materiel supprimee' });
 }
 
 async function listInstallments(req, res) {
@@ -102,7 +209,10 @@ async function markInstallmentPaid(req, res) {
 module.exports = {
   listKits,
   createKit,
+  listAssignments,
   assignEquipment,
+  updateAssignment,
+  deleteAssignment,
   listInstallments,
   createInstallment,
   markInstallmentPaid

@@ -1645,6 +1645,169 @@ tbody tr:nth-child(3n) {
   white-space: nowrap;
 }
 
+.countdown-metrics,
+.equipment-metrics {
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+}
+
+.countdown-list {
+  display: grid;
+  gap: 12px;
+}
+
+.countdown-item {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.3fr) minmax(190px, 0.9fr) minmax(150px, 0.7fr);
+  gap: 12px 18px;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--brand);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  animation: reveal-up 520ms ease-out both;
+}
+
+.countdown-item.warning {
+  border-left-color: var(--accent);
+}
+
+.countdown-item.urgent,
+.countdown-item.expired {
+  border-left-color: var(--danger);
+}
+
+.countdown-client {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.countdown-client > div,
+.countdown-dates,
+.countdown-value {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.countdown-client span,
+.countdown-dates span,
+.countdown-value span {
+  color: var(--muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.countdown-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--brand) 14%, var(--surface));
+  color: var(--brand);
+}
+
+.countdown-item.urgent .countdown-icon,
+.countdown-item.expired .countdown-icon {
+  background: color-mix(in srgb, var(--danger) 13%, var(--surface));
+  color: var(--danger);
+}
+
+.countdown-value {
+  text-align: right;
+}
+
+.countdown-value strong {
+  font-size: 20px;
+}
+
+.countdown-item.expired .countdown-value strong {
+  color: var(--danger);
+}
+
+.countdown-progress {
+  grid-column: 1 / -1;
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.countdown-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--brand));
+  transition: width 400ms ease;
+}
+
+.countdown-item.urgent .countdown-progress span,
+.countdown-item.expired .countdown-progress span {
+  background: var(--danger);
+}
+
+.equipment-record {
+  align-items: flex-start;
+}
+
+.equipment-record-main {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.network-identifiers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 3px;
+}
+
+.network-identifiers span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  margin: 0;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 12px;
+}
+
+.network-identifiers b {
+  color: var(--brand);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.equipment-state {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--brand) 30%, var(--line));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--brand) 10%, var(--surface));
+  color: var(--brand-strong);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.equipment-state.a_reparer,
+.equipment-state.remplace {
+  border-color: color-mix(in srgb, var(--danger) 34%, var(--line));
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface));
+  color: var(--danger);
+}
+
 .action-row {
   display: flex;
   align-items: center;
@@ -2065,6 +2228,14 @@ tbody tr:nth-child(3n) {
 }
 
 @media (max-width: 900px) {
+  .countdown-item {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .countdown-value {
+    text-align: left;
+  }
+
   .login-card {
     grid-template-columns: 1fr;
     min-height: auto;
@@ -2263,9 +2434,19 @@ tbody tr:nth-child(3n) {
   }
 
   .metric-grid,
+  .countdown-metrics,
+  .equipment-metrics,
   .form-grid,
   .form-grid.two {
     grid-template-columns: 1fr;
+  }
+
+  .countdown-item {
+    grid-template-columns: 1fr;
+  }
+
+  .countdown-value {
+    text-align: left;
   }
 
   .text-button {

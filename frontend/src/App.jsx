@@ -24,6 +24,7 @@ import {
   Router,
   ShieldCheck,
   Sun,
+  Timer,
   Ticket,
   Trash2,
   UserPlus,
@@ -98,6 +99,7 @@ const adminNav = [
   { id: 'quotes', label: 'Devis', icon: ClipboardList },
   { id: 'clients', label: 'Clients', icon: Users },
   { id: 'contracts', label: 'Contrats', icon: FileText },
+  { id: 'countdowns', label: 'Echeances', icon: Timer },
   { id: 'plans', label: 'Bouquets', icon: Gauge },
   { id: 'invoices', label: 'Factures', icon: Receipt },
   { id: 'payments', label: 'Paiements', icon: BadgeDollarSign },
@@ -285,6 +287,7 @@ function App() {
     unpaidInvoices: [],
     payments: [],
     kits: [],
+    equipmentAssignments: [],
     tickets: [],
     quotes: [],
     users: [],
@@ -330,7 +333,7 @@ function App() {
         return;
       }
 
-      const [summary, clients, contracts, balances, equipmentStatus, invoices, unpaidInvoices, payments, kits, tickets, quotes, users, notificationLogs, appMessages, adminAppMessages, contactMessages, allFeedback, budgetSummary, budgetCategories, budgetEntries] =
+      const [summary, clients, contracts, balances, equipmentStatus, invoices, unpaidInvoices, payments, kits, equipmentAssignments, tickets, quotes, users, notificationLogs, appMessages, adminAppMessages, contactMessages, allFeedback, budgetSummary, budgetCategories, budgetEntries] =
         await Promise.all([
           api.summary().catch(() => emptySummary),
           api.clients().catch(() => []),
@@ -341,6 +344,7 @@ function App() {
           api.unpaidInvoices().catch(() => []),
           api.payments().catch(() => []),
           api.kits().catch(() => []),
+          api.equipmentAssignments().catch(() => []),
           api.tickets().catch(() => []),
           api.quotes().catch(() => []),
           api.users().catch(() => []),
@@ -365,6 +369,7 @@ function App() {
         unpaidInvoices,
         payments,
         kits,
+        equipmentAssignments,
         tickets,
         quotes,
         users,
@@ -504,6 +509,7 @@ function App() {
           {!isClient && active === 'quotes' && <Quotes data={data} submit={submit} />}
           {!isClient && active === 'clients' && <Clients data={data} submit={submit} />}
           {!isClient && active === 'contracts' && <Contracts data={data} submit={submit} />}
+          {!isClient && active === 'countdowns' && <Countdowns data={data} />}
           {!isClient && active === 'plans' && <Plans data={data} />}
           {!isClient && active === 'invoices' && <Invoices data={data} submit={submit} />}
           {!isClient && active === 'payments' && <Payments data={data} submit={submit} />}
@@ -901,6 +907,94 @@ function Dashboard({ data }) {
       <div className="two-columns">
         <TablePanel title="Messages contact" icon={Phone} columns={['Nom', 'Telephone', 'Sujet', 'Statut']} rows={data.contactMessages.slice(0, 8).map((item) => [item.full_name, item.phone, item.subject, item.status])} />
         <TablePanel title="Appreciations recues" icon={MessageSquare} columns={['Nom', 'Quartier', 'Note', 'Statut']} rows={data.allFeedback.slice(0, 8).map((item) => [item.full_name, item.neighborhood || '-', `${item.rating}/5`, item.status])} />
+      </div>
+    </>
+  );
+}
+
+function subscriptionCountdown(activatedAt, now) {
+  if (!activatedAt) return null;
+
+  const startedAt = new Date(`${String(activatedAt).slice(0, 10)}T00:00:00`);
+  if (Number.isNaN(startedAt.getTime())) return null;
+
+  const durationMs = 30 * 24 * 60 * 60 * 1000;
+  const expiresAt = new Date(startedAt.getTime() + durationMs);
+  const remainingMs = expiresAt.getTime() - now.getTime();
+  const absoluteMs = Math.abs(remainingMs);
+  const days = Math.floor(absoluteMs / (24 * 60 * 60 * 1000));
+  const hours = Math.floor((absoluteMs / (60 * 60 * 1000)) % 24);
+  const minutes = Math.floor((absoluteMs / (60 * 1000)) % 60);
+  const progress = Math.max(0, Math.min(100, (remainingMs / durationMs) * 100));
+
+  return { startedAt, expiresAt, remainingMs, days, hours, minutes, progress };
+}
+
+function Countdowns({ data }) {
+  const [now, setNow] = useState(new Date());
+  const eligibleContracts = data.contracts.filter((item) => item.activated_at && item.status !== 'brouillon' && item.status !== 'resilie');
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 30000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const countdowns = eligibleContracts
+    .map((contract) => ({ contract, countdown: subscriptionCountdown(contract.activated_at, now) }))
+    .filter((item) => item.countdown)
+    .sort((a, b) => a.countdown.remainingMs - b.countdown.remainingMs);
+  const expired = countdowns.filter((item) => item.countdown.remainingMs <= 0).length;
+  const urgent = countdowns.filter((item) => item.countdown.remainingMs > 0 && item.countdown.remainingMs <= 3 * 24 * 60 * 60 * 1000).length;
+
+  return (
+    <>
+      <div className="metric-grid countdown-metrics">
+        <div className="metric"><Timer size={20} /><span>Compteurs actifs</span><strong>{countdowns.length}</strong></div>
+        <div className="metric"><AlertCircle size={20} /><span>Echeance sous 3 jours</span><strong>{urgent}</strong></div>
+        <div className="metric"><X size={20} /><span>Periodes expirees</span><strong>{expired}</strong></div>
+      </div>
+
+      <div className="panel">
+        <PanelHeader icon={Timer} title="Compte a rebours des abonnements" />
+        <div className="countdown-list">
+          {countdowns.length === 0 ? <p className="muted">Aucun contrat avec une date de mise en service.</p> : countdowns.map(({ contract, countdown }) => {
+            const isExpired = countdown.remainingMs <= 0;
+            const isUrgent = !isExpired && countdown.remainingMs <= 3 * 24 * 60 * 60 * 1000;
+            const stateClass = isExpired ? 'expired' : isUrgent ? 'urgent' : countdown.remainingMs <= 7 * 24 * 60 * 60 * 1000 ? 'warning' : 'active';
+
+            return (
+              <div className={`countdown-item ${stateClass}`} key={contract.contract_id}>
+                <div className="countdown-client">
+                  <span className="countdown-icon"><Timer size={20} /></span>
+                  <div>
+                    <strong>{contract.client_name}</strong>
+                    <span>{contract.contract_number} - {contract.plan_name}</span>
+                  </div>
+                </div>
+                <div className="countdown-dates">
+                  <span>Mise en service: {dateText(contract.activated_at)}</span>
+                  <strong>Echeance: {countdown.expiresAt.toLocaleDateString('fr-FR')}</strong>
+                </div>
+                <div className="countdown-value">
+                  {isExpired ? (
+                    <>
+                      <strong>Expire</strong>
+                      <span>depuis {countdown.days} j {countdown.hours} h</span>
+                    </>
+                  ) : (
+                    <>
+                      <strong>{countdown.days} j {countdown.hours} h</strong>
+                      <span>{countdown.minutes} min restantes</span>
+                    </>
+                  )}
+                </div>
+                <div className="countdown-progress" aria-label={`${Math.round(countdown.progress)} pourcent restant`}>
+                  <span style={{ width: `${countdown.progress}%` }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </>
   );
@@ -1853,14 +1947,124 @@ function Budget({ data, submit }) {
 }
 
 function Equipment({ data, submit }) {
-  const [form, setForm] = useState({ contractId: '', installmentNumber: 1, amountUsd: 20, dueDate: '' });
+  const emptyAssignment = {
+    id: '',
+    contractId: '',
+    equipmentKitId: '',
+    equipmentName: '',
+    cpeSerialNumber: '',
+    routerSerialNumber: '',
+    ipAddress: '',
+    macAddress: '',
+    installedAt: todayInputDate(),
+    ownershipStatus: 'propriete_operateur',
+    conditionStatus: 'bon',
+    notes: ''
+  };
+  const [assignment, setAssignment] = useState(emptyAssignment);
+  const [installment, setInstallment] = useState({ contractId: '', installmentNumber: 1, amountUsd: 20, dueDate: '' });
+  const isEditing = Boolean(assignment.id);
+
+  function editAssignment(item) {
+    setAssignment({
+      id: item.id,
+      contractId: item.contract_id || '',
+      equipmentKitId: item.equipment_kit_id || '',
+      equipmentName: item.equipment_name || item.kit_name || '',
+      cpeSerialNumber: item.cpe_serial_number || '',
+      routerSerialNumber: item.router_serial_number || '',
+      ipAddress: item.ip_address || '',
+      macAddress: item.mac_address || '',
+      installedAt: dateInputValue(item.installed_at) || todayInputDate(),
+      ownershipStatus: item.ownership_status || 'propriete_operateur',
+      conditionStatus: item.condition_status || 'bon',
+      notes: item.notes || ''
+    });
+  }
+
+  function saveAssignment() {
+    const body = {
+      contractId: assignment.contractId,
+      equipmentKitId: assignment.equipmentKitId,
+      equipmentName: assignment.equipmentName,
+      cpeSerialNumber: assignment.cpeSerialNumber || undefined,
+      routerSerialNumber: assignment.routerSerialNumber || undefined,
+      ipAddress: assignment.ipAddress,
+      macAddress: assignment.macAddress || undefined,
+      installedAt: assignment.installedAt || undefined,
+      ownershipStatus: assignment.ownershipStatus,
+      conditionStatus: assignment.conditionStatus,
+      notes: assignment.notes || undefined
+    };
+    const action = isEditing
+      ? () => api.updateEquipmentAssignment(assignment.id, body)
+      : () => api.assignEquipment(body);
+    submit(action, isEditing ? 'Affectation materiel modifiee' : 'Equipement affecte au client');
+    setAssignment(emptyAssignment);
+  }
+
   return (
     <>
-      <QuickForm title="Paiement du kit internet" icon={Boxes} onSubmit={() => submit(() => api.createInstallment(form), 'Paiement du kit cree')}>
-        <SelectInput label="Contrat" value={form.contractId} onChange={(contractId) => setForm({ ...form, contractId })} options={data.contracts.map((contract) => ({ value: contract.contract_id, label: `${contract.contract_number} - ${contract.client_name}` }))} />
-        <TextInput label="Numero du paiement" type="number" value={form.installmentNumber} onChange={(installmentNumber) => setForm({ ...form, installmentNumber })} />
-        <TextInput label="Montant USD" type="number" value={form.amountUsd} onChange={(amountUsd) => setForm({ ...form, amountUsd })} />
-        <TextInput label="Date limite de paiement" type="date" value={form.dueDate} onChange={(dueDate) => setForm({ ...form, dueDate })} />
+      <div className="metric-grid equipment-metrics">
+        <div className="metric"><Router size={20} /><span>Equipements affectes</span><strong>{data.equipmentAssignments.length}</strong></div>
+        <div className="metric"><Wifi size={20} /><span>Adresses IP renseignees</span><strong>{data.equipmentAssignments.filter((item) => item.ip_address).length}</strong></div>
+        <div className="metric"><Boxes size={20} /><span>Kits disponibles</span><strong>{data.kits.filter((item) => item.is_active).length}</strong></div>
+      </div>
+
+      <QuickForm title={isEditing ? 'Modifier l equipement client' : 'Enregistrer un equipement client'} icon={Router} onSubmit={saveAssignment}>
+        <SelectInput label="Client / contrat" value={assignment.contractId} onChange={(contractId) => setAssignment({ ...assignment, contractId })} options={data.contracts.map((contract) => ({ value: contract.contract_id, label: `${contract.client_name} - ${contract.contract_number}` }))} />
+        <SelectInput label="Kit" value={assignment.equipmentKitId} onChange={(equipmentKitId) => setAssignment({ ...assignment, equipmentKitId })} options={data.kits.map((kit) => ({ value: kit.id, label: kit.name }))} />
+        <TextInput label="Nom / modele equipement" value={assignment.equipmentName} onChange={(equipmentName) => setAssignment({ ...assignment, equipmentName })} />
+        <TextInput label="Adresse IP" value={assignment.ipAddress} onChange={(ipAddress) => setAssignment({ ...assignment, ipAddress })} />
+        <TextInput label="Adresse MAC" value={assignment.macAddress} onChange={(macAddress) => setAssignment({ ...assignment, macAddress })} />
+        <TextInput label="Serie CPE" value={assignment.cpeSerialNumber} onChange={(cpeSerialNumber) => setAssignment({ ...assignment, cpeSerialNumber })} />
+        <TextInput label="Serie routeur" value={assignment.routerSerialNumber} onChange={(routerSerialNumber) => setAssignment({ ...assignment, routerSerialNumber })} />
+        <TextInput label="Date installation" type="date" value={assignment.installedAt} onChange={(installedAt) => setAssignment({ ...assignment, installedAt })} />
+        <SelectInput label="Propriete" value={assignment.ownershipStatus} onChange={(ownershipStatus) => setAssignment({ ...assignment, ownershipStatus })} options={[
+          { value: 'propriete_operateur', label: 'Propriete LWASIVA_NET' },
+          { value: 'propriete_client', label: 'Propriete client' }
+        ]} />
+        <SelectInput label="Etat" value={assignment.conditionStatus} onChange={(conditionStatus) => setAssignment({ ...assignment, conditionStatus })} options={[
+          { value: 'neuf', label: 'Neuf' },
+          { value: 'bon', label: 'Bon' },
+          { value: 'a_reparer', label: 'A reparer' },
+          { value: 'remplace', label: 'Remplace' },
+          { value: 'recupere', label: 'Recupere' }
+        ]} />
+        <TextAreaInput label="Notes techniques" value={assignment.notes} onChange={(notes) => setAssignment({ ...assignment, notes })} />
+        {isEditing && <button type="button" className="small-button" onClick={() => setAssignment(emptyAssignment)}><X size={17} /> Annuler</button>}
+      </QuickForm>
+
+      <div className="panel table-panel">
+        <PanelHeader icon={Router} title="Registre equipements et adresses IP" />
+        <div className="quote-list">
+          {data.equipmentAssignments.length === 0 ? <p className="muted">Aucun equipement affecte.</p> : data.equipmentAssignments.map((item) => (
+            <div className="quote-item equipment-record" key={item.id}>
+              <div className="equipment-record-main">
+                <strong>{item.client_name} - {item.equipment_name || item.kit_name}</strong>
+                <span>{item.contract_number} - {item.plan_name} - Installe le {dateText(item.installed_at)}</span>
+                <div className="network-identifiers">
+                  <span><b>IP</b>{item.ip_address || '-'}</span>
+                  <span><b>MAC</b>{item.mac_address || '-'}</span>
+                  <span><b>CPE</b>{item.cpe_serial_number || '-'}</span>
+                  <span><b>Routeur</b>{item.router_serial_number || '-'}</span>
+                </div>
+              </div>
+              <div className="quote-actions">
+                <span className={`equipment-state ${item.condition_status}`}>{item.condition_status}</span>
+                <button className="icon-button" title="Modifier" onClick={() => editAssignment(item)}><Pencil size={17} /></button>
+                <button className="icon-button danger" title="Supprimer" onClick={() => submit(() => api.deleteEquipmentAssignment(item.id), 'Affectation materiel supprimee')}><Trash2 size={17} /></button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <QuickForm title="Paiement du kit internet" icon={Boxes} onSubmit={() => submit(() => api.createInstallment(installment), 'Paiement du kit cree')}>
+        <SelectInput label="Contrat" value={installment.contractId} onChange={(contractId) => setInstallment({ ...installment, contractId })} options={data.contracts.map((contract) => ({ value: contract.contract_id, label: `${contract.contract_number} - ${contract.client_name}` }))} />
+        <TextInput label="Numero du paiement" type="number" value={installment.installmentNumber} onChange={(installmentNumber) => setInstallment({ ...installment, installmentNumber })} />
+        <TextInput label="Montant USD" type="number" value={installment.amountUsd} onChange={(amountUsd) => setInstallment({ ...installment, amountUsd })} />
+        <TextInput label="Date limite de paiement" type="date" value={installment.dueDate} onChange={(dueDate) => setInstallment({ ...installment, dueDate })} />
       </QuickForm>
       <TablePanel title="Etat materiel" icon={Router} columns={['Contrat', 'Client', 'Kit', 'Paye', 'Reste']} rows={data.equipmentStatus.map((item) => [item.contract_number, item.client_name, item.equipment_kit || '-', money(item.equipment_paid_usd), money(item.equipment_remaining_usd)])} />
     </>
