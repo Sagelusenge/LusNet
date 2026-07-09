@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   BadgeDollarSign,
+  BarChart3,
   BellRing,
   Boxes,
   Building2,
@@ -106,6 +107,7 @@ const adminNav = [
   { id: 'payments', label: 'Paiements', icon: BadgeDollarSign },
   { id: 'budget', label: 'Budget', icon: Building2 },
   { id: 'equipment', label: 'Materiel', icon: Router },
+  { id: 'reports', label: 'Rapports', icon: BarChart3 },
   { id: 'support', label: 'Support', icon: Ticket },
   { id: 'feedback', label: 'Appreciations', icon: MessageSquare },
   { id: 'notifications', label: 'Notifications', icon: Send },
@@ -301,7 +303,7 @@ function App() {
     budgetSummary: { summary: { total_recettes_usd: 0, total_depenses_usd: 0, solde_usd: 0 }, byCategory: [] },
     budgetCategories: [],
     budgetEntries: [],
-    clientSpace: { client: null, contracts: [], invoices: [], payments: [], tickets: [] }
+    clientSpace: { client: null, contracts: [], invoices: [], payments: [], tickets: [], equipmentStatus: [] }
   });
 
   const isLoggedIn = Boolean(tokenState);
@@ -327,7 +329,7 @@ function App() {
 
       if (isClient) {
         const [clientSpace, appMessages] = await Promise.all([
-          api.clientSpace().catch(() => ({ client: null, contracts: [], invoices: [], payments: [], tickets: [] })),
+          api.clientSpace().catch(() => ({ client: null, contracts: [], invoices: [], payments: [], tickets: [], equipmentStatus: [] })),
           api.appMessages().catch(() => [])
         ]);
         setData((previous) => ({ ...previous, plans: publicPlans, clientSpace, appMessages }));
@@ -383,7 +385,7 @@ function App() {
         budgetSummary,
         budgetCategories,
         budgetEntries,
-        clientSpace: { client: null, contracts: [], invoices: [], payments: [], tickets: [] }
+        clientSpace: { client: null, contracts: [], invoices: [], payments: [], tickets: [], equipmentStatus: [] }
       });
     } finally {
       setLoading(false);
@@ -516,6 +518,7 @@ function App() {
           {!isClient && active === 'payments' && <Payments data={data} submit={submit} />}
           {!isClient && active === 'budget' && <Budget data={data} submit={submit} />}
           {!isClient && active === 'equipment' && <Equipment data={data} submit={submit} />}
+          {!isClient && active === 'reports' && <Reports data={data} />}
           {!isClient && active === 'support' && <Support data={data} submit={submit} />}
           {!isClient && active === 'feedback' && <FeedbackAdmin data={data} submit={submit} />}
           {!isClient && active === 'notifications' && <Notifications data={data} submit={submit} />}
@@ -880,7 +883,7 @@ function LoginPanel({ onLoggedIn, notify }) {
 }
 
 function Dashboard({ data }) {
-  const subscriptionStats = getSubscriptionStats(data.contracts);
+  const subscriptionStats = getSubscriptionStats(data.contracts, data.invoices);
   const cards = [
     ['Clients', data.summary.total_clients, Users],
     ['Contrats actifs', data.summary.active_contracts, ClipboardList],
@@ -931,10 +934,38 @@ function subscriptionCountdown(activatedAt, now) {
   return { startedAt, expiresAt, remainingMs, days, hours, minutes, progress };
 }
 
-function getSubscriptionStats(contracts, now = new Date()) {
+function paidInvoiceEndDate(contract, invoices) {
+  const paidInvoices = invoices
+    .filter((invoice) => String(invoice.contract_id) === String(contract.contract_id || contract.id))
+    .filter((invoice) => invoice.status === 'payee' || Number(invoice.paid_amount_usd || 0) >= Number(invoice.total_amount_usd || 0))
+    .map((invoice) => new Date(`${String(invoice.period_end).slice(0, 10)}T23:59:59`))
+    .filter((date) => !Number.isNaN(date.getTime()))
+    .sort((a, b) => b.getTime() - a.getTime());
+
+  return paidInvoices[0] || null;
+}
+
+function subscriptionCountdownForContract(contract, invoices, now) {
+  const fallbackCountdown = subscriptionCountdown(contract.activated_at, now);
+  const paidEnd = paidInvoiceEndDate(contract, invoices);
+  if (!paidEnd) return fallbackCountdown;
+
+  const startedAt = fallbackCountdown?.startedAt || new Date(`${String(contract.activated_at || paidEnd).slice(0, 10)}T00:00:00`);
+  const remainingMs = paidEnd.getTime() - now.getTime();
+  const absoluteMs = Math.abs(remainingMs);
+  const days = Math.floor(absoluteMs / (24 * 60 * 60 * 1000));
+  const hours = Math.floor((absoluteMs / (60 * 60 * 1000)) % 24);
+  const minutes = Math.floor((absoluteMs / (60 * 1000)) % 60);
+  const durationMs = Math.max(1, paidEnd.getTime() - startedAt.getTime());
+  const progress = Math.max(0, Math.min(100, (remainingMs / durationMs) * 100));
+
+  return { startedAt, expiresAt: paidEnd, remainingMs, days, hours, minutes, progress };
+}
+
+function getSubscriptionStats(contracts, invoices = [], now = new Date()) {
   const eligibleContracts = contracts.filter((item) => item.activated_at && item.status !== 'brouillon' && item.status !== 'resilie');
   const countdowns = eligibleContracts
-    .map((contract) => subscriptionCountdown(contract.activated_at, now))
+    .map((contract) => subscriptionCountdownForContract(contract, invoices, now))
     .filter(Boolean);
   const expired = countdowns.filter((item) => item.remainingMs <= 0).length;
 
@@ -954,7 +985,7 @@ function Countdowns({ data }) {
   }, []);
 
   const countdowns = eligibleContracts
-    .map((contract) => ({ contract, countdown: subscriptionCountdown(contract.activated_at, now) }))
+    .map((contract) => ({ contract, countdown: subscriptionCountdownForContract(contract, data.invoices, now) }))
     .filter((item) => item.countdown)
     .sort((a, b) => a.countdown.remainingMs - b.countdown.remainingMs);
   const expired = countdowns.filter((item) => item.countdown.remainingMs <= 0).length;
@@ -1491,6 +1522,11 @@ function ClientSpace({ data, messages = [], submit }) {
   const unpaid = data.invoices.filter((item) => item.status !== 'payee' && item.status !== 'annulee');
   const unpaidTotal = unpaid.reduce((sum, item) => sum + invoiceRemaining(item), 0);
   const activeContract = data.contracts.find((item) => item.status === 'actif') || data.contracts[0];
+  const countdown = activeContract ? subscriptionCountdownForContract(activeContract, data.invoices, new Date()) : null;
+  const isExpired = countdown && countdown.remainingMs <= 0;
+  const nextInvoice = [...unpaid].sort((a, b) => new Date(a.due_date) - new Date(b.due_date))[0];
+  const activeEquipment = (data.equipmentStatus || []).find((item) => String(item.contract_id) === String(activeContract?.id)) || (data.equipmentStatus || [])[0];
+  const equipmentRemaining = Number(activeEquipment?.equipment_remaining_usd || 0);
   const openTickets = (data.tickets || []).filter((item) => item.status !== 'resolu' && item.status !== 'ferme');
   const latestMessage = messages[0];
 
@@ -1508,8 +1544,10 @@ function ClientSpace({ data, messages = [], submit }) {
       <div className="metric-grid">
         <div className="metric"><Users size={20} /><span>Client</span><strong>{data.client?.full_name || '-'}</strong></div>
         <div className="metric"><Wifi size={20} /><span>Bouquet</span><strong>{activeContract?.plan_name || '-'}</strong></div>
+        <div className="metric"><Timer size={20} /><span>Echeance</span><strong>{countdown ? countdown.expiresAt.toLocaleDateString('fr-FR') : '-'}</strong></div>
         <div className="metric"><Receipt size={20} /><span>Factures a payer</span><strong>{unpaid.length}</strong></div>
         <div className="metric"><BadgeDollarSign size={20} /><span>Reste a payer</span><strong>{money(unpaidTotal)}</strong></div>
+        <div className="metric"><Boxes size={20} /><span>Kit internet</span><strong>{equipmentRemaining > 0 ? money(equipmentRemaining) : 'En ordre'}</strong></div>
         <div className="metric"><Ticket size={20} /><span>Reclamations ouvertes</span><strong>{openTickets.length}</strong></div>
         <div className="metric"><MessageSquare size={20} /><span>Messages recus</span><strong>{messages.length}</strong></div>
       </div>
@@ -1522,7 +1560,37 @@ function ClientSpace({ data, messages = [], submit }) {
             <div><span>Adresse</span><strong>{activeContract?.installation_address || data.client?.address || '-'}</strong></div>
             <div><span>Statut</span><strong>{activeContract?.status || 'Aucun contrat'}</strong></div>
             <div><span>Debit</span><strong>{activeContract ? bandwidthText(activeContract) : '-'}</strong></div>
+            <div><span>Echeance abonnement</span><strong>{countdown ? countdown.expiresAt.toLocaleDateString('fr-FR') : '-'}</strong></div>
+            <div><span>Temps restant</span><strong>{countdown ? (isExpired ? `Expire depuis ${countdown.days} j` : `${countdown.days} j ${countdown.hours} h`) : '-'}</strong></div>
           </div>
+        </div>
+        <div className="panel client-summary-panel">
+          <PanelHeader icon={Boxes} title="Kit internet" />
+          {activeEquipment ? (
+            <div className="client-status-list">
+              <div><span>Kit</span><strong>{activeEquipment.equipment_kit || 'Materiel contrat'}</strong></div>
+              <div><span>Total kit</span><strong>{money(activeEquipment.equipment_total_usd)}</strong></div>
+              <div><span>Deja paye</span><strong>{money(activeEquipment.equipment_paid_usd)}</strong></div>
+              <div><span>Reste kit</span><strong>{equipmentRemaining > 0 ? money(equipmentRemaining) : 'En ordre'}</strong></div>
+            </div>
+          ) : (
+            <p className="muted">Aucun kit rattache au contrat pour le moment.</p>
+          )}
+        </div>
+      </div>
+      <div className="two-columns">
+        <div className="panel client-summary-panel">
+          <PanelHeader icon={Receipt} title="Prochaine facture" />
+          {nextInvoice ? (
+            <div className="client-status-list">
+              <div><span>Numero</span><strong>{nextInvoice.invoice_number}</strong></div>
+              <div><span>Type</span><strong>{invoiceTypeLabel(nextInvoice.invoice_type)}</strong></div>
+              <div><span>Reste a payer</span><strong>{money(invoiceRemaining(nextInvoice))}</strong></div>
+              <div><span>Date limite</span><strong>{dateText(nextInvoice.due_date)}</strong></div>
+            </div>
+          ) : (
+            <p className="muted">Aucune facture a payer.</p>
+          )}
         </div>
         <div className="panel client-summary-panel">
           <PanelHeader icon={MessageSquare} title="Dernier message" />
@@ -2291,6 +2359,100 @@ function Equipment({ data, submit }) {
         </div>
       )}
       <TablePanel title="Etat materiel" icon={Router} columns={['Contrat', 'Client', 'Kit', 'Paye', 'Reste']} rows={data.equipmentStatus.map((item) => [item.contract_number, item.client_name, item.equipment_kit || '-', money(item.equipment_paid_usd), money(item.equipment_remaining_usd)])} />
+    </>
+  );
+}
+
+function Reports({ data }) {
+  const [report, setReport] = useState('echeances');
+  const now = new Date();
+  const equipmentPaid = data.equipmentStatus.filter((item) => Number(item.equipment_remaining_usd || 0) <= 0 && Number(item.equipment_paid_usd || 0) > 0);
+  const equipmentPending = data.equipmentStatus.filter((item) => Number(item.equipment_remaining_usd || 0) > 0);
+  const unpaid = data.unpaidInvoices || [];
+  const budgetSummary = data.budgetSummary?.summary || {};
+  const deadlineRows = data.contracts
+    .map((contract) => ({ contract, countdown: subscriptionCountdownForContract(contract, data.invoices, now) }))
+    .filter((item) => item.countdown)
+    .sort((a, b) => a.countdown.remainingMs - b.countdown.remainingMs);
+
+  const reports = {
+    echeances: {
+      title: 'Rapport echeances abonnements',
+      icon: Timer,
+      columns: ['Client', 'Contrat', 'Bouquet', 'Echeance', 'Etat'],
+      rows: deadlineRows.map(({ contract, countdown }) => [
+        contract.client_name,
+        contract.contract_number,
+        contract.plan_name,
+        countdown.expiresAt.toLocaleDateString('fr-FR'),
+        countdown.remainingMs <= 0 ? `Expire depuis ${countdown.days} j` : `${countdown.days} j ${countdown.hours} h restantes`
+      ])
+    },
+    kit_paye: {
+      title: 'Clients en ordre avec le kit',
+      icon: CheckCircle2,
+      columns: ['Client', 'Contrat', 'Kit', 'Paye', 'Reste'],
+      rows: equipmentPaid.map((item) => [item.client_name, item.contract_number, item.equipment_kit || '-', money(item.equipment_paid_usd), money(item.equipment_remaining_usd)])
+    },
+    kit_reste: {
+      title: 'Clients avec reste kit',
+      icon: Boxes,
+      columns: ['Client', 'Contrat', 'Kit', 'Paye', 'Reste'],
+      rows: equipmentPending.map((item) => [item.client_name, item.contract_number, item.equipment_kit || '-', money(item.equipment_paid_usd), money(item.equipment_remaining_usd)])
+    },
+    budget: {
+      title: 'Rapport budget',
+      icon: Building2,
+      columns: ['Type', 'Categorie', 'Total'],
+      rows: [
+        ['Resume', 'Recettes', money(budgetSummary.total_recettes_usd)],
+        ['Resume', 'Depenses', money(budgetSummary.total_depenses_usd)],
+        ['Resume', 'Solde', money(budgetSummary.solde_usd)],
+        ...(data.budgetSummary?.byCategory || []).map((item) => [item.entry_type, item.category_name, money(item.total_usd)])
+      ]
+    },
+    clients: {
+      title: 'Liste clients',
+      icon: Users,
+      columns: ['Code', 'Nom', 'Telephone', 'Type', 'Adresse'],
+      rows: data.clients.map((item) => [item.client_code, item.full_name, item.phone, item.client_type, item.address])
+    },
+    impayes: {
+      title: 'Factures et abonnements a regulariser',
+      icon: Receipt,
+      columns: ['Client', 'Telephone', 'Facture', 'Type', 'Reste', 'Date limite'],
+      rows: unpaid.map((item) => [item.client_name, item.client_phone, item.invoice_number, invoiceTypeLabel(item.invoice_type), money(item.remaining_amount_usd), item.due_date])
+    }
+  };
+
+  const selectedReport = reports[report];
+
+  return (
+    <>
+      <div className="metric-grid">
+        <div className="metric"><Users size={20} /><span>Clients</span><strong>{data.clients.length}</strong></div>
+        <div className="metric"><Timer size={20} /><span>Abonnements expires</span><strong>{deadlineRows.filter((item) => item.countdown.remainingMs <= 0).length}</strong></div>
+        <div className="metric"><CheckCircle2 size={20} /><span>Kits en ordre</span><strong>{equipmentPaid.length}</strong></div>
+        <div className="metric"><Boxes size={20} /><span>Kits avec reste</span><strong>{equipmentPending.length}</strong></div>
+        <div className="metric"><Receipt size={20} /><span>Factures a suivre</span><strong>{unpaid.length}</strong></div>
+        <div className="metric"><Building2 size={20} /><span>Solde budget</span><strong>{money(budgetSummary.solde_usd)}</strong></div>
+      </div>
+
+      <div className="panel">
+        <PanelHeader icon={BarChart3} title="Rapports" />
+        <div className="form-grid two">
+          <SelectInput label="Type de rapport" value={report} onChange={setReport} options={[
+            { value: 'echeances', label: 'Echeances abonnements' },
+            { value: 'kit_paye', label: 'Clients en ordre avec le kit' },
+            { value: 'kit_reste', label: 'Clients avec reste kit' },
+            { value: 'budget', label: 'Budget' },
+            { value: 'clients', label: 'Liste clients' },
+            { value: 'impayes', label: 'Factures a regulariser' }
+          ]} />
+        </div>
+      </div>
+
+      <TablePanel title={selectedReport.title} icon={selectedReport.icon} columns={selectedReport.columns} rows={selectedReport.rows} />
     </>
   );
 }
