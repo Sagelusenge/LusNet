@@ -100,10 +100,10 @@ SELECT
   c.contract_number,
   cl.full_name AS client_name,
   cl.phone AS client_phone,
-  ek.name AS equipment_kit,
-  ek.total_price_usd AS equipment_total_usd,
+  COALESCE(ek.name, 'Materiel contrat') AS equipment_kit,
+  COALESCE(ek.total_price_usd, c.equipment_total_price_usd) AS equipment_total_usd,
   COALESCE(SUM(CASE WHEN ei.status = 'payee' THEN ei.amount_usd ELSE 0 END), 0.00) AS equipment_paid_usd,
-  ek.total_price_usd - COALESCE(SUM(CASE WHEN ei.status = 'payee' THEN ei.amount_usd ELSE 0 END), 0.00) AS equipment_remaining_usd,
+  GREATEST(COALESCE(ek.total_price_usd, c.equipment_total_price_usd) - COALESCE(SUM(CASE WHEN ei.status = 'payee' THEN ei.amount_usd ELSE 0 END), 0.00), 0.00) AS equipment_remaining_usd,
   ce.ownership_status
 FROM contracts c
 INNER JOIN clients cl ON cl.id = c.client_id
@@ -117,6 +117,7 @@ GROUP BY
   cl.phone,
   ek.name,
   ek.total_price_usd,
+  c.equipment_total_price_usd,
   ce.ownership_status;
 
 CREATE OR REPLACE VIEW vw_dashboard_summary AS

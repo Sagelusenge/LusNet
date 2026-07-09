@@ -886,10 +886,7 @@ function Dashboard({ data }) {
     ['Contrats actifs', data.summary.active_contracts, ClipboardList],
     ['Abonnements expires', subscriptionStats.expired, AlertCircle],
     ['Abonnements a jour', subscriptionStats.upToDate, CheckCircle2],
-    ['Suspendus', data.summary.suspended_contracts, FileText],
-    ['Devis recus', data.quotes.length, ClipboardList],
-    ['Paiements du jour', money(data.summary.payments_today_usd), BadgeDollarSign],
-    ['Tickets ouverts', data.summary.open_tickets, Ticket]
+    ['Suspendus', data.summary.suspended_contracts, FileText]
   ];
 
   return (
@@ -2150,6 +2147,12 @@ function Equipment({ data, submit }) {
   const isEditing = Boolean(assignment.id);
   const totalStock = data.kits.reduce((sum, kit) => sum + Number(kit.stock_quantity || 0), 0);
   const assignedStock = data.kits.reduce((sum, kit) => sum + Number(kit.assigned_count || 0), 0);
+  const equipmentStatusByContract = new Map(data.equipmentStatus.map((item) => [String(item.contract_id), item]));
+  const contractsWithKitBalance = data.contracts.filter((contract) => {
+    const status = equipmentStatusByContract.get(String(contract.contract_id));
+    const remaining = status ? Number(status.equipment_remaining_usd || 0) : Number(contract.equipment_total_price_usd || 100);
+    return remaining > 0;
+  });
 
   function editAssignment(item) {
     setAssignment({
@@ -2256,12 +2259,37 @@ function Equipment({ data, submit }) {
         </div>
       </div>
 
-      <QuickForm title="Paiement du kit internet" icon={Boxes} onSubmit={() => submit(() => api.createInstallment(installment), 'Paiement du kit cree')}>
-        <SelectInput label="Contrat" value={installment.contractId} onChange={(contractId) => setInstallment({ ...installment, contractId })} options={data.contracts.map((contract) => ({ value: contract.contract_id, label: `${contract.contract_number} - ${contract.client_name}` }))} />
-        <TextInput label="Numero du paiement" type="number" value={installment.installmentNumber} onChange={(installmentNumber) => setInstallment({ ...installment, installmentNumber })} />
-        <TextInput label="Montant USD" type="number" value={installment.amountUsd} onChange={(amountUsd) => setInstallment({ ...installment, amountUsd })} />
-        <TextInput label="Date limite de paiement" type="date" value={installment.dueDate} onChange={(dueDate) => setInstallment({ ...installment, dueDate })} />
-      </QuickForm>
+      {contractsWithKitBalance.length > 0 ? (
+        <QuickForm title="Paiement du kit internet" icon={Boxes} onSubmit={() => submit(() => api.createInstallment(installment), 'Paiement du kit cree')}>
+          <SelectInput
+            label="Contrat"
+            value={installment.contractId}
+            onChange={(contractId) => {
+              const status = equipmentStatusByContract.get(String(contractId));
+              setInstallment({
+                ...installment,
+                contractId,
+                amountUsd: status ? Number(status.equipment_remaining_usd || installment.amountUsd) : installment.amountUsd
+              });
+            }}
+            options={contractsWithKitBalance.map((contract) => {
+              const status = equipmentStatusByContract.get(String(contract.contract_id));
+              return {
+                value: contract.contract_id,
+                label: `${contract.contract_number} - ${contract.client_name} - reste ${money(status?.equipment_remaining_usd || contract.equipment_total_price_usd || 100)}`
+              };
+            })}
+          />
+          <TextInput label="Numero du paiement" type="number" value={installment.installmentNumber} onChange={(installmentNumber) => setInstallment({ ...installment, installmentNumber })} />
+          <TextInput label="Montant USD" type="number" value={installment.amountUsd} onChange={(amountUsd) => setInstallment({ ...installment, amountUsd })} />
+          <TextInput label="Date limite de paiement" type="date" value={installment.dueDate} onChange={(dueDate) => setInstallment({ ...installment, dueDate })} />
+        </QuickForm>
+      ) : (
+        <div className="panel">
+          <PanelHeader icon={CheckCircle2} title="Paiement du kit internet" />
+          <p className="muted">Tous les kits enregistres sont en ordre. Aucun champ de paiement materiel a afficher.</p>
+        </div>
+      )}
       <TablePanel title="Etat materiel" icon={Router} columns={['Contrat', 'Client', 'Kit', 'Paye', 'Reste']} rows={data.equipmentStatus.map((item) => [item.contract_number, item.client_name, item.equipment_kit || '-', money(item.equipment_paid_usd), money(item.equipment_remaining_usd)])} />
     </>
   );

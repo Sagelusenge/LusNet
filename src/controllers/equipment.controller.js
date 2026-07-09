@@ -195,6 +195,24 @@ async function createInstallment(req, res) {
     throw new HttpError(400, 'Contrat, numero tranche, montant et echeance sont obligatoires');
   }
 
+  const balances = await query(
+    `SELECT
+       COALESCE(c.equipment_total_price_usd, 100.00) AS equipment_total_usd,
+       COALESCE(SUM(CASE WHEN ei.status = 'payee' THEN ei.amount_usd ELSE 0 END), 0.00) AS equipment_paid_usd
+     FROM contracts c
+     LEFT JOIN equipment_installments ei ON ei.contract_id = c.id
+     WHERE c.id = ?
+     GROUP BY c.id, c.equipment_total_price_usd`,
+    [contractId]
+  );
+
+  if (!balances[0]) throw new HttpError(404, 'Contrat introuvable');
+
+  const remaining = Number(balances[0].equipment_total_usd || 100) - Number(balances[0].equipment_paid_usd || 0);
+  if (remaining <= 0) {
+    throw new HttpError(400, 'Le kit de ce client est deja totalement paye');
+  }
+
   const result = await query(
     `INSERT INTO equipment_installments (contract_id, installment_number, amount_usd, due_date, notes)
      VALUES (?, ?, ?, ?, ?)`,

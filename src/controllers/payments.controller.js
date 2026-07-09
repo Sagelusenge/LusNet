@@ -134,7 +134,22 @@ async function syncEquipmentInstallmentPayment(connection, paymentId, isEquipmen
   const shouldSync = Boolean(isEquipmentPayment) || equipmentAmount > 0;
   if (!shouldSync) return;
 
-  const amount = equipmentAmount > 0 ? equipmentAmount : Number(payment.amount_usd || 0);
+  const [[equipmentBalance]] = await connection.execute(
+    `SELECT
+       COALESCE(c.equipment_total_price_usd, 100.00) AS equipment_total_usd,
+       COALESCE(SUM(CASE WHEN ei.status = 'payee' THEN ei.amount_usd ELSE 0 END), 0.00) AS equipment_paid_usd
+     FROM contracts c
+     LEFT JOIN equipment_installments ei ON ei.contract_id = c.id
+     WHERE c.id = ?
+     GROUP BY c.id, c.equipment_total_price_usd`,
+    [payment.contract_id]
+  );
+
+  const remaining = Number(equipmentBalance?.equipment_total_usd || 100) - Number(equipmentBalance?.equipment_paid_usd || 0);
+  if (remaining <= 0) return;
+
+  const requestedAmount = equipmentAmount > 0 ? equipmentAmount : Number(payment.amount_usd || 0);
+  const amount = Math.min(requestedAmount, remaining);
   const paidAt = String(payment.paid_at || '').slice(0, 10) || null;
   const marker = equipmentPaymentMarker(payment.payment_reference);
 
