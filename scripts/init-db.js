@@ -11,6 +11,8 @@ const files = [
   path.join(__dirname, '..', 'database', '012_invoice_type_status.sql'),
   path.join(__dirname, '..', 'database', '013_invoice_installation_amount.sql'),
   path.join(__dirname, '..', 'database', '014_equipment_network_details.sql'),
+  path.join(__dirname, '..', 'database', '015_web_push_deadline_alerts.sql'),
+  path.join(__dirname, '..', 'database', '016_equipment_stock_quantity.sql'),
   path.join(__dirname, '..', 'database', '002_views_procedures.sql'),
   path.join(__dirname, '..', 'database', '003_quote_requests_and_client_users.sql'),
   path.join(__dirname, '..', 'database', '004_whatsapp_notifications.sql'),

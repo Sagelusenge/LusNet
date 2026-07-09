@@ -1311,6 +1311,16 @@ button:disabled {
   grid-column: span 2;
 }
 
+.checkbox-field {
+  align-content: end;
+}
+
+.checkbox-field input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--brand);
+}
+
 .field input:focus,
 .field select:focus,
 .field textarea:focus {
@@ -1808,6 +1818,66 @@ tbody tr:nth-child(3n) {
   color: var(--danger);
 }
 
+.push-panel-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.push-status {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 220px;
+}
+
+.push-status > div {
+  display: grid;
+  gap: 3px;
+}
+
+.push-status span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.push-status-dot {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 12px;
+  border-radius: 50%;
+  background: var(--muted);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--muted) 12%, transparent);
+}
+
+.push-status.active .push-status-dot {
+  background: var(--brand);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--brand) 14%, transparent);
+  animation: push-pulse 2.2s ease-in-out infinite;
+}
+
+.push-status.blocked .push-status-dot {
+  background: var(--danger);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--danger) 12%, transparent);
+}
+
+.push-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.push-message {
+  margin: 14px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .action-row {
   display: flex;
   align-items: center;
@@ -2044,6 +2114,17 @@ tbody tr:nth-child(3n) {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes push-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--brand) 14%, transparent);
+  }
+
+  50% {
+    box-shadow: 0 0 0 10px color-mix(in srgb, var(--brand) 4%, transparent);
   }
 }
 
@@ -2572,6 +2653,16 @@ tbody tr:nth-child(3n) {
   .action-row {
     align-items: flex-start;
     flex-direction: column;
+    width: 100%;
+  }
+
+  .push-panel-content {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .push-actions,
+  .push-actions button {
     width: 100%;
   }
 }

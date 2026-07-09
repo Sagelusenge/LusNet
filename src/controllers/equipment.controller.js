@@ -3,19 +3,28 @@ const { query } = require('../config/database');
 const HttpError = require('../utils/http-error');
 
 async function listKits(req, res) {
-  const rows = await query('SELECT * FROM equipment_kits ORDER BY created_at DESC');
+  const rows = await query(
+    `SELECT
+       ek.*,
+       COUNT(ce.id) AS assigned_count,
+       GREATEST(COALESCE(ek.stock_quantity, 0) - COUNT(ce.id), 0) AS available_count
+     FROM equipment_kits ek
+     LEFT JOIN contract_equipment ce ON ce.equipment_kit_id = ek.id
+     GROUP BY ek.id, ek.name, ek.description, ek.total_price_usd, ek.stock_quantity, ek.is_active, ek.created_at, ek.updated_at
+     ORDER BY ek.created_at DESC`
+  );
   res.json({ success: true, data: rows });
 }
 
 async function createKit(req, res) {
-  const { name, description, totalPriceUsd = 100, isActive = true } = req.body;
+  const { name, description, totalPriceUsd = 100, stockQuantity = 0, isActive = true } = req.body;
 
   if (!name) throw new HttpError(400, 'Le nom du kit est obligatoire');
 
   const result = await query(
-    `INSERT INTO equipment_kits (name, description, total_price_usd, is_active)
-     VALUES (?, ?, ?, ?)`,
-    [name, description || null, totalPriceUsd, isActive]
+    `INSERT INTO equipment_kits (name, description, total_price_usd, stock_quantity, is_active)
+     VALUES (?, ?, ?, ?, ?)`,
+    [name, description || null, totalPriceUsd, Number(stockQuantity || 0), isActive]
   );
 
   res.status(201).json({ success: true, data: { id: result.insertId } });

@@ -94,6 +94,89 @@ async function deletePaymentBudgetEntry(connection, paymentReference) {
   );
 }
 
+function equipmentPaymentMarker(paymentReference) {
+  return `Paiement materiel: ${paymentReference}`;
+}
+
+async function unlinkEquipmentInstallmentPayment(connection, paymentReference) {
+  if (!paymentReference) return;
+  const marker = equipmentPaymentMarker(paymentReference);
+
+  await connection.execute(
+    `UPDATE equipment_installments
+     SET status = CASE WHEN due_date < CURRENT_DATE THEN 'en_retard' ELSE 'a_payer' END,
+         paid_at = NULL,
+         notes = NULLIF(TRIM(REPLACE(COALESCE(notes, ''), ?, '')), '')
+     WHERE notes LIKE ?`,
+    [marker, `%${marker}%`]
+  );
+}
+
+async function syncEquipmentInstallmentPayment(connection, paymentId, isEquipmentPayment = false) {
+  const [[payment]] = await connection.execute(
+    `SELECT
+       p.payment_reference,
+       p.contract_id,
+       p.amount_usd,
+       p.paid_at,
+       COALESCE(i.equipment_installment_amount_usd, 0.00) AS equipment_installment_amount_usd
+     FROM payments p
+     LEFT JOIN invoices i ON i.id = p.invoice_id
+     WHERE p.id = ?`,
+    [paymentId]
+  );
+
+  if (!payment) return;
+
+  await unlinkEquipmentInstallmentPayment(connection, payment.payment_reference);
+
+  const equipmentAmount = Number(payment.equipment_installment_amount_usd || 0);
+  const shouldSync = Boolean(isEquipmentPayment) || equipmentAmount > 0;
+  if (!shouldSync) return;
+
+  const amount = equipmentAmount > 0 ? equipmentAmount : Number(payment.amount_usd || 0);
+  const paidAt = String(payment.paid_at || '').slice(0, 10) || null;
+  const marker = equipmentPaymentMarker(payment.payment_reference);
+
+  const [[installment]] = await connection.execute(
+    `SELECT id
+     FROM equipment_installments
+     WHERE contract_id = ?
+       AND status <> 'annulee'
+       AND COALESCE(notes, '') NOT LIKE ?
+     ORDER BY
+       CASE WHEN status = 'payee' THEN 1 ELSE 0 END ASC,
+       ABS(amount_usd - ?) ASC,
+       due_date ASC,
+       id ASC
+     LIMIT 1`,
+    [payment.contract_id, `%${marker}%`, amount]
+  );
+
+  if (installment) {
+    await connection.execute(
+      `UPDATE equipment_installments
+       SET status = 'payee',
+           paid_at = COALESCE(?, CURRENT_DATE),
+           notes = TRIM(CONCAT(COALESCE(notes, ''), CASE WHEN notes IS NULL OR notes = '' THEN '' ELSE ' | ' END, ?))
+       WHERE id = ?`,
+      [paidAt, marker, installment.id]
+    );
+    return;
+  }
+
+  const [[numberRow]] = await connection.execute(
+    'SELECT COALESCE(MAX(installment_number), 0) + 1 AS next_number FROM equipment_installments WHERE contract_id = ?',
+    [payment.contract_id]
+  );
+
+  await connection.execute(
+    `INSERT INTO equipment_installments (contract_id, installment_number, amount_usd, due_date, paid_at, status, notes)
+     VALUES (?, ?, ?, COALESCE(?, CURRENT_DATE), COALESCE(?, CURRENT_DATE), 'payee', ?)`,
+    [payment.contract_id, numberRow.next_number, amount, paidAt, paidAt, marker]
+  );
+}
+
 async function refreshInvoiceStatus(connection, invoiceId) {
   if (!invoiceId) return;
 
@@ -132,7 +215,14 @@ async function listPayments(req, res) {
        i.status AS invoice_status,
        i.period_start,
        i.period_end,
-       i.due_date
+       i.due_date,
+       COALESCE(i.equipment_installment_amount_usd, 0.00) AS equipment_installment_amount_usd,
+       EXISTS (
+         SELECT 1
+         FROM equipment_installments ei
+         WHERE ei.contract_id = p.contract_id
+           AND ei.notes LIKE CONCAT('%Paiement materiel: ', p.payment_reference, '%')
+       ) AS is_equipment_payment
      FROM payments p
      INNER JOIN clients cl ON cl.id = p.client_id
      INNER JOIN contracts c ON c.id = p.contract_id
@@ -150,7 +240,8 @@ async function registerPayment(req, res) {
     method,
     transactionNumber,
     paidAt,
-    notes
+    notes,
+    isEquipmentPayment = false
   } = req.body;
 
   if (!invoiceId || !amountUsd || !method) {
@@ -188,6 +279,7 @@ async function registerPayment(req, res) {
     }
     await refreshInvoiceStatus(connection, invoiceId);
     await syncPaymentBudgetEntry(connection, result.paymentId);
+    await syncEquipmentInstallmentPayment(connection, result.paymentId, isEquipmentPayment);
 
     res.status(201).json({ success: true, data: result });
   } finally {
@@ -197,7 +289,7 @@ async function registerPayment(req, res) {
 
 async function updatePayment(req, res) {
   const { id } = req.params;
-  const { amountUsd, method, transactionNumber, paidAt, notes } = req.body;
+  const { amountUsd, method, transactionNumber, paidAt, notes, isEquipmentPayment } = req.body;
   const fields = [];
   const values = [];
 
@@ -236,6 +328,9 @@ async function updatePayment(req, res) {
     await connection.execute(`UPDATE payments SET ${fields.join(', ')} WHERE id = ?`, [...values, id]);
     await refreshInvoiceStatus(connection, payment.invoice_id);
     await syncPaymentBudgetEntry(connection, id);
+    if (isEquipmentPayment !== undefined) {
+      await syncEquipmentInstallmentPayment(connection, id, isEquipmentPayment);
+    }
 
     res.json({ success: true, message: 'Paiement modifie' });
   } finally {
@@ -250,6 +345,7 @@ async function deletePayment(req, res) {
     const [[payment]] = await connection.execute('SELECT invoice_id, payment_reference FROM payments WHERE id = ?', [req.params.id]);
     if (!payment) throw new HttpError(404, 'Paiement introuvable');
 
+    await unlinkEquipmentInstallmentPayment(connection, payment.payment_reference);
     await connection.execute('DELETE FROM payments WHERE id = ?', [req.params.id]);
     await deletePaymentBudgetEntry(connection, payment.payment_reference);
     await refreshInvoiceStatus(connection, payment.invoice_id);

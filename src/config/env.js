@@ -23,6 +23,12 @@ const env = {
     accessToken: process.env.WHATSAPP_ACCESS_TOKEN || '',
     phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
     fromNumber: process.env.WHATSAPP_FROM_NUMBER || '243980208012'
+  },
+  webPush: {
+    enabled: process.env.WEB_PUSH_DEADLINE_ALERTS !== 'false',
+    subject: process.env.WEB_PUSH_SUBJECT || 'mailto:admin@example.com',
+    publicKey: process.env.WEB_PUSH_PUBLIC_KEY || '',
+    privateKey: process.env.WEB_PUSH_PRIVATE_KEY || ''
   }
 };
 

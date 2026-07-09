@@ -98,6 +98,7 @@ CREATE TABLE equipment_kits (
   name VARCHAR(120) NOT NULL,
   description TEXT NULL,
   total_price_usd DECIMAL(10,2) NOT NULL DEFAULT 100.00,
+  stock_quantity INT UNSIGNED NOT NULL DEFAULT 0,
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -269,6 +270,6 @@ VALUES
   ('Stream Plus', 10, 'Streaming HD, teletravail, appels video', 20.00),
   ('Pro Ultra', 30, 'Streaming 4K, gaming, multi-utilisateurs', 50.00);
 
-INSERT INTO equipment_kits (name, description, total_price_usd)
+INSERT INTO equipment_kits (name, description, total_price_usd, stock_quantity)
 VALUES
-  ('Kit installation standard', 'Antenne receptrice/CPE, routeur Wi-Fi, cablage et accessoires', 100.00);
+  ('Kit installation standard', 'Antenne receptrice/CPE, routeur Wi-Fi, cablage et accessoires', 100.00, 0);

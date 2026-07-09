@@ -1,7 +1,11 @@
 const { sendFiveDayReminders } = require('./reminder.service');
+const { sendDeadlinePushAlerts } = require('./web-push.service');
+const env = require('../config/env');
 
 function startReminderScheduler() {
-  if (process.env.WHATSAPP_AUTO_REMINDERS === 'false') return;
+  const whatsappEnabled = process.env.WHATSAPP_AUTO_REMINDERS !== 'false';
+  const webPushEnabled = env.webPush.enabled;
+  if (!whatsappEnabled && !webPushEnabled) return;
 
   let lastRunDate = '';
 
@@ -11,8 +15,14 @@ function startReminderScheduler() {
     lastRunDate = today;
 
     try {
-      const results = await sendFiveDayReminders();
-      console.log(`Rappels WhatsApp J-5 verifies: ${results.length}`);
+      if (whatsappEnabled) {
+        const whatsappResults = await sendFiveDayReminders();
+        console.log(`Rappels WhatsApp J-5 verifies: ${whatsappResults.length}`);
+      }
+      if (webPushEnabled) {
+        const pushResults = await sendDeadlinePushAlerts();
+        console.log(`Alertes Web Push echeances verifiees: ${pushResults.length}`);
+      }
     } catch (error) {
       lastRunDate = '';
       console.warn('Echec verification rappels WhatsApp:', error.message);

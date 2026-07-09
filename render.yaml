@@ -33,6 +33,14 @@ services:
         value: meta
       - key: WHATSAPP_FROM_NUMBER
         value: "243980208012"
+      - key: WEB_PUSH_SUBJECT
+        value: mailto:admin@lwasiva.net
+      - key: WEB_PUSH_PUBLIC_KEY
+        value: BNVVqLNisEzsvoBPt4ZS06MpNkr0po37y5nZ5iv2YAH5nvOH1doSasFc_fHJbro0w85jr_Xol5hAL0NXylWf0Ng
+      - key: WEB_PUSH_PRIVATE_KEY
+        sync: false
+      - key: WEB_PUSH_DEADLINE_ALERTS
+        value: "true"
 
   - type: static
     name: lwasiva-net-web

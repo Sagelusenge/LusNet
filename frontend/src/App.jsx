@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   BadgeDollarSign,
+  BellRing,
   Boxes,
   Building2,
   CheckCircle2,
@@ -879,9 +880,12 @@ function LoginPanel({ onLoggedIn, notify }) {
 }
 
 function Dashboard({ data }) {
+  const subscriptionStats = getSubscriptionStats(data.contracts);
   const cards = [
     ['Clients', data.summary.total_clients, Users],
     ['Contrats actifs', data.summary.active_contracts, ClipboardList],
+    ['Abonnements expires', subscriptionStats.expired, AlertCircle],
+    ['Abonnements a jour', subscriptionStats.upToDate, CheckCircle2],
     ['Suspendus', data.summary.suspended_contracts, FileText],
     ['Devis recus', data.quotes.length, ClipboardList],
     ['Paiements du jour', money(data.summary.payments_today_usd), BadgeDollarSign],
@@ -928,6 +932,19 @@ function subscriptionCountdown(activatedAt, now) {
   const progress = Math.max(0, Math.min(100, (remainingMs / durationMs) * 100));
 
   return { startedAt, expiresAt, remainingMs, days, hours, minutes, progress };
+}
+
+function getSubscriptionStats(contracts, now = new Date()) {
+  const eligibleContracts = contracts.filter((item) => item.activated_at && item.status !== 'brouillon' && item.status !== 'resilie');
+  const countdowns = eligibleContracts
+    .map((contract) => subscriptionCountdown(contract.activated_at, now))
+    .filter(Boolean);
+  const expired = countdowns.filter((item) => item.remainingMs <= 0).length;
+
+  return {
+    expired,
+    upToDate: Math.max(0, countdowns.length - expired)
+  };
 }
 
 function Countdowns({ data }) {
@@ -1236,10 +1253,167 @@ function UsersAdmin({ data, submit }) {
   );
 }
 
+function urlBase64ToUint8Array(value) {
+  const padding = '='.repeat((4 - (value.length % 4)) % 4);
+  const base64 = (value + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  return Uint8Array.from([...rawData].map((character) => character.charCodeAt(0)));
+}
+
+function PushNotificationPanel() {
+  const [state, setState] = useState('loading');
+  const [message, setMessage] = useState('');
+  const [pushBusy, setPushBusy] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadStatus() {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+        if (mounted) setState('unsupported');
+        return;
+      }
+      if (Notification.permission === 'denied') {
+        if (mounted) setState('blocked');
+        return;
+      }
+
+      try {
+        const status = await api.webPushStatus();
+        if (mounted) setState(status.enabled ? 'active' : 'inactive');
+      } catch (error) {
+        if (mounted) {
+          setState('inactive');
+          setMessage(error.message);
+        }
+      }
+    }
+
+    loadStatus();
+    return () => { mounted = false; };
+  }, []);
+
+  async function enablePush() {
+    setPushBusy(true);
+    setMessage('');
+    try {
+      if (!window.isSecureContext) throw new Error('Les notifications exigent une connexion HTTPS');
+      const key = await api.webPushPublicKey();
+      if (!key.configured || !key.publicKey) throw new Error('Web Push n est pas configure sur le serveur');
+
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        setState(permission === 'denied' ? 'blocked' : 'inactive');
+        throw new Error('Permission de notification non accordee');
+      }
+
+      const registration = await navigator.serviceWorker.ready;
+      let subscription = await registration.pushManager.getSubscription();
+      if (!subscription) {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(key.publicKey)
+        });
+      }
+
+      await api.subscribeWebPush({
+        subscription: subscription.toJSON(),
+        userAgent: navigator.userAgent
+      });
+      setState('active');
+      setMessage('Notifications activees sur cet appareil.');
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setPushBusy(false);
+    }
+  }
+
+  async function disablePush() {
+    setPushBusy(true);
+    setMessage('');
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+      if (subscription) {
+        await api.unsubscribeWebPush({ endpoint: subscription.endpoint });
+        await subscription.unsubscribe();
+      }
+      setState('inactive');
+      setMessage('Notifications desactivees sur cet appareil.');
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setPushBusy(false);
+    }
+  }
+
+  async function testPush() {
+    setPushBusy(true);
+    setMessage('');
+    try {
+      await api.testWebPush();
+      setMessage('Notification test envoyee.');
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setPushBusy(false);
+    }
+  }
+
+  const labels = {
+    loading: 'Verification...',
+    active: 'Activees',
+    inactive: 'Desactivees',
+    blocked: 'Bloquees par le navigateur',
+    unsupported: 'Non prises en charge'
+  };
+
+  return (
+    <div className="panel push-panel">
+      <PanelHeader icon={BellRing} title="Notifications telephone / navigateur" />
+      <div className="push-panel-content">
+        <div className={`push-status ${state}`}>
+          <span className="push-status-dot" />
+          <div>
+            <span>Etat sur cet appareil</span>
+            <strong>{labels[state]}</strong>
+          </div>
+        </div>
+        <div className="push-actions">
+          {state !== 'active' && state !== 'unsupported' && (
+            <button className="primary-button" disabled={pushBusy || state === 'loading'} onClick={enablePush}>
+              <BellRing size={17} /> Activer
+            </button>
+          )}
+          {state === 'active' && (
+            <>
+              <button className="primary-button" disabled={pushBusy} onClick={testPush}><Send size={17} /> Tester</button>
+              <button className="small-button" disabled={pushBusy} onClick={disablePush}><X size={17} /> Desactiver</button>
+            </>
+          )}
+        </div>
+      </div>
+      {message && <p className="push-message">{message}</p>}
+    </div>
+  );
+}
+
 function Notifications({ data, submit }) {
   const [form, setForm] = useState({ title: '', body: '', targetRole: 'all' });
   return (
     <>
+      <PushNotificationPanel />
+      <div className="panel">
+        <PanelHeader icon={Timer} title="Alertes push des echeances" />
+        <div className="action-row">
+          <p className="muted">Alertes automatiques J-5, J-3, J-1 et le jour de l echeance.</p>
+          <button className="primary-button" onClick={() => submit(() => api.runDeadlinePushAlerts(), 'Alertes push verifiees')}>
+            <BellRing size={17} />
+            Verifier maintenant
+          </button>
+        </div>
+      </div>
       <div className="panel">
         <PanelHeader icon={MessageSquare} title="Message dans l'application" />
         <form className="form-grid" onSubmit={(event) => { event.preventDefault(); submit(() => api.sendAppMessage(form), 'Message envoye aux utilisateurs'); }}>
@@ -1342,6 +1516,7 @@ function ClientSpace({ data, messages = [], submit }) {
         <div className="metric"><Ticket size={20} /><span>Reclamations ouvertes</span><strong>{openTickets.length}</strong></div>
         <div className="metric"><MessageSquare size={20} /><span>Messages recus</span><strong>{messages.length}</strong></div>
       </div>
+      <PushNotificationPanel />
       <div className="two-columns">
         <div className="panel client-summary-panel">
           <PanelHeader icon={ShieldCheck} title="Etat du service" />
@@ -1729,9 +1904,11 @@ function Invoices({ data, submit }) {
 }
 
 function Payments({ data, submit }) {
-  const emptyForm = { id: '', invoiceId: '', amountUsd: '', method: 'especes', transactionNumber: '', paidAt: currentDateTimeInput(), notes: '' };
+  const emptyForm = { id: '', invoiceId: '', amountUsd: '', method: 'especes', transactionNumber: '', paidAt: currentDateTimeInput(), notes: '', isEquipmentPayment: false };
   const [form, setForm] = useState(emptyForm);
   const isEditing = Boolean(form.id);
+  const selectedInvoice = data.invoices.find((invoice) => String(invoice.id) === String(form.invoiceId));
+  const selectedInvoiceHasEquipment = Number(selectedInvoice?.equipment_installment_amount_usd || 0) > 0;
 
   function editPayment(item) {
     setForm({
@@ -1741,7 +1918,8 @@ function Payments({ data, submit }) {
       method: item.method || 'especes',
       transactionNumber: item.transaction_number || '',
       paidAt: dateTimeInputValue(item.paid_at),
-      notes: item.notes || ''
+      notes: item.notes || '',
+      isEquipmentPayment: Boolean(item.is_equipment_payment) || Number(item.equipment_installment_amount_usd || 0) > 0
     });
   }
 
@@ -1752,7 +1930,8 @@ function Payments({ data, submit }) {
       method: form.method,
       transactionNumber: form.transactionNumber,
       paidAt: form.paidAt || undefined,
-      notes: form.notes || undefined
+      notes: form.notes || undefined,
+      isEquipmentPayment: form.isEquipmentPayment || selectedInvoiceHasEquipment
     };
     const action = isEditing ? () => api.updatePayment(form.id, body) : () => api.registerPayment(body);
     submit(action, isEditing ? 'Paiement modifie' : 'Paiement enregistre');
@@ -1835,6 +2014,10 @@ function Payments({ data, submit }) {
         <TextInput label="Transaction" value={form.transactionNumber} onChange={(transactionNumber) => setForm({ ...form, transactionNumber })} />
         <TextInput label="Date paiement" type="datetime-local" value={form.paidAt} onChange={(paidAt) => setForm({ ...form, paidAt })} />
         <TextInput label="Note" value={form.notes} onChange={(notes) => setForm({ ...form, notes })} />
+        <label className="field checkbox-field">
+          <span>Paiement materiel</span>
+          <input type="checkbox" checked={form.isEquipmentPayment || selectedInvoiceHasEquipment} onChange={(event) => setForm({ ...form, isEquipmentPayment: event.target.checked })} disabled={selectedInvoiceHasEquipment} />
+        </label>
         {isEditing && <button type="button" className="secondary-button" onClick={() => setForm(emptyForm)}><X size={17} /> Annuler</button>}
       </QuickForm>
       <div className="panel table-panel">
@@ -1962,8 +2145,11 @@ function Equipment({ data, submit }) {
     notes: ''
   };
   const [assignment, setAssignment] = useState(emptyAssignment);
+  const [kitForm, setKitForm] = useState({ name: '', description: '', totalPriceUsd: 100, stockQuantity: 0 });
   const [installment, setInstallment] = useState({ contractId: '', installmentNumber: 1, amountUsd: 20, dueDate: '' });
   const isEditing = Boolean(assignment.id);
+  const totalStock = data.kits.reduce((sum, kit) => sum + Number(kit.stock_quantity || 0), 0);
+  const assignedStock = data.kits.reduce((sum, kit) => sum + Number(kit.assigned_count || 0), 0);
 
   function editAssignment(item) {
     setAssignment({
@@ -2008,8 +2194,18 @@ function Equipment({ data, submit }) {
       <div className="metric-grid equipment-metrics">
         <div className="metric"><Router size={20} /><span>Equipements affectes</span><strong>{data.equipmentAssignments.length}</strong></div>
         <div className="metric"><Wifi size={20} /><span>Adresses IP renseignees</span><strong>{data.equipmentAssignments.filter((item) => item.ip_address).length}</strong></div>
-        <div className="metric"><Boxes size={20} /><span>Kits disponibles</span><strong>{data.kits.filter((item) => item.is_active).length}</strong></div>
+        <div className="metric"><Boxes size={20} /><span>Materiel achete</span><strong>{totalStock}</strong></div>
+        <div className="metric"><CheckCircle2 size={20} /><span>Stock disponible</span><strong>{Math.max(totalStock - assignedStock, 0)}</strong></div>
       </div>
+
+      <QuickForm title="Categorie / stock materiel" icon={Boxes} onSubmit={() => submit(() => api.createKit(kitForm), 'Categorie materiel ajoutee')}>
+        <TextInput label="Categorie" value={kitForm.name} onChange={(name) => setKitForm({ ...kitForm, name })} />
+        <TextInput label="Quantite achetee" type="number" value={kitForm.stockQuantity} onChange={(stockQuantity) => setKitForm({ ...kitForm, stockQuantity })} />
+        <TextInput label="Prix unitaire USD" type="number" value={kitForm.totalPriceUsd} onChange={(totalPriceUsd) => setKitForm({ ...kitForm, totalPriceUsd })} />
+        <TextInput label="Description" value={kitForm.description} onChange={(description) => setKitForm({ ...kitForm, description })} />
+      </QuickForm>
+
+      <TablePanel title="Stock par categorie" icon={Boxes} columns={['Categorie', 'Achete', 'Affecte', 'Disponible']} rows={data.kits.map((item) => [item.name, item.stock_quantity || 0, item.assigned_count || 0, item.available_count || 0])} />
 
       <QuickForm title={isEditing ? 'Modifier l equipement client' : 'Enregistrer un equipement client'} icon={Router} onSubmit={saveAssignment}>
         <SelectInput label="Client / contrat" value={assignment.contractId} onChange={(contractId) => setAssignment({ ...assignment, contractId })} options={data.contracts.map((contract) => ({ value: contract.contract_id, label: `${contract.client_name} - ${contract.contract_number}` }))} />
