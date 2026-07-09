@@ -1321,6 +1321,18 @@ button:disabled {
   accent-color: var(--brand);
 }
 
+.report-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.report-panel-header .panel-header {
+  margin-bottom: 0;
+}
+
 .field input:focus,
 .field select:focus,
 .field textarea:focus {

@@ -2364,7 +2364,6 @@ function Equipment({ data, submit }) {
 }
 
 function Reports({ data }) {
-  const [report, setReport] = useState('echeances');
   const now = new Date();
   const equipmentPaid = data.equipmentStatus.filter((item) => Number(item.equipment_remaining_usd || 0) <= 0 && Number(item.equipment_paid_usd || 0) > 0);
   const equipmentPending = data.equipmentStatus.filter((item) => Number(item.equipment_remaining_usd || 0) > 0);
@@ -2375,8 +2374,8 @@ function Reports({ data }) {
     .filter((item) => item.countdown)
     .sort((a, b) => a.countdown.remainingMs - b.countdown.remainingMs);
 
-  const reports = {
-    echeances: {
+  const reports = [
+    {
       title: 'Rapport echeances abonnements',
       icon: Timer,
       columns: ['Client', 'Contrat', 'Bouquet', 'Echeance', 'Etat'],
@@ -2388,19 +2387,19 @@ function Reports({ data }) {
         countdown.remainingMs <= 0 ? `Expire depuis ${countdown.days} j` : `${countdown.days} j ${countdown.hours} h restantes`
       ])
     },
-    kit_paye: {
+    {
       title: 'Clients en ordre avec le kit',
       icon: CheckCircle2,
       columns: ['Client', 'Contrat', 'Kit', 'Paye', 'Reste'],
       rows: equipmentPaid.map((item) => [item.client_name, item.contract_number, item.equipment_kit || '-', money(item.equipment_paid_usd), money(item.equipment_remaining_usd)])
     },
-    kit_reste: {
+    {
       title: 'Clients avec reste kit',
       icon: Boxes,
       columns: ['Client', 'Contrat', 'Kit', 'Paye', 'Reste'],
       rows: equipmentPending.map((item) => [item.client_name, item.contract_number, item.equipment_kit || '-', money(item.equipment_paid_usd), money(item.equipment_remaining_usd)])
     },
-    budget: {
+    {
       title: 'Rapport budget',
       icon: Building2,
       columns: ['Type', 'Categorie', 'Total'],
@@ -2411,21 +2410,19 @@ function Reports({ data }) {
         ...(data.budgetSummary?.byCategory || []).map((item) => [item.entry_type, item.category_name, money(item.total_usd)])
       ]
     },
-    clients: {
+    {
       title: 'Liste clients',
       icon: Users,
       columns: ['Code', 'Nom', 'Telephone', 'Type', 'Adresse'],
       rows: data.clients.map((item) => [item.client_code, item.full_name, item.phone, item.client_type, item.address])
     },
-    impayes: {
+    {
       title: 'Factures et abonnements a regulariser',
       icon: Receipt,
       columns: ['Client', 'Telephone', 'Facture', 'Type', 'Reste', 'Date limite'],
       rows: unpaid.map((item) => [item.client_name, item.client_phone, item.invoice_number, invoiceTypeLabel(item.invoice_type), money(item.remaining_amount_usd), item.due_date])
     }
-  };
-
-  const selectedReport = reports[report];
+  ];
 
   return (
     <>
@@ -2439,21 +2436,83 @@ function Reports({ data }) {
       </div>
 
       <div className="panel">
-        <PanelHeader icon={BarChart3} title="Rapports" />
-        <div className="form-grid two">
-          <SelectInput label="Type de rapport" value={report} onChange={setReport} options={[
-            { value: 'echeances', label: 'Echeances abonnements' },
-            { value: 'kit_paye', label: 'Clients en ordre avec le kit' },
-            { value: 'kit_reste', label: 'Clients avec reste kit' },
-            { value: 'budget', label: 'Budget' },
-            { value: 'clients', label: 'Liste clients' },
-            { value: 'impayes', label: 'Factures a regulariser' }
-          ]} />
-        </div>
+        <PanelHeader icon={BarChart3} title="Rapports disponibles" />
+        <p className="muted">Chaque cadre peut etre imprime separement.</p>
       </div>
 
-      <TablePanel title={selectedReport.title} icon={selectedReport.icon} columns={selectedReport.columns} rows={selectedReport.rows} />
+      {reports.map((item) => (
+        <ReportPanel key={item.title} title={item.title} icon={item.icon} columns={item.columns} rows={item.rows} />
+      ))}
     </>
+  );
+}
+
+function escapeReportCell(value) {
+  return String(value ?? '-')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function printReport(title, columns, rows) {
+  const head = columns.map((column) => `<th>${escapeReportCell(column)}</th>`).join('');
+  const body = rows.length === 0
+    ? `<tr><td colspan="${columns.length}">Aucune donnee</td></tr>`
+    : rows.map((row) => `<tr>${row.map((cell) => `<td>${escapeReportCell(cell)}</td>`).join('')}</tr>`).join('');
+  const html = `
+    <html>
+      <head><title>${escapeReportCell(title)}</title>${documentStyles()}</head>
+      <body>
+        <main class="doc">
+          <header class="doc-header">
+            <div>
+              <div class="brand-title">LWASIVA_NET</div>
+              <div class="brand-sub">Rapport administratif</div>
+              <div class="brand-sub">Imprime le ${todayDisplayDate()}</div>
+            </div>
+            <div class="doc-title">
+              <h1>${escapeReportCell(title)}</h1>
+              <span class="badge">${rows.length} ligne(s)</span>
+            </div>
+          </header>
+          <table>
+            <thead><tr>${head}</tr></thead>
+            <tbody>${body}</tbody>
+          </table>
+          <footer class="footer">LWASIVA_NET - Rapport imprime par l'administration</footer>
+        </main>
+      </body>
+    </html>`;
+  printHtml(title, html);
+}
+
+function ReportPanel({ title, icon, columns, rows }) {
+  const Icon = icon || BarChart3;
+
+  return (
+    <div className="panel table-panel report-panel">
+      <div className="report-panel-header">
+        <PanelHeader icon={Icon} title={title} />
+        <button className="small-button" type="button" onClick={() => printReport(title, columns, rows)}>
+          <Printer size={17} />
+          Imprimer
+        </button>
+      </div>
+      <div className="table-wrap">
+        <table>
+          <thead><tr>{columns.map((column) => <th key={column}>{column}</th>)}</tr></thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr><td colSpan={columns.length} className="empty-cell">Aucune donnee</td></tr>
+            ) : rows.map((row, index) => (
+              <tr key={`${title}-${index}`}>{row.map((cell, cellIndex) => <td key={cellIndex}>{cell || '-'}</td>)}</tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 
