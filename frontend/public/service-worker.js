@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lwasiva-net-v2';
+const CACHE_NAME = 'lwasiva-net-v3';
 const APP_SHELL = [
   '/',
   '/manifest.webmanifest',

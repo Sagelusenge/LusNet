@@ -16,6 +16,7 @@ const quoteRoutes = require('./quotes.routes');
 const supportRoutes = require('./support.routes');
 const userRoutes = require('./users.routes');
 const clientSpaceRoutes = require('./client-space.routes');
+const accountRequestRoutes = require('./account-requests.routes');
 
 const router = express.Router();
 
@@ -42,5 +43,6 @@ router.use('/quotes', quoteRoutes);
 router.use('/support', supportRoutes);
 router.use('/users', userRoutes);
 router.use('/client-space', clientSpaceRoutes);
+router.use('/account-requests', accountRequestRoutes);
 
 module.exports = router;

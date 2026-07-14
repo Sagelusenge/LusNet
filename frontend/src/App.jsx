@@ -271,7 +271,11 @@ function invoiceRemaining(item) {
 }
 
 function App() {
-  const [active, setActive] = useState(localStorage.getItem('lwasiva_token') ? 'admin-dashboard' : 'home');
+  const [active, setActive] = useState(() => {
+    const section = new URLSearchParams(window.location.search).get('section');
+    if (localStorage.getItem('lwasiva_token')) return section || 'admin-dashboard';
+    return section === 'register' ? 'register' : 'home';
+  });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [tokenState, setTokenState] = useState(localStorage.getItem('lwasiva_token') || '');
   const [currentUser, setCurrentUser] = useState(getCurrentUser());
@@ -294,6 +298,7 @@ function App() {
     tickets: [],
     quotes: [],
     users: [],
+    accountRequests: [],
   notificationLogs: [],
     appMessages: [],
     adminAppMessages: [],
@@ -336,7 +341,7 @@ function App() {
         return;
       }
 
-      const [summary, clients, contracts, balances, equipmentStatus, invoices, unpaidInvoices, payments, kits, equipmentAssignments, tickets, quotes, users, notificationLogs, appMessages, adminAppMessages, contactMessages, allFeedback, budgetSummary, budgetCategories, budgetEntries] =
+      const [summary, clients, contracts, balances, equipmentStatus, invoices, unpaidInvoices, payments, kits, equipmentAssignments, tickets, quotes, users, accountRequests, notificationLogs, appMessages, adminAppMessages, contactMessages, allFeedback, budgetSummary, budgetCategories, budgetEntries] =
         await Promise.all([
           api.summary().catch(() => emptySummary),
           api.clients().catch(() => []),
@@ -351,6 +356,7 @@ function App() {
           api.tickets().catch(() => []),
           api.quotes().catch(() => []),
           api.users().catch(() => []),
+          api.accountRequests().catch(() => []),
           api.notificationLogs().catch(() => []),
           api.appMessages().catch(() => []),
           api.adminAppMessages().catch(() => []),
@@ -376,6 +382,7 @@ function App() {
         tickets,
         quotes,
         users,
+        accountRequests,
         notificationLogs,
         appMessages,
         adminAppMessages,
@@ -441,6 +448,8 @@ function App() {
       <PublicShell active={active} setActive={setActive} toast={toast} theme={theme} setTheme={setTheme}>
         {active === 'login' ? (
           <LoginPanel onLoggedIn={onLoggedIn} notify={notify} />
+        ) : active === 'register' ? (
+          <ClientRegistrationPanel submit={submit} busy={busy} setActive={setActive} />
         ) : (
           <PublicHome plans={data.plans} feedback={data.publicFeedback} submit={submit} setActive={setActive} busy={busy} />
         )}
@@ -523,7 +532,7 @@ function App() {
           {!isClient && active === 'feedback' && <FeedbackAdmin data={data} submit={submit} />}
           {!isClient && active === 'notifications' && <Notifications data={data} submit={submit} />}
           {!isClient && active === 'users' && <UsersAdmin data={data} submit={submit} />}
-          {isClient && active === 'client-space' && <ClientSpace data={data.clientSpace} messages={data.appMessages} submit={submit} />}
+          {isClient && active === 'client-space' && <><PushNotificationPanel /><ClientSpace data={data.clientSpace} messages={data.appMessages} submit={submit} /></>}
           {isClient && active === 'client-contracts' && <ClientContracts data={data.clientSpace} />}
           {isClient && active === 'client-invoices' && <ClientInvoices data={data.clientSpace} />}
           {isClient && active === 'client-complaints' && <ClientComplaints data={data.clientSpace} submit={submit} />}
@@ -591,6 +600,10 @@ function PublicShell({ active, setActive, toast, theme, setTheme, children }) {
           <button className={`nav-pill login-nav ${active === 'login' ? 'active' : ''}`} onClick={() => setActive('login')}>
             <LogIn size={17} />
             <span>Connexion</span>
+          </button>
+          <button className={`nav-pill ${active === 'register' ? 'active' : ''}`} onClick={() => setActive('register')}>
+            <UserPlus size={17} />
+            <span>Creer un compte</span>
           </button>
         </nav>
       </header>
@@ -673,6 +686,11 @@ function PublicHome({ plans, feedback, submit, setActive, busy }) {
           <Phone size={18} />
           <span>Contact officiel</span>
           <strong>+243 980 208 012</strong>
+        </div>
+        <div className="reveal-card">
+          <Send size={18} />
+          <span>E-mail professionnel</span>
+          <strong>sagelusenge@gmail.com</strong>
         </div>
         <div className="reveal-card">
           <ShieldCheck size={18} />
@@ -874,7 +892,7 @@ function LoginPanel({ onLoggedIn, notify }) {
           </form>
           <div className="login-help">
             <strong>Besoin d'un compte ?</strong>
-            <span>L'administration cree les comptes clients apres validation du devis.</span>
+            <span>Faites votre demande depuis l'accueil. Un administrateur devra l'approuver.</span>
           </div>
         </div>
       </div>
@@ -894,6 +912,7 @@ function Dashboard({ data }) {
 
   return (
     <>
+      <PushNotificationPanel />
       <TablePanel title="Messages de LWASIVA_NET" icon={MessageSquare} columns={['Titre', 'Message', 'Date']} rows={(data.appMessages || []).slice(0, 6).map((item) => [item.title, item.body, item.created_at])} />
       <div className="metric-grid">
         {cards.map(([label, value, Icon]) => (
@@ -913,6 +932,64 @@ function Dashboard({ data }) {
         <TablePanel title="Appreciations recues" icon={MessageSquare} columns={['Nom', 'Quartier', 'Note', 'Statut']} rows={data.allFeedback.slice(0, 8).map((item) => [item.full_name, item.neighborhood || '-', `${item.rating}/5`, item.status])} />
       </div>
     </>
+  );
+}
+
+function ClientRegistrationPanel({ submit, busy, setActive }) {
+  const emptyForm = {
+    fullName: '',
+    clientType: 'particulier',
+    phone: '',
+    email: '',
+    address: '',
+    city: 'Goma',
+    password: '',
+    confirmPassword: ''
+  };
+  const [form, setForm] = useState(emptyForm);
+
+  function requestAccount(event) {
+    event.preventDefault();
+    if (form.password !== form.confirmPassword) return;
+    const { confirmPassword, ...body } = form;
+    submit(() => api.requestClientAccount(body), 'Demande envoyee. Vous recevrez un email apres la validation de l administrateur.');
+    setForm(emptyForm);
+  }
+
+  return (
+    <main className="login-page registration-page">
+      <div className="login-card registration-card">
+        <div className="login-visual">
+          <div className="brand-mark login-mark">LN</div>
+          <h1>Demande de compte</h1>
+          <p>Votre compte restera bloque jusqu'a la verification par un administrateur LWASIVA_NET.</p>
+          <div className="login-points">
+            <span><ShieldCheck size={17} /> Validation obligatoire</span>
+            <span><Send size={17} /> Reponse par e-mail</span>
+            <span><BellRing size={17} /> Notifications PWA apres connexion</span>
+          </div>
+        </div>
+        <div className="login-form-panel">
+          <div className="login-heading">
+            <UserPlus size={22} />
+            <div><h2>Creer mon compte client</h2><p>Remplissez tous les champs obligatoires.</p></div>
+          </div>
+          <form className="form-grid two" onSubmit={requestAccount}>
+            <TextInput label="Nom complet" value={form.fullName} onChange={(fullName) => setForm({ ...form, fullName })} />
+            <SelectInput label="Type de client" value={form.clientType} onChange={(clientType) => setForm({ ...form, clientType })} options={['particulier', 'entreprise']} />
+            <TextInput label="Telephone" value={form.phone} onChange={(phone) => setForm({ ...form, phone })} />
+            <TextInput label="E-mail" type="email" value={form.email} onChange={(email) => setForm({ ...form, email })} />
+            <TextInput label="Adresse" value={form.address} onChange={(address) => setForm({ ...form, address })} />
+            <TextInput label="Ville" value={form.city} onChange={(city) => setForm({ ...form, city })} />
+            <TextInput label="Mot de passe (8 caracteres min.)" type="password" value={form.password} onChange={(password) => setForm({ ...form, password })} />
+            <TextInput label="Confirmer le mot de passe" type="password" value={form.confirmPassword} onChange={(confirmPassword) => setForm({ ...form, confirmPassword })} />
+            {form.confirmPassword && form.password !== form.confirmPassword && <p className="form-error">Les mots de passe ne correspondent pas.</p>}
+            <button className="primary-button" disabled={busy || form.password !== form.confirmPassword}><UserPlus size={17} /> {busy ? 'Envoi...' : 'Envoyer la demande'}</button>
+            <button className="small-button" type="button" onClick={() => setActive('login')}>J'ai deja un compte</button>
+          </form>
+        </div>
+      </div>
+    </main>
   );
 }
 
@@ -1250,6 +1327,32 @@ function UsersAdmin({ data, submit }) {
 
   return (
     <>
+      <div className="panel table-panel">
+        <PanelHeader icon={ShieldCheck} title={`Demandes de comptes (${data.accountRequests.filter((item) => item.status === 'en_attente').length} en attente)`} />
+        <div className="quote-list">
+          {data.accountRequests.length === 0 ? <p className="muted">Aucune demande de compte</p> : data.accountRequests.map((item) => (
+            <div className="quote-item" key={item.id}>
+              <div>
+                <strong>{item.full_name} - {item.client_type}</strong>
+                <span>{item.email} - {item.phone} - {item.address}, {item.city}</span>
+                <span>Statut : {item.status}{item.reviewed_by_name ? ` par ${item.reviewed_by_name}` : ''}{item.admin_notes ? ` - ${item.admin_notes}` : ''}</span>
+              </div>
+              {item.status === 'en_attente' && (
+                <div className="quote-actions">
+                  <button className="primary-button" onClick={() => {
+                    const adminNotes = window.prompt('Note interne facultative pour cette approbation :', '') || '';
+                    submit(() => api.approveAccountRequest(item.id, { adminNotes }), 'Compte client approuve et active');
+                  }}><CheckCircle2 size={17} /> Accepter</button>
+                  <button className="small-button danger" onClick={() => {
+                    const adminNotes = window.prompt('Motif du rejet (il sera envoye au client) :', '') || '';
+                    submit(() => api.rejectAccountRequest(item.id, { adminNotes }), 'Demande rejetee');
+                  }}><X size={17} /> Rejeter</button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
       <QuickForm title={isEditing ? 'Modifier utilisateur' : 'Creer un utilisateur'} icon={UserPlus} onSubmit={() => submit(() => isEditing ? api.updateUser(form.id, form) : api.createUser(form), isEditing ? 'Utilisateur modifie' : 'Utilisateur cree')}>
         <TextInput label="Nom complet" value={form.fullName} onChange={(fullName) => setForm({ ...form, fullName })} />
         <TextInput label="Email" value={form.email} onChange={(email) => setForm({ ...form, email })} />

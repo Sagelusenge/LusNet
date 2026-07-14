@@ -951,6 +951,21 @@ button:disabled {
   box-shadow: var(--shadow);
 }
 
+.registration-card {
+  width: min(1160px, 100%);
+  grid-template-columns: minmax(280px, .8fr) minmax(520px, 1.4fr);
+}
+
+.registration-page .login-form-panel {
+  align-self: stretch;
+}
+
+.form-error {
+  color: var(--danger);
+  font-size: 13px;
+  margin: 0;
+}
+
 .info-card::after,
 .plan::before,
 .testimonial-card::before,

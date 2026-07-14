@@ -19,7 +19,8 @@ const files = [
   path.join(__dirname, '..', 'database', '005_contact_feedback.sql'),
   path.join(__dirname, '..', 'database', '006_app_messages_push.sql'),
   path.join(__dirname, '..', 'database', '007_budget.sql'),
-  path.join(__dirname, '..', 'database', '008_other_plan.sql')
+  path.join(__dirname, '..', 'database', '008_other_plan.sql'),
+  path.join(__dirname, '..', 'database', '017_client_account_requests.sql')
 ];
 
 function splitSqlStatements(sql) {

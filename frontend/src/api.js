@@ -49,6 +49,10 @@ export async function apiRequest(path, options = {}) {
 export const api = {
   login: (body) => apiRequest('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
   register: (body) => apiRequest('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
+  requestClientAccount: (body) => apiRequest('/account-requests', { method: 'POST', body: JSON.stringify(body) }),
+  accountRequests: () => apiRequest('/account-requests'),
+  approveAccountRequest: (id, body = {}) => apiRequest(`/account-requests/${id}/approve`, { method: 'POST', body: JSON.stringify(body) }),
+  rejectAccountRequest: (id, body = {}) => apiRequest(`/account-requests/${id}/reject`, { method: 'POST', body: JSON.stringify(body) }),
   me: () => apiRequest('/auth/me'),
   budgetSummary: () => apiRequest('/budget/summary'),
   budgetCategories: (type = '') => apiRequest(`/budget/categories${type ? `?type=${encodeURIComponent(type)}` : ''}`),

@@ -53,6 +53,18 @@ async function login(req, res) {
   const users = await query('SELECT * FROM users WHERE email = ? AND is_active = TRUE LIMIT 1', [email]);
   const user = users[0];
 
+  if (!user) {
+    const requests = await query(
+      "SELECT password_hash, status FROM client_account_requests WHERE email = ? ORDER BY created_at DESC LIMIT 1",
+      [String(email).trim().toLowerCase()]
+    ).catch(() => []);
+    if (requests[0]?.password_hash && await bcrypt.compare(password, requests[0].password_hash)) {
+      if (requests[0].status === 'en_attente') {
+        throw new HttpError(403, 'Votre demande attend encore la validation de l administrateur');
+      }
+    }
+  }
+
   if (!user || !(await bcrypt.compare(password, user.password_hash))) {
     throw new HttpError(401, 'Identifiants incorrects');
   }
