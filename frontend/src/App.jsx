@@ -45,12 +45,14 @@ const PUBLIC_NAV_CRITICAL_CSS = `
     padding: 0 !important;
   }
   .public-header-inner {
+    flex-wrap: wrap !important;
     gap: 10px !important;
     min-height: 64px !important;
     padding: 9px 12px !important;
   }
   .public-brand {
-    flex: 0 0 auto !important;
+    flex: 0 0 100% !important;
+    width: 100% !important;
     gap: 9px !important;
   }
   .public-brand .brand-mark {
@@ -63,22 +65,21 @@ const PUBLIC_NAV_CRITICAL_CSS = `
     line-height: 1 !important;
   }
   .public-header nav {
-    flex: 1 1 auto !important;
+    flex: 0 0 100% !important;
+    width: 100% !important;
     min-width: 0 !important;
     display: grid !important;
-    grid-auto-flow: column !important;
-    grid-auto-columns: max-content !important;
+    grid-template-columns: 40px repeat(4, minmax(0, 1fr)) !important;
     align-items: center !important;
     gap: 7px !important;
-    margin-left: auto !important;
-    overflow-x: auto !important;
-    overscroll-behavior-x: contain !important;
-    scrollbar-width: none !important;
+    margin-left: 0 !important;
+    overflow: visible !important;
   }
   .public-header nav::-webkit-scrollbar {
     display: none !important;
   }
   .public-header nav button {
+    width: 100% !important;
     min-width: 40px !important;
     min-height: 40px !important;
     border-radius: 14px !important;
@@ -94,9 +95,21 @@ const PUBLIC_NAV_CRITICAL_CSS = `
     display: none !important;
   }
   .public-header nav .nav-pill span {
-    max-width: 92px !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
+  }
+}
+@media (max-width: 520px) {
+  .public-header nav {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  }
+  .public-header nav .public-icon-button {
+    width: 100% !important;
+  }
+  .public-header nav .nav-pill span {
+    display: none !important;
   }
 }
 `;
@@ -592,22 +605,22 @@ function PublicShell({ active, setActive, toast, theme, setTheme, children }) {
             <button className="public-icon-button theme-toggle" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} title="Changer le theme" aria-label="Changer le theme">
               {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
             </button>
-            <button className={`nav-pill ${active === 'home' ? 'active' : ''}`} onClick={() => setActive('home')} title="Accueil">
+            <button className={`nav-pill ${active === 'home' ? 'active' : ''}`} onClick={() => setActive('home')} title="Accueil" aria-label="Accueil">
               <Home size={17} />
               <span>Accueil</span>
             </button>
             <button onClick={() => {
               setActive('home');
               setTimeout(() => document.getElementById('avis')?.scrollIntoView({ behavior: 'smooth' }), 0);
-            }} className="nav-pill optional-nav">
+            }} className="nav-pill optional-nav" title="Avis clients" aria-label="Avis clients">
               <MessageSquare size={17} />
               <span>Avis</span>
             </button>
-            <button className={`nav-pill login-nav ${active === 'login' ? 'active' : ''}`} onClick={() => setActive('login')}>
+            <button className={`nav-pill login-nav ${active === 'login' ? 'active' : ''}`} onClick={() => setActive('login')} title="Connexion" aria-label="Connexion">
               <LogIn size={17} />
               <span>Connexion</span>
             </button>
-            <button className={`nav-pill register-nav ${active === 'register' ? 'active' : ''}`} onClick={() => setActive('register')}>
+            <button className={`nav-pill register-nav ${active === 'register' ? 'active' : ''}`} onClick={() => setActive('register')} title="Creer un compte" aria-label="Creer un compte">
               <UserPlus size={17} />
               <span>Creer un compte</span>
             </button>

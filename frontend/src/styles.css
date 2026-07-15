@@ -2476,13 +2476,15 @@ tbody tr:nth-child(3n) {
   }
 
   .public-header-inner {
+    flex-wrap: wrap;
     gap: 10px;
     min-height: 64px;
     padding: 9px 12px;
   }
 
   .public-brand {
-    flex: 0 0 auto;
+    flex: 0 0 100%;
+    width: 100%;
     gap: 9px;
   }
 
@@ -2502,18 +2504,16 @@ tbody tr:nth-child(3n) {
   }
 
   .public-header nav {
-    flex: 1 1 auto;
+    flex: 0 0 100%;
+    width: 100%;
     min-width: 0;
     max-width: none;
     display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: max-content;
+    grid-template-columns: 40px repeat(4, minmax(0, 1fr));
     align-items: center;
     gap: 7px;
-    margin-left: auto;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scrollbar-width: none;
+    margin-left: 0;
+    overflow: visible;
   }
 
   .public-header nav::-webkit-scrollbar {
@@ -2521,6 +2521,7 @@ tbody tr:nth-child(3n) {
   }
 
   .public-header nav button {
+    width: 100%;
     min-width: 40px;
     min-height: 40px;
     border-radius: 14px;
@@ -2538,7 +2539,8 @@ tbody tr:nth-child(3n) {
   }
 
   .public-header nav .nav-pill span {
-    max-width: 92px;
+    min-width: 0;
+    max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
   }
@@ -2756,6 +2758,20 @@ tbody tr:nth-child(3n) {
   .push-actions,
   .push-actions button {
     width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .public-header nav {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .public-header nav .public-icon-button {
+    width: 100%;
+  }
+
+  .public-header nav .nav-pill span {
+    display: none;
   }
 }
 
