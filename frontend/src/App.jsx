@@ -41,10 +41,13 @@ import { api, getCurrentUser, setToken } from './api';
 const PUBLIC_NAV_CRITICAL_CSS = `
 @media (max-width: 760px) {
   .public-header {
-    align-items: center !important;
+    min-height: 64px !important;
+    padding: 0 !important;
+  }
+  .public-header-inner {
     gap: 10px !important;
     min-height: 64px !important;
-    padding: 10px 14px !important;
+    padding: 9px 12px !important;
   }
   .public-brand {
     flex: 0 0 auto !important;
@@ -60,6 +63,8 @@ const PUBLIC_NAV_CRITICAL_CSS = `
     line-height: 1 !important;
   }
   .public-header nav {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
     display: grid !important;
     grid-auto-flow: column !important;
     grid-auto-columns: max-content !important;
@@ -575,37 +580,39 @@ function PublicShell({ active, setActive, toast, theme, setTheme, children }) {
     <div className="public-shell">
       <style>{PUBLIC_NAV_CRITICAL_CSS}</style>
       <header className="public-header">
-        <div className="brand public-brand">
-          <div className="brand-mark">LN</div>
-          <div>
-            <strong>LWASIVA_NET</strong>
-            <span>Internet haut debit a Goma</span>
+        <div className="public-header-inner">
+          <div className="brand public-brand">
+            <div className="brand-mark" aria-hidden="true">LN</div>
+            <div className="public-brand-copy">
+              <strong>LWASIVA_NET</strong>
+              <span>Internet haut debit a Goma</span>
+            </div>
           </div>
+          <nav className="public-nav" aria-label="Navigation publique">
+            <button className="public-icon-button theme-toggle" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} title="Changer le theme" aria-label="Changer le theme">
+              {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+            </button>
+            <button className={`nav-pill ${active === 'home' ? 'active' : ''}`} onClick={() => setActive('home')} title="Accueil">
+              <Home size={17} />
+              <span>Accueil</span>
+            </button>
+            <button onClick={() => {
+              setActive('home');
+              setTimeout(() => document.getElementById('avis')?.scrollIntoView({ behavior: 'smooth' }), 0);
+            }} className="nav-pill optional-nav">
+              <MessageSquare size={17} />
+              <span>Avis</span>
+            </button>
+            <button className={`nav-pill login-nav ${active === 'login' ? 'active' : ''}`} onClick={() => setActive('login')}>
+              <LogIn size={17} />
+              <span>Connexion</span>
+            </button>
+            <button className={`nav-pill register-nav ${active === 'register' ? 'active' : ''}`} onClick={() => setActive('register')}>
+              <UserPlus size={17} />
+              <span>Creer un compte</span>
+            </button>
+          </nav>
         </div>
-        <nav className="public-nav" aria-label="Navigation publique">
-          <button className="public-icon-button theme-toggle" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} title="Changer le theme">
-            {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-          </button>
-          <button className={`nav-pill ${active === 'home' ? 'active' : ''}`} onClick={() => setActive('home')} title="Accueil">
-            <Home size={17} />
-            <span>Accueil</span>
-          </button>
-          <button onClick={() => {
-            setActive('home');
-            setTimeout(() => document.getElementById('avis')?.scrollIntoView({ behavior: 'smooth' }), 0);
-          }} className="nav-pill optional-nav">
-            <MessageSquare size={17} />
-            <span>Avis</span>
-          </button>
-          <button className={`nav-pill login-nav ${active === 'login' ? 'active' : ''}`} onClick={() => setActive('login')}>
-            <LogIn size={17} />
-            <span>Connexion</span>
-          </button>
-          <button className={`nav-pill ${active === 'register' ? 'active' : ''}`} onClick={() => setActive('register')}>
-            <UserPlus size={17} />
-            <span>Creer un compte</span>
-          </button>
-        </nav>
       </header>
       {toast && <Toast toast={toast} />}
       {children}
