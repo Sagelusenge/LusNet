@@ -66,18 +66,24 @@ async function listRequests(req, res) {
   const rows = await query(
     `SELECT car.id, car.full_name, car.client_type, car.phone, car.email, car.address, car.city,
             car.status, car.admin_notes, car.reviewed_at, car.client_id, car.user_id, car.created_at,
-            u.full_name AS reviewed_by_name
+            u.full_name AS reviewed_by_name, c.full_name AS client_name, c.client_code
      FROM client_account_requests car
      LEFT JOIN users u ON u.id = car.reviewed_by
+     LEFT JOIN clients c ON c.id = car.client_id
      ORDER BY FIELD(car.status, 'en_attente', 'approuvee', 'rejetee'), car.created_at DESC`
   );
   res.json({ success: true, data: rows });
 }
 
 async function approveRequest(req, res) {
+  const clientId = Number(req.body.clientId);
+  if (!Number.isSafeInteger(clientId) || clientId <= 0) {
+    throw new HttpError(400, 'Selectionnez la fiche du client avant d approuver la demande');
+  }
+
   const connection = await getConnection();
   let request;
-  let clientId;
+  let client;
   let userId;
   try {
     await connection.beginTransaction();
@@ -93,24 +99,22 @@ async function approveRequest(req, res) {
     if (users[0]) throw new HttpError(409, 'Un utilisateur utilise deja cette adresse email');
 
     const [clients] = await connection.execute(
-      'SELECT id FROM clients WHERE email = ? OR phone = ? ORDER BY id ASC LIMIT 1',
-      [request.email, request.phone]
+      'SELECT id, full_name, client_code FROM clients WHERE id = ? LIMIT 1 FOR UPDATE',
+      [clientId]
     );
-    clientId = clients[0]?.id;
-    if (!clientId) {
-      const clientCode = `CLI-${Date.now()}-${request.id}`;
-      const [clientResult] = await connection.execute(
-        `INSERT INTO clients (client_code, full_name, client_type, phone, email, address, city, created_by)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [clientCode, request.full_name, request.client_type, request.phone, request.email, request.address, request.city, req.user.id]
-      );
-      clientId = clientResult.insertId;
-    }
+    client = clients[0];
+    if (!client) throw new HttpError(404, 'La fiche client selectionnee est introuvable');
+
+    const [linkedUsers] = await connection.execute(
+      "SELECT id FROM users WHERE client_id = ? AND role = 'client' LIMIT 1 FOR UPDATE",
+      [clientId]
+    );
+    if (linkedUsers[0]) throw new HttpError(409, 'Cette fiche client est deja liee a un compte utilisateur');
 
     const [userResult] = await connection.execute(
       `INSERT INTO users (full_name, phone, email, password_hash, role, client_id, is_active)
        VALUES (?, ?, ?, ?, 'client', ?, TRUE)`,
-      [request.full_name, request.phone, request.email, request.password_hash, clientId]
+      [client.full_name, request.phone, request.email, request.password_hash, clientId]
     );
     userId = userResult.insertId;
 
@@ -134,7 +138,11 @@ async function approveRequest(req, res) {
     notifyClientDecision(request, true),
     notifyAdminsOfDecision(request, true, reviewer[0]?.full_name)
   ]).catch(() => null);
-  res.json({ success: true, data: { clientId, userId }, message: 'Compte client approuve et active' });
+  res.json({
+    success: true,
+    data: { clientId, clientName: client.full_name, userId },
+    message: `Compte approuve et lie au client ${client.full_name}`
+  });
 }
 
 async function rejectRequest(req, res) {

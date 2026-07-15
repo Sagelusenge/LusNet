@@ -1311,6 +1311,7 @@ function printContractDocument(item) {
 function UsersAdmin({ data, submit }) {
   const emptyForm = { id: '', fullName: '', email: '', phone: '', password: '', role: 'manager', clientId: '' };
   const [form, setForm] = useState(emptyForm);
+  const [requestClients, setRequestClients] = useState({});
   const isEditing = Boolean(form.id);
 
   function editUser(item) {
@@ -1336,13 +1337,26 @@ function UsersAdmin({ data, submit }) {
                 <strong>{item.full_name} - {item.client_type}</strong>
                 <span>{item.email} - {item.phone} - {item.address}, {item.city}</span>
                 <span>Statut : {item.status}{item.reviewed_by_name ? ` par ${item.reviewed_by_name}` : ''}{item.admin_notes ? ` - ${item.admin_notes}` : ''}</span>
+                {item.client_name && <span>Fiche client liee : {item.client_name}{item.client_code ? ` (${item.client_code})` : ''}</span>}
               </div>
               {item.status === 'en_attente' && (
                 <div className="quote-actions">
+                  <SelectInput
+                    label="Affecter a la fiche client"
+                    value={requestClients[item.id] || ''}
+                    onChange={(clientId) => setRequestClients((previous) => ({ ...previous, [item.id]: clientId }))}
+                    options={data.clients.map((client) => ({
+                      value: client.id,
+                      label: `${client.full_name} - ${client.client_code}${client.phone ? ` - ${client.phone}` : ''}`
+                    }))}
+                  />
                   <button className="primary-button" onClick={() => {
                     const adminNotes = window.prompt('Note interne facultative pour cette approbation :', '') || '';
-                    submit(() => api.approveAccountRequest(item.id, { adminNotes }), 'Compte client approuve et active');
-                  }}><CheckCircle2 size={17} /> Accepter</button>
+                    submit(
+                      () => api.approveAccountRequest(item.id, { clientId: requestClients[item.id], adminNotes }),
+                      'Compte client approuve, lie et active'
+                    );
+                  }} disabled={!requestClients[item.id]}><CheckCircle2 size={17} /> Affecter et accepter</button>
                   <button className="small-button danger" onClick={() => {
                     const adminNotes = window.prompt('Motif du rejet (il sera envoye au client) :', '') || '';
                     submit(() => api.rejectAccountRequest(item.id, { adminNotes }), 'Demande rejetee');
