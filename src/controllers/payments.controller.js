@@ -98,6 +98,27 @@ function equipmentPaymentMarker(paymentReference) {
   return `Paiement materiel: ${paymentReference}`;
 }
 
+function calculateEquipmentAllocation({
+  paymentAmount,
+  invoiceEquipmentAmount,
+  invoiceEquipmentAlreadyAllocated,
+  contractEquipmentRemaining,
+  isEquipmentPayment
+}) {
+  const paid = Math.max(Number(paymentAmount) || 0, 0);
+  const invoiceEquipment = Math.max(Number(invoiceEquipmentAmount) || 0, 0);
+  const alreadyAllocated = Math.max(Number(invoiceEquipmentAlreadyAllocated) || 0, 0);
+  const contractRemaining = Math.max(Number(contractEquipmentRemaining) || 0, 0);
+
+  if (paid <= 0 || contractRemaining <= 0) return 0;
+
+  const requested = invoiceEquipment > 0
+    ? Math.min(paid, Math.max(invoiceEquipment - alreadyAllocated, 0))
+    : (isEquipmentPayment ? paid : 0);
+
+  return Math.min(requested, contractRemaining);
+}
+
 async function unlinkEquipmentInstallmentPayment(connection, paymentReference) {
   if (!paymentReference) return;
   const marker = equipmentPaymentMarker(paymentReference);
@@ -117,9 +138,11 @@ async function syncEquipmentInstallmentPayment(connection, paymentId, isEquipmen
     `SELECT
        p.payment_reference,
        p.contract_id,
+       p.invoice_id,
        p.amount_usd,
        p.paid_at,
-       COALESCE(i.equipment_installment_amount_usd, 0.00) AS equipment_installment_amount_usd
+       COALESCE(i.installation_amount_usd, 0.00)
+         + COALESCE(i.equipment_installment_amount_usd, 0.00) AS invoice_equipment_amount_usd
      FROM payments p
      LEFT JOIN invoices i ON i.id = p.invoice_id
      WHERE p.id = ?`,
@@ -130,9 +153,23 @@ async function syncEquipmentInstallmentPayment(connection, paymentId, isEquipmen
 
   await unlinkEquipmentInstallmentPayment(connection, payment.payment_reference);
 
-  const equipmentAmount = Number(payment.equipment_installment_amount_usd || 0);
-  const shouldSync = Boolean(isEquipmentPayment) || equipmentAmount > 0;
+  const invoiceEquipmentAmount = Number(payment.invoice_equipment_amount_usd || 0);
+  const shouldSync = Boolean(isEquipmentPayment) || invoiceEquipmentAmount > 0;
   if (!shouldSync) return;
+
+  const [[invoiceAllocation]] = payment.invoice_id
+    ? await connection.execute(
+      `SELECT COALESCE(SUM(ei.amount_usd), 0.00) AS allocated_usd
+       FROM equipment_installments ei
+       INNER JOIN payments linked_payment
+         ON linked_payment.contract_id = ei.contract_id
+        AND ei.notes LIKE CONCAT('%Paiement materiel: ', linked_payment.payment_reference, '%')
+       WHERE linked_payment.invoice_id = ?
+         AND linked_payment.id <> ?
+         AND ei.status = 'payee'`,
+      [payment.invoice_id, paymentId]
+    )
+    : [[{ allocated_usd: 0 }]];
 
   const [[equipmentBalance]] = await connection.execute(
     `SELECT
@@ -146,10 +183,15 @@ async function syncEquipmentInstallmentPayment(connection, paymentId, isEquipmen
   );
 
   const remaining = Number(equipmentBalance?.equipment_total_usd || 100) - Number(equipmentBalance?.equipment_paid_usd || 0);
-  if (remaining <= 0) return;
+  const amount = calculateEquipmentAllocation({
+    paymentAmount: payment.amount_usd,
+    invoiceEquipmentAmount,
+    invoiceEquipmentAlreadyAllocated: invoiceAllocation?.allocated_usd,
+    contractEquipmentRemaining: remaining,
+    isEquipmentPayment
+  });
+  if (amount <= 0) return;
 
-  const requestedAmount = equipmentAmount > 0 ? equipmentAmount : Number(payment.amount_usd || 0);
-  const amount = Math.min(requestedAmount, remaining);
   const paidAt = String(payment.paid_at || '').slice(0, 10) || null;
   const marker = equipmentPaymentMarker(payment.payment_reference);
 
@@ -157,7 +199,7 @@ async function syncEquipmentInstallmentPayment(connection, paymentId, isEquipmen
     `SELECT id
      FROM equipment_installments
      WHERE contract_id = ?
-       AND status <> 'annulee'
+       AND status IN ('a_payer', 'en_retard')
        AND COALESCE(notes, '') NOT LIKE ?
      ORDER BY
        CASE WHEN status = 'payee' THEN 1 ELSE 0 END ASC,
@@ -172,10 +214,11 @@ async function syncEquipmentInstallmentPayment(connection, paymentId, isEquipmen
     await connection.execute(
       `UPDATE equipment_installments
        SET status = 'payee',
+           amount_usd = ?,
            paid_at = COALESCE(?, CURRENT_DATE),
            notes = TRIM(CONCAT(COALESCE(notes, ''), CASE WHEN notes IS NULL OR notes = '' THEN '' ELSE ' | ' END, ?))
        WHERE id = ?`,
-      [paidAt, marker, installment.id]
+      [amount, paidAt, marker, installment.id]
     );
     return;
   }
@@ -259,7 +302,9 @@ async function registerPayment(req, res) {
     isEquipmentPayment = false
   } = req.body;
 
-  if (!invoiceId || !amountUsd || !method) {
+  const paymentAmount = Number(amountUsd);
+
+  if (!invoiceId || !method || !Number.isFinite(paymentAmount) || paymentAmount <= 0) {
     throw new HttpError(400, 'Facture, montant et methode de paiement sont obligatoires');
   }
 
@@ -270,10 +315,11 @@ async function registerPayment(req, res) {
   const connection = await getConnection();
 
   try {
+    await connection.beginTransaction();
     await connection.execute('SET @payment_id = NULL');
     await connection.execute('CALL sp_register_payment(?, ?, ?, ?, ?, @payment_id)', [
       invoiceId,
-      amountUsd,
+      paymentAmount,
       method,
       transactionNumber || null,
       req.user?.id || null
@@ -296,7 +342,11 @@ async function registerPayment(req, res) {
     await syncPaymentBudgetEntry(connection, result.paymentId);
     await syncEquipmentInstallmentPayment(connection, result.paymentId, isEquipmentPayment);
 
+    await connection.commit();
     res.status(201).json({ success: true, data: result });
+  } catch (error) {
+    await connection.rollback();
+    throw error;
   } finally {
     connection.release();
   }
@@ -309,8 +359,12 @@ async function updatePayment(req, res) {
   const values = [];
 
   if (amountUsd !== undefined) {
+    const paymentAmount = Number(amountUsd);
+    if (!Number.isFinite(paymentAmount) || paymentAmount <= 0) {
+      throw new HttpError(400, 'Le montant du paiement doit etre superieur a zero');
+    }
     fields.push('amount_usd = ?');
-    values.push(Number(amountUsd || 0));
+    values.push(paymentAmount);
   }
   if (method !== undefined) {
     if (!allowedMethods.has(method)) throw new HttpError(400, 'Methode de paiement invalide');
@@ -337,17 +391,20 @@ async function updatePayment(req, res) {
   const connection = await getConnection();
 
   try {
+    await connection.beginTransaction();
     const [[payment]] = await connection.execute('SELECT invoice_id FROM payments WHERE id = ?', [id]);
     if (!payment) throw new HttpError(404, 'Paiement introuvable');
 
     await connection.execute(`UPDATE payments SET ${fields.join(', ')} WHERE id = ?`, [...values, id]);
     await refreshInvoiceStatus(connection, payment.invoice_id);
     await syncPaymentBudgetEntry(connection, id);
-    if (isEquipmentPayment !== undefined) {
-      await syncEquipmentInstallmentPayment(connection, id, isEquipmentPayment);
-    }
+    await syncEquipmentInstallmentPayment(connection, id, isEquipmentPayment);
 
+    await connection.commit();
     res.json({ success: true, message: 'Paiement modifie' });
+  } catch (error) {
+    await connection.rollback();
+    throw error;
   } finally {
     connection.release();
   }
@@ -357,6 +414,7 @@ async function deletePayment(req, res) {
   const connection = await getConnection();
 
   try {
+    await connection.beginTransaction();
     const [[payment]] = await connection.execute('SELECT invoice_id, payment_reference FROM payments WHERE id = ?', [req.params.id]);
     if (!payment) throw new HttpError(404, 'Paiement introuvable');
 
@@ -365,7 +423,11 @@ async function deletePayment(req, res) {
     await deletePaymentBudgetEntry(connection, payment.payment_reference);
     await refreshInvoiceStatus(connection, payment.invoice_id);
 
+    await connection.commit();
     res.json({ success: true, message: 'Paiement supprime' });
+  } catch (error) {
+    await connection.rollback();
+    throw error;
   } finally {
     connection.release();
   }
@@ -375,5 +437,6 @@ module.exports = {
   listPayments,
   registerPayment,
   updatePayment,
-  deletePayment
+  deletePayment,
+  calculateEquipmentAllocation
 };
