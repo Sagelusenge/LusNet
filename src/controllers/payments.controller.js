@@ -141,8 +141,7 @@ async function syncEquipmentInstallmentPayment(connection, paymentId, isEquipmen
        p.invoice_id,
        p.amount_usd,
        p.paid_at,
-       COALESCE(i.installation_amount_usd, 0.00)
-         + COALESCE(i.equipment_installment_amount_usd, 0.00) AS invoice_equipment_amount_usd
+       COALESCE(i.equipment_installment_amount_usd, 0.00) AS invoice_equipment_amount_usd
      FROM payments p
      LEFT JOIN invoices i ON i.id = p.invoice_id
      WHERE p.id = ?`,

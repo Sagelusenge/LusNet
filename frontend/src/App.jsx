@@ -2110,10 +2110,7 @@ function Payments({ data, submit }) {
   const [form, setForm] = useState(emptyForm);
   const isEditing = Boolean(form.id);
   const selectedInvoice = data.invoices.find((invoice) => String(invoice.id) === String(form.invoiceId));
-  const selectedInvoiceHasEquipment = (
-    Number(selectedInvoice?.installation_amount_usd || 0)
-    + Number(selectedInvoice?.equipment_installment_amount_usd || 0)
-  ) > 0;
+  const selectedInvoiceHasEquipment = Number(selectedInvoice?.equipment_installment_amount_usd || 0) > 0;
 
   function editPayment(item) {
     setForm({
@@ -2125,7 +2122,6 @@ function Payments({ data, submit }) {
       paidAt: dateTimeInputValue(item.paid_at),
       notes: item.notes || '',
       isEquipmentPayment: Boolean(item.is_equipment_payment)
-        || Number(item.installation_amount_usd || 0) > 0
         || Number(item.equipment_installment_amount_usd || 0) > 0
     });
   }

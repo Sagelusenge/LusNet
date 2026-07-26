@@ -13,6 +13,16 @@ test('alloue automatiquement la part materiel sans depasser le paiement recu', (
   }), 10);
 });
 
+test('la part installation reste separee et ne compte pas comme materiel', () => {
+  assert.equal(calculateEquipmentAllocation({
+    paymentAmount: 10,
+    invoiceEquipmentAmount: 0,
+    invoiceEquipmentAlreadyAllocated: 0,
+    contractEquipmentRemaining: 100,
+    isEquipmentPayment: false
+  }), 0);
+});
+
 test('ne deduit pas deux fois la part materiel de la meme facture', () => {
   assert.equal(calculateEquipmentAllocation({
     paymentAmount: 15,
