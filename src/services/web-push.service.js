@@ -73,7 +73,7 @@ async function sendToUser(userId, payload) {
 }
 
 function deadlinePayload(contract, alertDay) {
-  const expirationDate = new Date(`${contract.expiration_date}T00:00:00`).toLocaleDateString('fr-FR');
+  const expirationDate = new Date(`${String(contract.expiration_date).slice(0, 10)}T00:00:00`).toLocaleDateString('fr-FR');
   const timing = alertDay === 0
     ? 'arrive a echeance aujourd hui'
     : `arrive a echeance dans ${alertDay} jour${alertDay > 1 ? 's' : ''}`;
@@ -93,15 +93,27 @@ function deadlinePayload(contract, alertDay) {
 async function findDeadlineContracts() {
   return query(
     `SELECT c.id AS contract_id, c.client_id, c.contract_number, c.activated_at,
-            DATE_ADD(DATE(c.activated_at), INTERVAL 30 DAY) AS expiration_date,
-            DATEDIFF(DATE_ADD(DATE(c.activated_at), INTERVAL 30 DAY), CURRENT_DATE) AS alert_day,
+            TIMESTAMPADD(SECOND, COALESCE((
+              SELECT SUM(TIMESTAMPDIFF(SECOND, ss.suspended_at, ss.restored_at))
+              FROM service_suspensions ss
+              WHERE ss.contract_id = c.id AND ss.restored_at IS NOT NULL
+            ), 0), DATE_ADD(DATE(c.activated_at), INTERVAL 30 DAY)) AS expiration_date,
+            DATEDIFF(DATE(TIMESTAMPADD(SECOND, COALESCE((
+              SELECT SUM(TIMESTAMPDIFF(SECOND, ss.suspended_at, ss.restored_at))
+              FROM service_suspensions ss
+              WHERE ss.contract_id = c.id AND ss.restored_at IS NOT NULL
+            ), 0), DATE_ADD(DATE(c.activated_at), INTERVAL 30 DAY))), CURRENT_DATE) AS alert_day,
             cl.full_name AS client_name, ip.name AS plan_name
      FROM contracts c
      INNER JOIN clients cl ON cl.id = c.client_id
      INNER JOIN internet_plans ip ON ip.id = c.plan_id
      WHERE c.activated_at IS NOT NULL
-       AND c.status IN ('essai', 'actif', 'suspendu')
-       AND DATEDIFF(DATE_ADD(DATE(c.activated_at), INTERVAL 30 DAY), CURRENT_DATE) IN (5, 3, 1, 0)`
+       AND c.status IN ('essai', 'actif')
+       AND DATEDIFF(DATE(TIMESTAMPADD(SECOND, COALESCE((
+         SELECT SUM(TIMESTAMPDIFF(SECOND, ss.suspended_at, ss.restored_at))
+         FROM service_suspensions ss
+         WHERE ss.contract_id = c.id AND ss.restored_at IS NOT NULL
+       ), 0), DATE_ADD(DATE(c.activated_at), INTERVAL 30 DAY))), CURRENT_DATE) IN (5, 3, 1, 0)`
   );
 }
 

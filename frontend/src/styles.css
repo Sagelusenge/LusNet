@@ -1770,6 +1770,11 @@ tbody tr:nth-child(3n) {
   border-left-color: var(--danger);
 }
 
+.countdown-item.paused {
+  border-left-color: #6f7ee8;
+  background: color-mix(in srgb, #6f7ee8 7%, var(--surface));
+}
+
 .countdown-client {
   display: flex;
   align-items: center;
@@ -1810,6 +1815,11 @@ tbody tr:nth-child(3n) {
   color: var(--danger);
 }
 
+.countdown-item.paused .countdown-icon {
+  color: #6f7ee8;
+  background: color-mix(in srgb, #6f7ee8 14%, var(--surface));
+}
+
 .countdown-value {
   text-align: right;
 }
@@ -1820,6 +1830,10 @@ tbody tr:nth-child(3n) {
 
 .countdown-item.expired .countdown-value strong {
   color: var(--danger);
+}
+
+.countdown-item.paused .countdown-value strong {
+  color: #7f8cf0;
 }
 
 .countdown-progress {
@@ -1841,6 +1855,15 @@ tbody tr:nth-child(3n) {
 .countdown-item.urgent .countdown-progress span,
 .countdown-item.expired .countdown-progress span {
   background: var(--danger);
+}
+
+.countdown-item.paused .countdown-progress span {
+  background: repeating-linear-gradient(135deg, #6f7ee8 0 8px, #909af3 8px 16px);
+  animation: paused-progress 1.2s linear infinite;
+}
+
+@keyframes paused-progress {
+  to { background-position: 23px 0; }
 }
 
 .equipment-record {

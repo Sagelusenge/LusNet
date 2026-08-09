@@ -99,6 +99,8 @@ export const api = {
   contracts: () => apiRequest('/contracts'),
   createContract: (body) => apiRequest('/contracts', { method: 'POST', body: JSON.stringify(body) }),
   updateContract: (id, body) => apiRequest(`/contracts/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  suspendContract: (id, body = {}) => apiRequest(`/contracts/${id}/suspend`, { method: 'POST', body: JSON.stringify(body) }),
+  restoreContract: (id, body = {}) => apiRequest(`/contracts/${id}/restore`, { method: 'POST', body: JSON.stringify(body) }),
   deleteContract: (id) => apiRequest(`/contracts/${id}`, { method: 'DELETE' }),
   balances: () => apiRequest('/contracts/balances'),
   equipmentStatus: () => apiRequest('/contracts/equipment-status'),

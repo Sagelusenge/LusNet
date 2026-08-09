@@ -1015,18 +1015,24 @@ function paidInvoiceEndDate(contract, invoices) {
 function subscriptionCountdownForContract(contract, invoices, now) {
   const fallbackCountdown = subscriptionCountdown(contract.activated_at, now);
   const paidEnd = paidInvoiceEndDate(contract, invoices);
-  if (!paidEnd) return fallbackCountdown;
+  const baseExpiresAt = paidEnd || fallbackCountdown?.expiresAt;
+  if (!baseExpiresAt) return null;
 
-  const startedAt = fallbackCountdown?.startedAt || new Date(`${String(contract.activated_at || paidEnd).slice(0, 10)}T00:00:00`);
-  const remainingMs = paidEnd.getTime() - now.getTime();
+  const startedAt = fallbackCountdown?.startedAt || new Date(`${String(contract.activated_at || baseExpiresAt).slice(0, 10)}T00:00:00`);
+  const completedSuspensionMs = Math.max(0, Number(contract.completed_suspension_seconds || 0) * 1000);
+  const expiresAt = new Date(baseExpiresAt.getTime() + completedSuspensionMs);
+  const suspendedAt = contract.status === 'suspendu' && contract.current_suspended_at ? new Date(contract.current_suspended_at) : null;
+  const isPaused = Boolean(suspendedAt && !Number.isNaN(suspendedAt.getTime()));
+  const effectiveNow = isPaused ? suspendedAt : now;
+  const remainingMs = expiresAt.getTime() - effectiveNow.getTime();
   const absoluteMs = Math.abs(remainingMs);
   const days = Math.floor(absoluteMs / (24 * 60 * 60 * 1000));
   const hours = Math.floor((absoluteMs / (60 * 60 * 1000)) % 24);
   const minutes = Math.floor((absoluteMs / (60 * 1000)) % 60);
-  const durationMs = Math.max(1, paidEnd.getTime() - startedAt.getTime());
+  const durationMs = Math.max(1, baseExpiresAt.getTime() - startedAt.getTime());
   const progress = Math.max(0, Math.min(100, (remainingMs / durationMs) * 100));
 
-  return { startedAt, expiresAt: paidEnd, remainingMs, days, hours, minutes, progress };
+  return { startedAt, expiresAt, remainingMs, days, hours, minutes, progress, isPaused, suspendedAt };
 }
 
 function getSubscriptionStats(contracts, invoices = [], now = new Date()) {
@@ -1072,7 +1078,7 @@ function Countdowns({ data }) {
           {countdowns.length === 0 ? <p className="muted">Aucun contrat avec une date de mise en service.</p> : countdowns.map(({ contract, countdown }) => {
             const isExpired = countdown.remainingMs <= 0;
             const isUrgent = !isExpired && countdown.remainingMs <= 3 * 24 * 60 * 60 * 1000;
-            const stateClass = isExpired ? 'expired' : isUrgent ? 'urgent' : countdown.remainingMs <= 7 * 24 * 60 * 60 * 1000 ? 'warning' : 'active';
+            const stateClass = countdown.isPaused ? 'paused' : isExpired ? 'expired' : isUrgent ? 'urgent' : countdown.remainingMs <= 7 * 24 * 60 * 60 * 1000 ? 'warning' : 'active';
 
             return (
               <div className={`countdown-item ${stateClass}`} key={contract.contract_id}>
@@ -1085,10 +1091,15 @@ function Countdowns({ data }) {
                 </div>
                 <div className="countdown-dates">
                   <span>Mise en service: {dateText(contract.activated_at)}</span>
-                  <strong>Echeance: {countdown.expiresAt.toLocaleDateString('fr-FR')}</strong>
+                  <strong>{countdown.isPaused ? `Suspendu le ${countdown.suspendedAt.toLocaleDateString('fr-FR')}` : `Echeance: ${countdown.expiresAt.toLocaleDateString('fr-FR')}`}</strong>
                 </div>
                 <div className="countdown-value">
-                  {isExpired ? (
+                  {countdown.isPaused ? (
+                    <>
+                      <strong>En pause</strong>
+                      <span>{countdown.days} j {countdown.hours} h {countdown.minutes} min figes</span>
+                    </>
+                  ) : isExpired ? (
                     <>
                       <strong>Expire</strong>
                       <span>depuis {countdown.days} j {countdown.hours} h</span>
@@ -1651,7 +1662,7 @@ function ClientSpace({ data, messages = [], submit }) {
       <div className="metric-grid">
         <div className="metric"><Users size={20} /><span>Client</span><strong>{data.client?.full_name || '-'}</strong></div>
         <div className="metric"><Wifi size={20} /><span>Bouquet</span><strong>{activeContract?.plan_name || '-'}</strong></div>
-        <div className="metric"><Timer size={20} /><span>Echeance</span><strong>{countdown ? countdown.expiresAt.toLocaleDateString('fr-FR') : '-'}</strong></div>
+        <div className="metric"><Timer size={20} /><span>Echeance</span><strong>{countdown ? (countdown.isPaused ? 'En pause' : countdown.expiresAt.toLocaleDateString('fr-FR')) : '-'}</strong></div>
         <div className="metric"><Receipt size={20} /><span>Factures a payer</span><strong>{unpaid.length}</strong></div>
         <div className="metric"><BadgeDollarSign size={20} /><span>Reste a payer</span><strong>{money(unpaidTotal)}</strong></div>
         <div className="metric"><Boxes size={20} /><span>Kit internet</span><strong>{equipmentRemaining > 0 ? money(equipmentRemaining) : 'En ordre'}</strong></div>
@@ -1667,8 +1678,8 @@ function ClientSpace({ data, messages = [], submit }) {
             <div><span>Adresse</span><strong>{activeContract?.installation_address || data.client?.address || '-'}</strong></div>
             <div><span>Statut</span><strong>{activeContract?.status || 'Aucun contrat'}</strong></div>
             <div><span>Debit</span><strong>{activeContract ? bandwidthText(activeContract) : '-'}</strong></div>
-            <div><span>Echeance abonnement</span><strong>{countdown ? countdown.expiresAt.toLocaleDateString('fr-FR') : '-'}</strong></div>
-            <div><span>Temps restant</span><strong>{countdown ? (isExpired ? `Expire depuis ${countdown.days} j` : `${countdown.days} j ${countdown.hours} h`) : '-'}</strong></div>
+            <div><span>Echeance abonnement</span><strong>{countdown ? (countdown.isPaused ? 'Compteur suspendu' : countdown.expiresAt.toLocaleDateString('fr-FR')) : '-'}</strong></div>
+            <div><span>Temps restant</span><strong>{countdown ? (countdown.isPaused ? `${countdown.days} j ${countdown.hours} h figes` : isExpired ? `Expire depuis ${countdown.days} j` : `${countdown.days} j ${countdown.hours} h`) : '-'}</strong></div>
           </div>
         </div>
         <div className="panel client-summary-panel">
@@ -1890,8 +1901,8 @@ function Contracts({ data, submit }) {
               <div className="quote-actions">
                 <button className="icon-button" title="Imprimer contrat" onClick={() => printContractDocument(item)}><Printer size={17} /></button>
                 <button className="icon-button" title="Modifier" onClick={() => editContract(item)}><Pencil size={17} /></button>
-                <button className="icon-button" title="Activer" onClick={() => submit(() => api.updateContract(item.contract_id, { status: 'actif' }), 'Contrat active')}><CheckCircle2 size={17} /></button>
-                <button className="icon-button" title="Suspendre" onClick={() => submit(() => api.updateContract(item.contract_id, { status: 'suspendu' }), 'Contrat suspendu')}><X size={17} /></button>
+                <button className="icon-button" title={item.status === 'suspendu' ? 'Reactiver et reprendre le compteur' : 'Activer'} onClick={() => submit(() => item.status === 'suspendu' ? api.restoreContract(item.contract_id) : api.updateContract(item.contract_id, { status: 'actif' }), item.status === 'suspendu' ? 'Contrat reactive, echeance reprise' : 'Contrat active')}><CheckCircle2 size={17} /></button>
+                {item.status !== 'suspendu' && <button className="icon-button" title="Suspendre et figer le compteur" onClick={() => submit(() => api.suspendContract(item.contract_id), 'Contrat suspendu, echeance figee')}><X size={17} /></button>}
                 <button className="icon-button danger" title="Supprimer" onClick={() => submit(() => api.deleteContract(item.contract_id), 'Contrat supprime')}><Trash2 size={17} /></button>
               </div>
             </div>
@@ -2514,7 +2525,7 @@ function Reports({ data }) {
         contract.contract_number,
         contract.plan_name,
         countdown.expiresAt.toLocaleDateString('fr-FR'),
-        countdown.remainingMs <= 0 ? `Expire depuis ${countdown.days} j` : `${countdown.days} j ${countdown.hours} h restantes`
+        countdown.isPaused ? `En pause a ${countdown.days} j ${countdown.hours} h` : countdown.remainingMs <= 0 ? `Expire depuis ${countdown.days} j` : `${countdown.days} j ${countdown.hours} h restantes`
       ])
     },
     {

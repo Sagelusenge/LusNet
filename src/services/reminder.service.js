@@ -31,9 +31,13 @@ async function findFiveDayReminders() {
        ON wnl.invoice_id = i.id
       AND wnl.notification_type = 'abonnement_j_5'
       AND wnl.phone = cl.phone
-     WHERE i.period_end = DATE_ADD(CURRENT_DATE, INTERVAL 5 DAY)
+     WHERE DATE(TIMESTAMPADD(SECOND, COALESCE((
+         SELECT SUM(TIMESTAMPDIFF(SECOND, ss.suspended_at, ss.restored_at))
+         FROM service_suspensions ss
+         WHERE ss.contract_id = c.id AND ss.restored_at IS NOT NULL
+       ), 0), TIMESTAMP(i.period_end, '23:59:59'))) = DATE_ADD(CURRENT_DATE, INTERVAL 5 DAY)
        AND i.status <> 'annulee'
-       AND c.status IN ('essai', 'actif', 'suspendu')
+       AND c.status IN ('essai', 'actif')
        AND wnl.id IS NULL`
   );
 }

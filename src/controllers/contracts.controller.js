@@ -15,11 +15,70 @@ function normalizeDueDay(value) {
 
 async function listContracts(req, res) {
   const rows = await query(
-    `SELECT *
-     FROM vw_active_contracts
-     ORDER BY activated_at DESC, contract_id DESC`
+    `SELECT
+       vc.*,
+       COALESCE((
+         SELECT SUM(TIMESTAMPDIFF(SECOND, ss.suspended_at, ss.restored_at))
+         FROM service_suspensions ss
+         WHERE ss.contract_id = vc.contract_id
+           AND ss.restored_at IS NOT NULL
+       ), 0) AS completed_suspension_seconds,
+       CASE
+         WHEN vc.status = 'suspendu' THEN COALESCE((
+           SELECT MAX(ss.suspended_at)
+           FROM service_suspensions ss
+           WHERE ss.contract_id = vc.contract_id
+             AND ss.restored_at IS NULL
+         ), c.updated_at)
+         ELSE NULL
+       END AS current_suspended_at
+     FROM vw_active_contracts vc
+     INNER JOIN contracts c ON c.id = vc.contract_id
+     ORDER BY vc.activated_at DESC, vc.contract_id DESC`
   );
   res.json({ success: true, data: rows });
+}
+
+async function getContractState(contractId) {
+  const rows = await query('SELECT id, status, updated_at FROM contracts WHERE id = ? LIMIT 1', [contractId]);
+  if (!rows[0]) throw new HttpError(404, 'Contrat introuvable');
+  return rows[0];
+}
+
+async function ensureOpenSuspension(contract, createdBy = null, notes = null) {
+  const rows = await query(
+    'SELECT id FROM service_suspensions WHERE contract_id = ? AND restored_at IS NULL LIMIT 1',
+    [contract.id]
+  );
+  if (rows[0]) return;
+
+  await query(
+    `INSERT INTO service_suspensions (contract_id, reason, suspended_at, notes, created_by)
+     VALUES (?, 'autre', ?, ?, ?)`,
+    [contract.id, contract.updated_at || new Date(), notes || 'Suspension existante regularisee automatiquement', createdBy]
+  );
+}
+
+async function transitionContractStatus(contractId, nextStatus, userId = null, notes = null, reason = 'impaye') {
+  const contract = await getContractState(contractId);
+  if (!nextStatus || nextStatus === contract.status) return contract.status;
+
+  if (nextStatus === 'suspendu') {
+    await query('CALL sp_suspend_contract(?, ?, ?, ?)', [contractId, reason, notes, userId]);
+    return nextStatus;
+  }
+
+  if (contract.status === 'suspendu') {
+    await ensureOpenSuspension(contract, userId, notes);
+    await query('CALL sp_restore_contract(?, ?)', [contractId, notes]);
+    if (nextStatus !== 'actif') {
+      await query('UPDATE contracts SET status = ? WHERE id = ?', [nextStatus, contractId]);
+    }
+    return nextStatus;
+  }
+
+  await query('UPDATE contracts SET status = ? WHERE id = ?', [nextStatus, contractId]);
+  return nextStatus;
 }
 
 async function getContract(req, res) {
@@ -93,7 +152,7 @@ async function createContract(req, res) {
 
 async function updateContractStatus(req, res) {
   const { status } = req.body;
-  await query('UPDATE contracts SET status = ? WHERE id = ?', [status, req.params.id]);
+  await transitionContractStatus(req.params.id, status, req.user?.id || null, req.body.notes || null, req.body.reason || 'impaye');
   res.json({ success: true, message: 'Statut du contrat mis a jour' });
 }
 
@@ -114,6 +173,8 @@ async function updateContract(req, res) {
     notes
   } = req.body;
 
+  const contractBeforeUpdate = await getContractState(req.params.id);
+
   let isOtherPlan = false;
   if (planId) {
     const plans = await query('SELECT name FROM internet_plans WHERE id = ? LIMIT 1', [planId]);
@@ -124,7 +185,6 @@ async function updateContract(req, res) {
   await query(
     `UPDATE contracts
      SET plan_id = COALESCE(?, plan_id),
-         status = COALESCE(?, status),
          signed_at = COALESCE(?, signed_at),
          activated_at = COALESCE(?, activated_at),
          trial_ends_at = COALESCE(?, trial_ends_at),
@@ -140,7 +200,6 @@ async function updateContract(req, res) {
      WHERE id = ?`,
     [
       planId || null,
-      status || null,
       signedAt || null,
       activatedAt || null,
       trialEndsAt || null,
@@ -159,6 +218,10 @@ async function updateContract(req, res) {
       req.params.id
     ]
   );
+
+  if (status && status !== contractBeforeUpdate.status) {
+    await transitionContractStatus(req.params.id, status, req.user?.id || null, notes || null);
+  }
 
   res.json({ success: true, message: 'Contrat mis a jour' });
 }
@@ -180,13 +243,13 @@ async function listEquipmentStatus(req, res) {
 
 async function suspendContract(req, res) {
   const { reason = 'impaye', notes } = req.body;
-  await query('CALL sp_suspend_contract(?, ?, ?, ?)', [req.params.id, reason, notes || null, req.user?.id || null]);
+  await transitionContractStatus(req.params.id, 'suspendu', req.user?.id || null, notes || null, reason);
   res.json({ success: true, message: 'Contrat suspendu' });
 }
 
 async function restoreContract(req, res) {
   const { notes } = req.body;
-  await query('CALL sp_restore_contract(?, ?)', [req.params.id, notes || null]);
+  await transitionContractStatus(req.params.id, 'actif', req.user?.id || null, notes || null);
   res.json({ success: true, message: 'Contrat reactive' });
 }
 
