@@ -161,6 +161,10 @@ function documentStyles() {
       .doc-title{text-align:right}
       .doc-title h1{font-size:18px;margin:0 0 6px;text-transform:uppercase}
       .badge{display:inline-block;padding:5px 9px;border-radius:999px;background:#fff3d1;color:#5c3d00;font-weight:700}
+      .report-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 16px}
+      .report-meta div{border:1px solid #d7e2de;border-radius:7px;padding:9px 10px;background:#f6faf8}
+      .report-meta span{display:block;color:#687770;font-size:9px;text-transform:uppercase;letter-spacing:.06em}
+      .report-meta strong{display:block;margin-top:3px;color:#14211d;font-size:12px}
       .box{border:1px solid #cfd8d4;border-radius:8px;padding:10px 12px;margin:10px 0;background:#fbfdfc}
       .compact-box,.compact-doc .box{padding:8px 10px;margin:7px 0}
       .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -172,8 +176,11 @@ function documentStyles() {
       p{margin:6px 0}
       table{width:100%;border-collapse:collapse;margin:8px 0 12px}
       .compact-doc table{margin:4px 0}
-      th{background:#08765d;color:#fff}
+      thead{display:table-header-group}
+      th{background:#08765d;color:#fff;text-transform:uppercase;font-size:10px;letter-spacing:.035em}
       th,td{border:1px solid #bfcac5;padding:6px;text-align:left;vertical-align:top}
+      tbody tr:nth-child(even){background:#f4f8f7}
+      tbody tr:last-child td{font-weight:700}
       .compact-doc th,.compact-doc td{padding:4px 6px}
       .selected{background:#e8f7f2;font-weight:700}
       .signature{display:grid;grid-template-columns:1fr 1fr;gap:38px;margin-top:24px}
@@ -189,8 +196,11 @@ function documentStyles() {
       .stamp-inner strong{font-size:11.5px;letter-spacing:0}
       .stamp-inner em{font-style:normal;font-size:7.5px}
       .small{font-size:11px;color:#555}
-      .footer{border-top:1px solid #cfd8d4;margin-top:18px;padding-top:8px;color:#555;font-size:11px;text-align:center}
-      @media print{.doc{max-width:none}.box{break-inside:avoid}table{break-inside:avoid}}
+      .report-signatures{display:grid;grid-template-columns:1fr 1fr;gap:70px;margin-top:36px}
+      .report-signatures div{min-height:74px;border-top:1px solid #71817b;padding-top:7px;color:#555;font-size:10px}
+      .report-signatures strong{display:block;color:#14211d;font-size:11px}
+      .footer{border-top:1px solid #cfd8d4;margin-top:18px;padding-top:8px;color:#555;font-size:10px;text-align:center}
+      @media print{.doc{max-width:none}.box,.report-meta{break-inside:avoid}tr{break-inside:avoid}.report-signatures{break-inside:avoid}}
     </style>`;
 }
 
@@ -2461,6 +2471,7 @@ function Equipment({ data, submit }) {
 function Reports({ data }) {
   const now = new Date();
   const [selectedPaymentClientId, setSelectedPaymentClientId] = useState('all');
+  const [activeReportId, setActiveReportId] = useState('client-payments');
   const formatReportDate = (value, includeTime = false) => {
     if (!value) return '-';
     const date = new Date(value);
@@ -2579,46 +2590,112 @@ function Reports({ data }) {
     }
   ];
 
+  const reportDescriptions = {
+    'Rapport echeances abonnements': 'Anticiper les expirations et les renouvellements.',
+    'Clients en ordre avec le kit': 'Identifier les kits totalement regles.',
+    'Clients avec reste kit': 'Suivre les soldes materiel encore ouverts.',
+    'Rapport budget': 'Lire les recettes, depenses et le solde global.',
+    'Liste clients': 'Exporter le registre administratif des clients.',
+    'Factures et abonnements a regulariser': 'Prioriser les factures avec un montant restant.',
+    'Historique general des paiements': 'Consulter toutes les transactions enregistrees.',
+    'Contrats et abonnements': 'Verifier les contrats, bouquets et statuts.',
+    'Factures entierement payees': 'Retrouver les factures deja soldees.',
+    'Suivi des tickets support': 'Analyser les demandes et leur niveau de priorite.',
+    'Demandes de devis': 'Suivre les prospects et demandes commerciales.',
+    'Mouvements detailles du budget': 'Auditer chaque mouvement financier.'
+  };
+  const reportCatalog = [
+    {
+      id: 'client-payments',
+      title: 'Paiements par client',
+      description: 'Releve individuel avec dates, references et total paye.',
+      icon: BadgeDollarSign,
+      rows: clientPaymentRows
+    },
+    ...reports.map((report, index) => ({
+      ...report,
+      id: `report-${index}`,
+      description: reportDescriptions[report.title] || 'Rapport administratif imprimable.'
+    }))
+  ];
+  const activeReport = reportCatalog.find((report) => report.id === activeReportId) || reportCatalog[0];
+
   return (
     <>
-      <div className="metric-grid">
-        <div className="metric"><Users size={20} /><span>Clients</span><strong>{data.clients.length}</strong></div>
-        <div className="metric"><Timer size={20} /><span>Abonnements expires</span><strong>{deadlineRows.filter((item) => item.countdown.remainingMs <= 0).length}</strong></div>
-        <div className="metric"><CheckCircle2 size={20} /><span>Kits en ordre</span><strong>{equipmentPaid.length}</strong></div>
-        <div className="metric"><Boxes size={20} /><span>Kits avec reste</span><strong>{equipmentPending.length}</strong></div>
-        <div className="metric"><Receipt size={20} /><span>Factures a suivre</span><strong>{unpaid.length}</strong></div>
-        <div className="metric"><Building2 size={20} /><span>Solde budget</span><strong>{money(budgetSummary.solde_usd)}</strong></div>
-      </div>
-
-      <div className="panel">
-        <PanelHeader icon={BarChart3} title="Rapports disponibles" />
-        <p className="muted">Chaque cadre peut etre imprime separement avec les donnees actuellement enregistrees.</p>
-      </div>
-
-      <div className="panel report-client-filter">
+      <section className="reports-hero">
         <div>
-          <PanelHeader icon={BadgeDollarSign} title="Releve des paiements par client" />
-          <p className="muted">Selectionnez un client pour obtenir son historique complet, les dates, factures, references et le total paye.</p>
+          <span className="reports-eyebrow"><BarChart3 size={14} /> Centre d'analyse</span>
+          <h2>Rapports administratifs</h2>
+          <p>Analysez l'activite de LWASIVA_NET, selectionnez un rapport puis imprimez un document pret a signer.</p>
         </div>
-        <SelectInput
-          label="Client"
-          value={selectedPaymentClientId}
-          onChange={setSelectedPaymentClientId}
-          options={[{ value: 'all', label: 'Tous les clients' }, ...paymentClients.map((client) => ({ value: client.id, label: `${client.full_name} - ${client.phone || 'sans telephone'}` }))]}
-        />
-        <div className="report-client-summary"><span>Transactions<strong>{selectedClientPayments.length}</strong></span><span>Total paye<strong>{money(selectedClientPaymentTotal)}</strong></span></div>
+        <div className="reports-hero-status">
+          <span><i /> Donnees actualisees</span>
+          <strong>{reportCatalog.length} rapports</strong>
+          <small>{now.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}</small>
+        </div>
+      </section>
+
+      <div className="metric-grid reports-metric-grid">
+        {[
+          [Users, 'Clients', data.clients.length],
+          [Timer, 'Abonnements expires', deadlineRows.filter((item) => item.countdown.remainingMs <= 0).length],
+          [CheckCircle2, 'Kits en ordre', equipmentPaid.length],
+          [Boxes, 'Kits avec reste', equipmentPending.length],
+          [Receipt, 'Factures a suivre', unpaid.length],
+          [Building2, 'Solde budget', money(budgetSummary.solde_usd)]
+        ].map(([Icon, label, value], index) => (
+          <div className="metric reports-metric" style={{ '--report-index': index }} key={label}><Icon size={20} /><span>{label}</span><strong>{value}</strong></div>
+        ))}
       </div>
+
+      <section className="panel report-library">
+        <div className="report-library-heading">
+          <div><PanelHeader icon={BarChart3} title="Bibliotheque de rapports" /><p className="muted">Choisissez le document que vous souhaitez consulter ou imprimer.</p></div>
+          <span>{activeReport.rows.length} ligne(s) dans la selection</span>
+        </div>
+        <div className="report-catalog-grid">
+          {reportCatalog.map((report, index) => {
+            const Icon = report.icon || BarChart3;
+            return (
+              <button
+                type="button"
+                className={`report-catalog-card ${activeReportId === report.id ? 'active' : ''}`}
+                style={{ '--report-card-index': index }}
+                onClick={() => setActiveReportId(report.id)}
+                key={report.id}
+              >
+                <span className="report-catalog-icon"><Icon size={19} /></span>
+                <span><strong>{report.title}</strong><small>{report.description}</small></span>
+                <b>{report.rows.length}</b>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {activeReportId === 'client-payments' && (
+        <div className="panel report-client-filter">
+          <div>
+            <PanelHeader icon={BadgeDollarSign} title="Releve des paiements par client" />
+            <p className="muted">Selectionnez un client pour obtenir son historique complet, les dates, factures, references et le total paye.</p>
+          </div>
+          <SelectInput
+            label="Client"
+            value={selectedPaymentClientId}
+            onChange={setSelectedPaymentClientId}
+            options={[{ value: 'all', label: 'Tous les clients' }, ...paymentClients.map((client) => ({ value: client.id, label: `${client.full_name} - ${client.phone || 'sans telephone'}` }))]}
+          />
+          <div className="report-client-summary"><span>Transactions<strong>{selectedClientPayments.length}</strong></span><span>Total paye<strong>{money(selectedClientPaymentTotal)}</strong></span></div>
+        </div>
+      )}
 
       <ReportPanel
-        title={`Releve paiements - ${selectedPaymentClient?.full_name || 'Tous les clients'}`}
-        icon={BadgeDollarSign}
-        columns={['Date', 'Reference', 'Contrat', 'Facture', 'Type', 'Methode', 'Transaction', 'Montant']}
-        rows={clientPaymentRows}
+        key={`${activeReportId}-${selectedPaymentClientId}`}
+        title={activeReportId === 'client-payments' ? `Releve paiements - ${selectedPaymentClient?.full_name || 'Tous les clients'}` : activeReport.title}
+        icon={activeReport.icon}
+        columns={activeReportId === 'client-payments' ? ['Date', 'Reference', 'Contrat', 'Facture', 'Type', 'Methode', 'Transaction', 'Montant'] : activeReport.columns}
+        rows={activeReport.rows}
       />
-
-      {reports.map((item) => (
-        <ReportPanel key={item.title} title={item.title} icon={item.icon} columns={item.columns} rows={item.rows} />
-      ))}
     </>
   );
 }
@@ -2653,10 +2730,19 @@ function printReport(title, columns, rows) {
               <span class="badge">${rows.length} ligne(s)</span>
             </div>
           </header>
+          <section class="report-meta">
+            <div><span>Document</span><strong>Rapport administratif</strong></div>
+            <div><span>Date d'edition</span><strong>${todayDisplayDate()}</strong></div>
+            <div><span>Statut</span><strong>Donnees verifiees</strong></div>
+          </section>
           <table>
             <thead><tr>${head}</tr></thead>
             <tbody>${body}</tbody>
           </table>
+          <section class="report-signatures">
+            <div><strong>Etabli par</strong>Nom, date et signature</div>
+            <div><strong>Verifie et approuve par</strong>Nom, date et signature</div>
+          </section>
           <footer class="footer">LWASIVA_NET - Rapport imprime par l'administration</footer>
         </main>
       </body>
