@@ -34,85 +34,12 @@ import {
   Wrench,
   Wifi,
   X,
-  AlertCircle
+  AlertCircle,
+  ArrowRight,
+  Globe2,
+  Zap
 } from 'lucide-react';
 import { api, getCurrentUser, setToken } from './api';
-
-const PUBLIC_NAV_CRITICAL_CSS = `
-@media (max-width: 760px) {
-  .public-header {
-    min-height: 64px !important;
-    padding: 0 !important;
-  }
-  .public-header-inner {
-    flex-wrap: wrap !important;
-    gap: 10px !important;
-    min-height: 64px !important;
-    padding: 9px 12px !important;
-  }
-  .public-brand {
-    flex: 0 0 100% !important;
-    width: 100% !important;
-    gap: 9px !important;
-  }
-  .public-brand .brand-mark {
-    width: 38px !important;
-    height: 38px !important;
-    border-radius: 12px !important;
-  }
-  .public-brand strong {
-    font-size: 16px !important;
-    line-height: 1 !important;
-  }
-  .public-header nav {
-    flex: 0 0 100% !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    display: grid !important;
-    grid-template-columns: 40px repeat(4, minmax(0, 1fr)) !important;
-    align-items: center !important;
-    gap: 7px !important;
-    margin-left: 0 !important;
-    overflow: visible !important;
-  }
-  .public-header nav::-webkit-scrollbar {
-    display: none !important;
-  }
-  .public-header nav button {
-    width: 100% !important;
-    min-width: 40px !important;
-    min-height: 40px !important;
-    border-radius: 14px !important;
-    padding: 0 12px !important;
-    font-size: 13px !important;
-    white-space: nowrap !important;
-  }
-  .public-header nav .public-icon-button {
-    width: 40px !important;
-    padding: 0 !important;
-  }
-  .public-header nav .public-icon-button span {
-    display: none !important;
-  }
-  .public-header nav .nav-pill span {
-    min-width: 0 !important;
-    max-width: 100% !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-  }
-}
-@media (max-width: 520px) {
-  .public-header nav {
-    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-  }
-  .public-header nav .public-icon-button {
-    width: 100% !important;
-  }
-  .public-header nav .nav-pill span {
-    display: none !important;
-  }
-}
-`;
 
 const adminNav = [
   { id: 'admin-dashboard', label: 'Dashboard', icon: Home },
@@ -482,10 +409,11 @@ function App() {
           <div className="brand-mark">LN</div>
           <div>
             <strong>LWASIVA_NET</strong>
-            <span>{isClient ? 'Espace client' : 'Administration'}</span>
+            <span>{isClient ? 'Espace client' : 'Administration centrale'}</span>
           </div>
         </div>
 
+        <span className="sidebar-section-label">Menu principal</span>
         <nav className="nav-list">
           {navItems.map((item, index) => {
             const Icon = item.icon;
@@ -506,6 +434,10 @@ function App() {
             );
           })}
         </nav>
+        <div className="sidebar-status">
+          <span><i /> Systeme operationnel</span>
+          <small>Goma, Nord-Kivu</small>
+        </div>
       </aside>
 
       <main className="main">
@@ -513,11 +445,15 @@ function App() {
           <button className="icon-button mobile-only" onClick={() => setSidebarOpen((value) => !value)} title="Menu">
             <Menu size={20} />
           </button>
-          <div>
+          <div className="topbar-title">
+            <span>{isClient ? 'Espace client' : 'Administration'}</span>
             <h1>{activeTitle}</h1>
-            <p>{currentUser?.fullName || 'Gestion des abonnements Internet'}</p>
           </div>
           <div className="topbar-actions">
+            <div className="topbar-profile">
+              <span>{String(currentUser?.fullName || 'LW').split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase()}</span>
+              <div><strong>{currentUser?.fullName || 'LWASIVA_NET'}</strong><small>{isClient ? 'Client' : 'Administrateur'}</small></div>
+            </div>
             <button className="icon-button" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} title="Changer le theme">
               {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
             </button>
@@ -535,7 +471,7 @@ function App() {
         {busy && <LoadingOverlay />}
 
         <section className="content">
-          {!isClient && active === 'admin-dashboard' && <Dashboard data={data} />}
+          {!isClient && active === 'admin-dashboard' && <Dashboard data={data} currentUser={currentUser} />}
           {!isClient && active === 'quotes' && <Quotes data={data} submit={submit} />}
           {!isClient && active === 'clients' && <Clients data={data} submit={submit} />}
           {!isClient && active === 'contracts' && <Contracts data={data} submit={submit} />}
@@ -589,9 +525,22 @@ function LoadingOverlay() {
 }
 
 function PublicShell({ active, setActive, toast, theme, setTheme, children }) {
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  function navigate(page) {
+    setActive(page);
+    setMobileNavOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function openSection(sectionId) {
+    setActive('home');
+    setMobileNavOpen(false);
+    window.setTimeout(() => document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+  }
+
   return (
     <div className="public-shell">
-      <style>{PUBLIC_NAV_CRITICAL_CSS}</style>
       <header className="public-header">
         <div className="public-header-inner">
           <div className="brand public-brand">
@@ -601,27 +550,32 @@ function PublicShell({ active, setActive, toast, theme, setTheme, children }) {
               <span>Internet haut debit a Goma</span>
             </div>
           </div>
-          <nav className="public-nav" aria-label="Navigation publique">
+          <button className="public-menu-toggle" onClick={() => setMobileNavOpen((open) => !open)} aria-expanded={mobileNavOpen} aria-controls="public-navigation" aria-label={mobileNavOpen ? 'Fermer le menu' : 'Ouvrir le menu'}>
+            {mobileNavOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
+          <nav id="public-navigation" className={`public-nav ${mobileNavOpen ? 'open' : ''}`} aria-label="Navigation publique">
+            <button className={`nav-pill ${active === 'home' ? 'active' : ''}`} onClick={() => navigate('home')} title="Accueil" aria-label="Accueil">
+              <span>Accueil</span>
+            </button>
+            <button onClick={() => openSection('offres')} className="nav-pill optional-nav" title="Nos offres">
+              <span>Offres</span>
+            </button>
+            <button onClick={() => openSection('installation')} className="nav-pill optional-nav" title="Installation et suivi">
+              <span>Installation</span>
+            </button>
+            <button onClick={() => openSection('avis')} className="nav-pill optional-nav" title="Avis clients">
+              <span>Avis clients</span>
+            </button>
+            <button onClick={() => openSection('contact')} className="nav-pill optional-nav" title="Nous contacter">
+              <span>Contact</span>
+            </button>
             <button className="public-icon-button theme-toggle" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} title="Changer le theme" aria-label="Changer le theme">
               {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
             </button>
-            <button className={`nav-pill ${active === 'home' ? 'active' : ''}`} onClick={() => setActive('home')} title="Accueil" aria-label="Accueil">
-              <Home size={17} />
-              <span>Accueil</span>
-            </button>
-            <button onClick={() => {
-              setActive('home');
-              setTimeout(() => document.getElementById('avis')?.scrollIntoView({ behavior: 'smooth' }), 0);
-            }} className="nav-pill optional-nav" title="Avis clients" aria-label="Avis clients">
-              <MessageSquare size={17} />
-              <span>Avis</span>
-            </button>
-            <button className={`nav-pill login-nav ${active === 'login' ? 'active' : ''}`} onClick={() => setActive('login')} title="Connexion" aria-label="Connexion">
-              <LogIn size={17} />
+            <button className={`nav-pill login-nav ${active === 'login' ? 'active' : ''}`} onClick={() => navigate('login')} title="Connexion" aria-label="Connexion">
               <span>Connexion</span>
             </button>
-            <button className={`nav-pill register-nav ${active === 'register' ? 'active' : ''}`} onClick={() => setActive('register')} title="Creer un compte" aria-label="Creer un compte">
-              <UserPlus size={17} />
+            <button className={`nav-pill register-nav ${active === 'register' ? 'active' : ''}`} onClick={() => navigate('register')} title="Creer un compte" aria-label="Creer un compte">
               <span>Creer un compte</span>
             </button>
           </nav>
@@ -629,6 +583,18 @@ function PublicShell({ active, setActive, toast, theme, setTheme, children }) {
       </header>
       {toast && <Toast toast={toast} />}
       {children}
+      <footer className="public-footer">
+        <div className="public-footer__main">
+          <div className="public-footer__brand">
+            <span className="brand-mark">LN</span>
+            <div><strong>LWASIVA_NET</strong><p>Internet local, fiable et suivi pour les foyers et entreprises de Goma.</p></div>
+          </div>
+          <div><strong>Navigation</strong><button onClick={() => navigate('home')}>Accueil</button><button onClick={() => openSection('offres')}>Nos offres</button><button onClick={() => openSection('installation')}>Installation</button></div>
+          <div><strong>Votre espace</strong><button onClick={() => navigate('login')}>Connexion</button><button onClick={() => navigate('register')}>Creer un compte</button><button onClick={() => openSection('contact')}>Contact</button></div>
+          <div><strong>Nous contacter</strong><span>+243 980 208 012</span><span>sagelusenge@gmail.com</span><span>Goma, Nord-Kivu</span></div>
+        </div>
+        <div className="public-footer__bottom"><span>© {new Date().getFullYear()} LWASIVA_NET</span><span>Connexion locale. Impact reel.</span></div>
+      </footer>
     </div>
   );
 }
@@ -657,46 +623,33 @@ function PublicHome({ plans, feedback, submit, setActive, busy }) {
           <span />
         </div>
         <div className="hero-content">
-          <span className="hero-kicker">Goma, Nord-Kivu, RDC</span>
-          <h1>LWASIVA_NET</h1>
-          <p>Connexion Internet sans fil pour foyers, entreprises locales, streaming, teletravail, appels video et usages professionnels.</p>
-          <div className="hero-stats">
-            <div><strong>24/7</strong><span>Service suivi</span></div>
-            <div><strong>5-30</strong><span>Mbps disponibles</span></div>
-            <div><strong>100$</strong><span>Kit standard</span></div>
-          </div>
+          <span className="hero-kicker"><Globe2 size={15} /> Le reseau local qui vous rapproche</span>
+          <h1><span>Connecter Goma.</span><span>Construire</span><span>ensemble.</span></h1>
+          <p>LWASIVA_NET fournit une connexion Internet sans fil fiable aux foyers et entreprises de Goma, avec une installation suivie et un support de proximite.</p>
           <div className="hero-actions">
-            <a href="#devis" className="primary-link">Demander un devis</a>
-            <button className="secondary-link" onClick={() => setActive('login')}>Espace client/admin</button>
+            <a href="#devis" className="primary-link">Demander un devis <ArrowRight size={18} /></a>
+            <button className="secondary-link" onClick={() => setActive('login')}>Acceder a mon espace</button>
           </div>
-          <div className="public-update-note">
-            <MessageSquare size={18} />
-            <span>Nouveau: les clients peuvent laisser une appreciation, et l'administration choisit les 4 avis visibles.</span>
+          <div className="hero-stats">
+            <div><ShieldCheck size={17} /><span><strong>Contrat clair</strong>Suivi transparent</span></div>
+            <div><Wifi size={17} /><span><strong>5 a 30 Mbps</strong>Selon votre besoin</span></div>
+            <div><Wrench size={17} /><span><strong>Equipe locale</strong>Installation a Goma</span></div>
           </div>
         </div>
-        <div className="hero-network" aria-hidden="true">
-          <div className="network-card signal-card">
-            <Wifi size={26} />
-            <strong>Signal stable</strong>
-            <span>Goma centre</span>
-          </div>
-          <div className="network-map">
-            <span className="network-line line-a" />
-            <span className="network-line line-b" />
-            <span className="network-line line-c" />
-            <span className="network-node node-main"><Router size={28} /></span>
-            <span className="network-node node-a" />
-            <span className="network-node node-b" />
-            <span className="network-node node-c" />
-            <span className="network-node node-d" />
-            <span className="signal-ring ring-one" />
-            <span className="signal-ring ring-two" />
-            <span className="signal-ring ring-three" />
-          </div>
-          <div className="network-card speed-card">
-            <Gauge size={25} />
-            <strong>30 Mbps</strong>
-            <span>Streaming, appels, travail</span>
+        <div className="hero-network">
+          <div className="coverage-card">
+            <header><span><i /> Reseau operationnel</span><Wifi size={20} /></header>
+            <div className="coverage-card__signal" aria-hidden="true">
+              <span className="coverage-orbit coverage-orbit--one" />
+              <span className="coverage-orbit coverage-orbit--two" />
+              <span className="coverage-router"><Router size={32} /></span>
+            </div>
+            <div className="coverage-card__rows">
+              <div><Globe2 /><span><small>Zone desservie</small><strong>Goma, Nord-Kivu</strong></span></div>
+              <div><Zap /><span><small>Debit disponible</small><strong>Jusqu'a 30 Mbps</strong></span></div>
+              <div><ShieldCheck /><span><small>Accompagnement</small><strong>Installation et support</strong></span></div>
+            </div>
+            <footer><span>LWASIVA_NET</span><b>Connexion locale. Impact reel.</b></footer>
           </div>
         </div>
       </section>
@@ -724,7 +677,7 @@ function PublicHome({ plans, feedback, submit, setActive, busy }) {
         </div>
       </section>
 
-      <section className="public-section">
+      <section className="public-section" id="offres">
         <div className="section-heading">
           <Wifi size={22} />
           <h2>Nos offres Internet</h2>
@@ -748,7 +701,7 @@ function PublicHome({ plans, feedback, submit, setActive, busy }) {
         <InfoCard icon={Phone} title="Support" text="Une equipe technique suit les pannes, interventions et demandes des abonnes." />
       </section>
 
-      <section className="public-section service-showcase">
+      <section className="public-section service-showcase" id="installation">
         <div className="showcase-copy">
           <div className="section-heading">
             <Wrench size={22} />
@@ -888,7 +841,7 @@ function LoginPanel({ onLoggedIn, notify }) {
       <div className="login-card">
         <div className="login-visual">
           <div className="brand-mark login-mark">LN</div>
-          <h1>LWASIVA_NET</h1>
+          <h1><span>Votre reseau.</span><span>Votre espace.</span></h1>
           <p>Espace reserve aux agents et aux clients ayant deja un compte.</p>
           <div className="login-points">
             <span><ShieldCheck size={17} /> Acces securise</span>
@@ -920,29 +873,36 @@ function LoginPanel({ onLoggedIn, notify }) {
   );
 }
 
-function Dashboard({ data }) {
+function Dashboard({ data, currentUser }) {
   const subscriptionStats = getSubscriptionStats(data.contracts, data.invoices);
   const cards = [
-    ['Clients', data.summary.total_clients, Users],
-    ['Contrats actifs', data.summary.active_contracts, ClipboardList],
-    ['Abonnements expires', subscriptionStats.expired, AlertCircle],
-    ['Abonnements a jour', subscriptionStats.upToDate, CheckCircle2],
-    ['Suspendus', data.summary.suspended_contracts, FileText]
+    ['Clients', data.summary.total_clients, 'Tous les comptes', Users, 'blue'],
+    ['Contrats actifs', data.summary.active_contracts, 'Services operationnels', ClipboardList, 'green'],
+    ['Abonnements expires', subscriptionStats.expired, 'A traiter', AlertCircle, 'amber'],
+    ['Abonnements a jour', subscriptionStats.upToDate, 'Paiements valides', CheckCircle2, 'purple'],
+    ['Suspendus', data.summary.suspended_contracts, 'Contrats interrompus', FileText, 'red']
   ];
 
   return (
     <>
-      <PushNotificationPanel />
-      <TablePanel title="Messages de LWASIVA_NET" icon={MessageSquare} columns={['Titre', 'Message', 'Date']} rows={(data.appMessages || []).slice(0, 6).map((item) => [item.title, item.body, item.created_at])} />
-      <div className="metric-grid">
-        {cards.map(([label, value, Icon]) => (
-          <div className="metric" key={label}>
-            <Icon size={20} />
-            <span>{label}</span>
-            <strong>{value}</strong>
-          </div>
+      <section className="dashboard-welcome">
+        <div>
+          <span>Vue d'ensemble</span>
+          <h2>Bonjour, {currentUser?.fullName || 'Administration LWASIVA_NET'}</h2>
+          <p>Voici l'activite recente de votre reseau et les elements qui demandent votre attention.</p>
+        </div>
+        <div className="dashboard-live"><i /><span>Donnees actualisees</span></div>
+      </section>
+      <div className="metric-grid admin-metric-grid">
+        {cards.map(([label, value, detail, Icon, tone], index) => (
+          <article className={`metric admin-metric-card admin-metric-card--${tone}`} style={{ '--metric-index': index }} key={label}>
+            <span className="admin-metric-icon"><Icon size={21} /></span>
+            <div><span>{label}</span><strong>{value}</strong><small>{detail}</small></div>
+          </article>
         ))}
       </div>
+      <PushNotificationPanel />
+      <TablePanel title="Messages de LWASIVA_NET" icon={MessageSquare} columns={['Titre', 'Message', 'Date']} rows={(data.appMessages || []).slice(0, 6).map((item) => [item.title, item.body, item.created_at])} />
       <div className="two-columns">
         <TablePanel title="Derniers devis" icon={ClipboardList} columns={['Numero', 'Client', 'Telephone', 'Statut']} rows={data.quotes.slice(0, 8).map((item) => [item.quote_number, item.full_name, item.phone, item.status])} />
         <TablePanel title="Factures a suivre" icon={Receipt} columns={['Client', 'Telephone', 'Type', 'Reste', 'Date limite']} rows={data.unpaidInvoices.slice(0, 8).map((item) => [item.client_name, item.client_phone, invoiceTypeLabel(item.invoice_type), money(item.remaining_amount_usd), item.due_date])} />
@@ -2109,8 +2069,6 @@ function Payments({ data, submit }) {
   const emptyForm = { id: '', invoiceId: '', amountUsd: '', method: 'especes', transactionNumber: '', paidAt: currentDateTimeInput(), notes: '', isEquipmentPayment: false };
   const [form, setForm] = useState(emptyForm);
   const isEditing = Boolean(form.id);
-  const selectedInvoice = data.invoices.find((invoice) => String(invoice.id) === String(form.invoiceId));
-  const selectedInvoiceHasEquipment = Number(selectedInvoice?.equipment_installment_amount_usd || 0) > 0;
 
   function editPayment(item) {
     setForm({
@@ -2122,7 +2080,6 @@ function Payments({ data, submit }) {
       paidAt: dateTimeInputValue(item.paid_at),
       notes: item.notes || '',
       isEquipmentPayment: Boolean(item.is_equipment_payment)
-        || Number(item.equipment_installment_amount_usd || 0) > 0
     });
   }
 
@@ -2134,7 +2091,7 @@ function Payments({ data, submit }) {
       transactionNumber: form.transactionNumber,
       paidAt: form.paidAt || undefined,
       notes: form.notes || undefined,
-      isEquipmentPayment: form.isEquipmentPayment || selectedInvoiceHasEquipment
+      isEquipmentPayment: form.isEquipmentPayment
     };
     const action = isEditing ? () => api.updatePayment(form.id, body) : () => api.registerPayment(body);
     submit(action, isEditing ? 'Paiement modifie' : 'Paiement enregistre');
@@ -2219,7 +2176,7 @@ function Payments({ data, submit }) {
         <TextInput label="Note" value={form.notes} onChange={(notes) => setForm({ ...form, notes })} />
         <label className="field checkbox-field">
           <span>Paiement materiel</span>
-          <input type="checkbox" checked={form.isEquipmentPayment || selectedInvoiceHasEquipment} onChange={(event) => setForm({ ...form, isEquipmentPayment: event.target.checked })} disabled={selectedInvoiceHasEquipment} />
+          <input type="checkbox" checked={form.isEquipmentPayment} onChange={(event) => setForm({ ...form, isEquipmentPayment: event.target.checked })} />
         </label>
         {isEditing && <button type="button" className="secondary-button" onClick={() => setForm(emptyForm)}><X size={17} /> Annuler</button>}
       </QuickForm>
@@ -2503,6 +2460,13 @@ function Equipment({ data, submit }) {
 
 function Reports({ data }) {
   const now = new Date();
+  const [selectedPaymentClientId, setSelectedPaymentClientId] = useState('all');
+  const formatReportDate = (value, includeTime = false) => {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return includeTime ? date.toLocaleString('fr-FR') : date.toLocaleDateString('fr-FR');
+  };
   const equipmentPaid = data.equipmentStatus.filter((item) => Number(item.equipment_remaining_usd || 0) <= 0 && Number(item.equipment_paid_usd || 0) > 0);
   const equipmentPending = data.equipmentStatus.filter((item) => Number(item.equipment_remaining_usd || 0) > 0);
   const unpaid = data.unpaidInvoices || [];
@@ -2511,6 +2475,23 @@ function Reports({ data }) {
     .map((contract) => ({ contract, countdown: subscriptionCountdownForContract(contract, data.invoices, now) }))
     .filter((item) => item.countdown)
     .sort((a, b) => a.countdown.remainingMs - b.countdown.remainingMs);
+  const paymentClients = data.clients
+    .filter((client) => data.payments.some((payment) => String(payment.client_id) === String(client.id)))
+    .sort((a, b) => String(a.full_name).localeCompare(String(b.full_name), 'fr'));
+  const selectedPaymentClient = paymentClients.find((client) => String(client.id) === String(selectedPaymentClientId));
+  const selectedClientPayments = data.payments.filter((payment) => selectedPaymentClientId === 'all' || String(payment.client_id) === String(selectedPaymentClientId));
+  const selectedClientPaymentTotal = selectedClientPayments.reduce((total, payment) => total + Number(payment.amount_usd || 0), 0);
+  const clientPaymentRows = selectedClientPayments.map((payment) => [
+    formatReportDate(payment.paid_at, true),
+    payment.payment_reference,
+    payment.contract_number,
+    payment.invoice_number || '-',
+    invoiceTypeLabel(payment.invoice_type),
+    payment.method,
+    payment.transaction_number || '-',
+    money(payment.amount_usd)
+  ]);
+  if (clientPaymentRows.length > 0) clientPaymentRows.push(['', '', '', '', '', '', 'TOTAL PAYE', money(selectedClientPaymentTotal)]);
 
   const reports = [
     {
@@ -2559,6 +2540,42 @@ function Reports({ data }) {
       icon: Receipt,
       columns: ['Client', 'Telephone', 'Facture', 'Type', 'Reste', 'Date limite'],
       rows: unpaid.map((item) => [item.client_name, item.client_phone, item.invoice_number, invoiceTypeLabel(item.invoice_type), money(item.remaining_amount_usd), item.due_date])
+    },
+    {
+      title: 'Historique general des paiements',
+      icon: BadgeDollarSign,
+      columns: ['Date', 'Client', 'Telephone', 'Reference', 'Contrat', 'Facture', 'Methode', 'Montant'],
+      rows: data.payments.map((item) => [formatReportDate(item.paid_at, true), item.client_name, item.client_phone, item.payment_reference, item.contract_number, item.invoice_number || '-', item.method, money(item.amount_usd)])
+    },
+    {
+      title: 'Contrats et abonnements',
+      icon: FileText,
+      columns: ['Contrat', 'Client', 'Bouquet', 'Debut', 'Fin', 'Statut'],
+      rows: data.contracts.map((item) => [item.contract_number, item.client_name, item.plan_name || '-', formatReportDate(item.start_date), formatReportDate(item.end_date), item.status])
+    },
+    {
+      title: 'Factures entierement payees',
+      icon: CheckCircle2,
+      columns: ['Facture', 'Client', 'Type', 'Montant', 'Echeance', 'Statut'],
+      rows: data.invoices.filter((item) => item.status === 'payee').map((item) => [item.invoice_number, item.client_name, invoiceTypeLabel(item.invoice_type), money(item.total_amount_usd), formatReportDate(item.due_date), item.status])
+    },
+    {
+      title: 'Suivi des tickets support',
+      icon: Ticket,
+      columns: ['Client', 'Contrat', 'Titre', 'Priorite', 'Statut', 'Ouverture'],
+      rows: data.tickets.map((item) => [item.client_name, item.contract_number || '-', item.title, item.priority, item.status, formatReportDate(item.created_at, true)])
+    },
+    {
+      title: 'Demandes de devis',
+      icon: ClipboardList,
+      columns: ['Numero', 'Client', 'Telephone', 'Bouquet', 'Statut', 'Date'],
+      rows: data.quotes.map((item) => [item.quote_number, item.full_name, item.phone, item.plan_name || '-', item.status, formatReportDate(item.created_at, true)])
+    },
+    {
+      title: 'Mouvements detailles du budget',
+      icon: Building2,
+      columns: ['Date', 'Type', 'Categorie', 'Libelle', 'Reference', 'Methode', 'Montant'],
+      rows: (data.budgetEntries || []).map((item) => [formatReportDate(item.entry_date), item.entry_type, item.category_name || '-', item.title, item.reference || '-', item.payment_method || '-', money(item.amount_usd)])
     }
   ];
 
@@ -2575,8 +2592,29 @@ function Reports({ data }) {
 
       <div className="panel">
         <PanelHeader icon={BarChart3} title="Rapports disponibles" />
-        <p className="muted">Chaque cadre peut etre imprime separement.</p>
+        <p className="muted">Chaque cadre peut etre imprime separement avec les donnees actuellement enregistrees.</p>
       </div>
+
+      <div className="panel report-client-filter">
+        <div>
+          <PanelHeader icon={BadgeDollarSign} title="Releve des paiements par client" />
+          <p className="muted">Selectionnez un client pour obtenir son historique complet, les dates, factures, references et le total paye.</p>
+        </div>
+        <SelectInput
+          label="Client"
+          value={selectedPaymentClientId}
+          onChange={setSelectedPaymentClientId}
+          options={[{ value: 'all', label: 'Tous les clients' }, ...paymentClients.map((client) => ({ value: client.id, label: `${client.full_name} - ${client.phone || 'sans telephone'}` }))]}
+        />
+        <div className="report-client-summary"><span>Transactions<strong>{selectedClientPayments.length}</strong></span><span>Total paye<strong>{money(selectedClientPaymentTotal)}</strong></span></div>
+      </div>
+
+      <ReportPanel
+        title={`Releve paiements - ${selectedPaymentClient?.full_name || 'Tous les clients'}`}
+        icon={BadgeDollarSign}
+        columns={['Date', 'Reference', 'Contrat', 'Facture', 'Type', 'Methode', 'Transaction', 'Montant']}
+        rows={clientPaymentRows}
+      />
 
       {reports.map((item) => (
         <ReportPanel key={item.title} title={item.title} icon={item.icon} columns={item.columns} rows={item.rows} />

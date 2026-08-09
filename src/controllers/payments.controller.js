@@ -110,11 +110,11 @@ function calculateEquipmentAllocation({
   const alreadyAllocated = Math.max(Number(invoiceEquipmentAlreadyAllocated) || 0, 0);
   const contractRemaining = Math.max(Number(contractEquipmentRemaining) || 0, 0);
 
-  if (paid <= 0 || contractRemaining <= 0) return 0;
+  if (!isEquipmentPayment || paid <= 0 || contractRemaining <= 0) return 0;
 
   const requested = invoiceEquipment > 0
     ? Math.min(paid, Math.max(invoiceEquipment - alreadyAllocated, 0))
-    : (isEquipmentPayment ? paid : 0);
+    : paid;
 
   return Math.min(requested, contractRemaining);
 }
@@ -153,8 +153,16 @@ async function syncEquipmentInstallmentPayment(connection, paymentId, isEquipmen
   await unlinkEquipmentInstallmentPayment(connection, payment.payment_reference);
 
   const invoiceEquipmentAmount = Number(payment.invoice_equipment_amount_usd || 0);
-  const shouldSync = Boolean(isEquipmentPayment) || invoiceEquipmentAmount > 0;
+  const shouldSync = Boolean(isEquipmentPayment);
   if (!shouldSync) return;
+
+  // Serialise les paiements materiel d'un meme contrat afin que deux
+  // enregistrements simultanes ne reutilisent pas la meme tranche.
+  const [[lockedContract]] = await connection.execute(
+    'SELECT id FROM contracts WHERE id = ? FOR UPDATE',
+    [payment.contract_id]
+  );
+  if (!lockedContract) return;
 
   const [[invoiceAllocation]] = payment.invoice_id
     ? await connection.execute(
@@ -205,7 +213,8 @@ async function syncEquipmentInstallmentPayment(connection, paymentId, isEquipmen
        ABS(amount_usd - ?) ASC,
        due_date ASC,
        id ASC
-     LIMIT 1`,
+     LIMIT 1
+     FOR UPDATE`,
     [payment.contract_id, `%${marker}%`, amount]
   );
 

@@ -3,20 +3,20 @@ const assert = require('node:assert/strict');
 
 const { calculateEquipmentAllocation } = require('../src/controllers/payments.controller');
 
-test('alloue automatiquement la part materiel sans depasser le paiement recu', () => {
+test('alloue la part materiel selectionnee sans depasser le paiement recu', () => {
   assert.equal(calculateEquipmentAllocation({
     paymentAmount: 10,
     invoiceEquipmentAmount: 20,
     invoiceEquipmentAlreadyAllocated: 0,
     contractEquipmentRemaining: 100,
-    isEquipmentPayment: false
+    isEquipmentPayment: true
   }), 10);
 });
 
-test('la part installation reste separee et ne compte pas comme materiel', () => {
+test('une ligne materiel facturee ne compte pas comme payee sans selection explicite', () => {
   assert.equal(calculateEquipmentAllocation({
     paymentAmount: 10,
-    invoiceEquipmentAmount: 0,
+    invoiceEquipmentAmount: 10,
     invoiceEquipmentAlreadyAllocated: 0,
     contractEquipmentRemaining: 100,
     isEquipmentPayment: false
@@ -29,7 +29,7 @@ test('ne deduit pas deux fois la part materiel de la meme facture', () => {
     invoiceEquipmentAmount: 20,
     invoiceEquipmentAlreadyAllocated: 20,
     contractEquipmentRemaining: 80,
-    isEquipmentPayment: false
+    isEquipmentPayment: true
   }), 0);
 });
 
@@ -39,7 +39,7 @@ test('alloue seulement la part materiel encore disponible sur une facture partie
     invoiceEquipmentAmount: 20,
     invoiceEquipmentAlreadyAllocated: 10,
     contractEquipmentRemaining: 90,
-    isEquipmentPayment: false
+    isEquipmentPayment: true
   }), 10);
 });
 
@@ -49,7 +49,7 @@ test('plafonne la deduction au solde materiel du contrat', () => {
     invoiceEquipmentAmount: 30,
     invoiceEquipmentAlreadyAllocated: 0,
     contractEquipmentRemaining: 7.5,
-    isEquipmentPayment: false
+    isEquipmentPayment: true
   }), 7.5);
 });
 
