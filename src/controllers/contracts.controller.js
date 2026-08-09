@@ -99,6 +99,7 @@ async function createContract(req, res) {
     minimumCommitmentMonths,
     billingDueDay,
     otherPriceUsd,
+    equipmentTotalPriceUsd = 100,
     equipmentInitialPaymentUsd,
     equipmentMonthlyPaymentUsd,
     equipmentPaidInFull = false,
@@ -115,6 +116,11 @@ async function createContract(req, res) {
   const plans = await query('SELECT name FROM internet_plans WHERE id = ? LIMIT 1', [planId]);
   const isOtherPlan = plans[0]?.name === 'Autre';
   const customMonthlyPriceUsd = isOtherPlan ? Number(otherPriceUsd || 10) : null;
+  const equipmentTotal = Number(equipmentTotalPriceUsd || 100);
+
+  if (!Number.isFinite(equipmentTotal) || equipmentTotal <= 0) {
+    throw new HttpError(400, 'Le prix total du materiel doit etre superieur a zero');
+  }
 
   const result = await query(
     `INSERT INTO contracts (
@@ -135,8 +141,8 @@ async function createContract(req, res) {
       normalizeDueDay(billingDueDay || 5),
       isOtherPlan ? 'Autre' : null,
       customMonthlyPriceUsd,
-      100,
-      Number(equipmentInitialPaymentUsd || (equipmentPaidInFull ? 100 : 20)),
+      equipmentTotal,
+      Number(equipmentPaidInFull ? equipmentTotal : (equipmentInitialPaymentUsd || 20)),
       equipmentPaidInFull ? null : (equipmentMonthlyPaymentUsd ? Number(equipmentMonthlyPaymentUsd) : null),
       Boolean(equipmentPaidInFull),
       installationAddress,
@@ -166,6 +172,7 @@ async function updateContract(req, res) {
     minimumCommitmentMonths,
     billingDueDay,
     otherPriceUsd,
+    equipmentTotalPriceUsd,
     equipmentInitialPaymentUsd,
     equipmentMonthlyPaymentUsd,
     equipmentPaidInFull,
@@ -181,6 +188,12 @@ async function updateContract(req, res) {
     isOtherPlan = plans[0]?.name === 'Autre';
   }
   const shouldUpdateCustomPlan = Boolean(planId);
+  const shouldUpdateEquipmentTotal = typeof equipmentTotalPriceUsd !== 'undefined';
+  const equipmentTotal = shouldUpdateEquipmentTotal ? Number(equipmentTotalPriceUsd) : null;
+
+  if (shouldUpdateEquipmentTotal && (!Number.isFinite(equipmentTotal) || equipmentTotal <= 0)) {
+    throw new HttpError(400, 'Le prix total du materiel doit etre superieur a zero');
+  }
 
   await query(
     `UPDATE contracts
@@ -192,6 +205,7 @@ async function updateContract(req, res) {
          billing_due_day = COALESCE(?, billing_due_day),
          custom_plan_name = CASE WHEN ? THEN ? ELSE custom_plan_name END,
          custom_monthly_price_usd = CASE WHEN ? THEN ? ELSE custom_monthly_price_usd END,
+         equipment_total_price_usd = CASE WHEN ? THEN ? ELSE equipment_total_price_usd END,
          equipment_initial_payment_usd = COALESCE(?, equipment_initial_payment_usd),
          equipment_monthly_payment_usd = CASE WHEN ? THEN ? ELSE equipment_monthly_payment_usd END,
          equipment_paid_in_full = COALESCE(?, equipment_paid_in_full),
@@ -209,6 +223,8 @@ async function updateContract(req, res) {
       isOtherPlan ? 'Autre' : null,
       shouldUpdateCustomPlan,
       isOtherPlan ? Number(otherPriceUsd || 10) : null,
+      shouldUpdateEquipmentTotal,
+      equipmentTotal,
       equipmentInitialPaymentUsd ? Number(equipmentInitialPaymentUsd) : null,
       typeof equipmentMonthlyPaymentUsd !== 'undefined',
       equipmentMonthlyPaymentUsd ? Number(equipmentMonthlyPaymentUsd) : null,

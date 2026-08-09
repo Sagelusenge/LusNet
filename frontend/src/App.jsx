@@ -1849,7 +1849,7 @@ function Clients({ data, submit }) {
 }
 
 function Contracts({ data, submit }) {
-  const emptyForm = { id: '', clientId: '', planId: '', installationAddress: '', status: 'essai', activatedAt: todayInputDate(), billingDueDay: 5, otherPriceUsd: 10, equipmentInitialPaymentUsd: 20, equipmentMonthlyPaymentUsd: '', equipmentPaidInFull: false };
+  const emptyForm = { id: '', clientId: '', planId: '', installationAddress: '', status: 'essai', activatedAt: todayInputDate(), billingDueDay: 5, otherPriceUsd: 10, equipmentTotalPriceUsd: 100, equipmentInitialPaymentUsd: 20, equipmentMonthlyPaymentUsd: '', equipmentPaidInFull: false };
   const [form, setForm] = useState(emptyForm);
   const isEditing = Boolean(form.id);
   const selectedPlan = data.plans.find((plan) => String(plan.id) === String(form.planId));
@@ -1865,6 +1865,7 @@ function Contracts({ data, submit }) {
       activatedAt: item.activated_at || todayInputDate(),
       billingDueDay: item.billing_due_day || 5,
       otherPriceUsd: isOtherPlanName(item.plan_name) ? item.monthly_price_usd : 10,
+      equipmentTotalPriceUsd: item.equipment_total_price_usd || 100,
       equipmentInitialPaymentUsd: item.equipment_initial_payment_usd || 20,
       equipmentMonthlyPaymentUsd: item.equipment_monthly_payment_usd || '',
       equipmentPaidInFull: Boolean(item.equipment_paid_in_full)
@@ -1880,7 +1881,8 @@ function Contracts({ data, submit }) {
         {isOtherPlan && <TextInput label="Prix autre (USD)" type="number" value={form.otherPriceUsd} onChange={(otherPriceUsd) => setForm({ ...form, otherPriceUsd })} />}
         <TextInput label="Date de mise en service" type="date" value={form.activatedAt} onChange={(activatedAt) => setForm({ ...form, activatedAt })} />
         <TextInput label="Jour du mois pour payer" type="number" value={form.billingDueDay} onChange={(billingDueDay) => setForm({ ...form, billingDueDay: clampDueDay(billingDueDay) })} />
-        <SelectInput label="Paiement du kit" value={form.equipmentPaidInFull ? 'total' : 'tranches'} onChange={(value) => setForm({ ...form, equipmentPaidInFull: value === 'total', equipmentInitialPaymentUsd: value === 'total' ? 100 : form.equipmentInitialPaymentUsd })} options={[
+        <TextInput label="Prix total du materiel (USD)" type="number" value={form.equipmentTotalPriceUsd} onChange={(equipmentTotalPriceUsd) => setForm({ ...form, equipmentTotalPriceUsd, equipmentInitialPaymentUsd: form.equipmentPaidInFull ? equipmentTotalPriceUsd : form.equipmentInitialPaymentUsd })} />
+        <SelectInput label="Paiement du kit" value={form.equipmentPaidInFull ? 'total' : 'tranches'} onChange={(value) => setForm({ ...form, equipmentPaidInFull: value === 'total', equipmentInitialPaymentUsd: value === 'total' ? form.equipmentTotalPriceUsd : form.equipmentInitialPaymentUsd })} options={[
           { value: 'tranches', label: 'Paiement par tranches' },
           { value: 'total', label: 'Kit paye totalement' }
         ]} />

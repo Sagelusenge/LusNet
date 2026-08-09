@@ -53,6 +53,16 @@ test('plafonne la deduction au solde materiel du contrat', () => {
   }), 7.5);
 });
 
+test('compte toute la tranche lorsque le prix materiel du contrat est superieur a 100 USD', () => {
+  assert.equal(calculateEquipmentAllocation({
+    paymentAmount: 50,
+    invoiceEquipmentAmount: 30,
+    invoiceEquipmentAlreadyAllocated: 0,
+    contractEquipmentRemaining: 120,
+    isEquipmentPayment: true
+  }), 30);
+});
+
 test('utilise tout le paiement lorsqu il est explicitement declare comme materiel', () => {
   assert.equal(calculateEquipmentAllocation({
     paymentAmount: 25,

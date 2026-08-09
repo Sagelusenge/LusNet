@@ -48,16 +48,23 @@ async function getMySpace(req, res) {
     `SELECT
        c.id AS contract_id,
        c.contract_number,
-       COALESCE(ek.name, 'Materiel contrat') AS equipment_kit,
-       COALESCE(ek.total_price_usd, c.equipment_total_price_usd) AS equipment_total_usd,
-       COALESCE(SUM(CASE WHEN ei.status = 'payee' THEN ei.amount_usd ELSE 0 END), 0.00) AS equipment_paid_usd,
-       GREATEST(COALESCE(ek.total_price_usd, c.equipment_total_price_usd) - COALESCE(SUM(CASE WHEN ei.status = 'payee' THEN ei.amount_usd ELSE 0 END), 0.00), 0.00) AS equipment_remaining_usd
+       COALESCE(eq.equipment_kit, 'Materiel contrat') AS equipment_kit,
+       COALESCE(c.equipment_total_price_usd, 100.00) AS equipment_total_usd,
+       COALESCE(ep.equipment_paid_usd, 0.00) AS equipment_paid_usd,
+       GREATEST(COALESCE(c.equipment_total_price_usd, 100.00) - COALESCE(ep.equipment_paid_usd, 0.00), 0.00) AS equipment_remaining_usd
      FROM contracts c
-     LEFT JOIN contract_equipment ce ON ce.contract_id = c.id
-     LEFT JOIN equipment_kits ek ON ek.id = ce.equipment_kit_id
-     LEFT JOIN equipment_installments ei ON ei.contract_id = c.id
+     LEFT JOIN (
+       SELECT ce.contract_id, GROUP_CONCAT(DISTINCT ek.name ORDER BY ek.name SEPARATOR ', ') AS equipment_kit
+       FROM contract_equipment ce
+       INNER JOIN equipment_kits ek ON ek.id = ce.equipment_kit_id
+       GROUP BY ce.contract_id
+     ) eq ON eq.contract_id = c.id
+     LEFT JOIN (
+       SELECT contract_id, SUM(CASE WHEN status = 'payee' THEN amount_usd ELSE 0 END) AS equipment_paid_usd
+       FROM equipment_installments
+       GROUP BY contract_id
+     ) ep ON ep.contract_id = c.id
      WHERE c.client_id = ?
-     GROUP BY c.id, c.contract_number, ek.name, ek.total_price_usd, c.equipment_total_price_usd
      ORDER BY c.created_at DESC`,
     [req.user.clientId]
   );

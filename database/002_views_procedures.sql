@@ -100,25 +100,29 @@ SELECT
   c.contract_number,
   cl.full_name AS client_name,
   cl.phone AS client_phone,
-  COALESCE(ek.name, 'Materiel contrat') AS equipment_kit,
-  COALESCE(ek.total_price_usd, c.equipment_total_price_usd) AS equipment_total_usd,
-  COALESCE(SUM(CASE WHEN ei.status = 'payee' THEN ei.amount_usd ELSE 0 END), 0.00) AS equipment_paid_usd,
-  GREATEST(COALESCE(ek.total_price_usd, c.equipment_total_price_usd) - COALESCE(SUM(CASE WHEN ei.status = 'payee' THEN ei.amount_usd ELSE 0 END), 0.00), 0.00) AS equipment_remaining_usd,
-  ce.ownership_status
+  COALESCE(eq.equipment_kit, 'Materiel contrat') AS equipment_kit,
+  COALESCE(c.equipment_total_price_usd, 100.00) AS equipment_total_usd,
+  COALESCE(ep.equipment_paid_usd, 0.00) AS equipment_paid_usd,
+  GREATEST(COALESCE(c.equipment_total_price_usd, 100.00) - COALESCE(ep.equipment_paid_usd, 0.00), 0.00) AS equipment_remaining_usd,
+  eq.ownership_status
 FROM contracts c
 INNER JOIN clients cl ON cl.id = c.client_id
-LEFT JOIN contract_equipment ce ON ce.contract_id = c.id
-LEFT JOIN equipment_kits ek ON ek.id = ce.equipment_kit_id
-LEFT JOIN equipment_installments ei ON ei.contract_id = c.id
-GROUP BY
-  c.id,
-  c.contract_number,
-  cl.full_name,
-  cl.phone,
-  ek.name,
-  ek.total_price_usd,
-  c.equipment_total_price_usd,
-  ce.ownership_status;
+LEFT JOIN (
+  SELECT
+    ce.contract_id,
+    GROUP_CONCAT(DISTINCT ek.name ORDER BY ek.name SEPARATOR ', ') AS equipment_kit,
+    MAX(ce.ownership_status) AS ownership_status
+  FROM contract_equipment ce
+  INNER JOIN equipment_kits ek ON ek.id = ce.equipment_kit_id
+  GROUP BY ce.contract_id
+) eq ON eq.contract_id = c.id
+LEFT JOIN (
+  SELECT
+    contract_id,
+    SUM(CASE WHEN status = 'payee' THEN amount_usd ELSE 0 END) AS equipment_paid_usd
+  FROM equipment_installments
+  GROUP BY contract_id
+) ep ON ep.contract_id = c.id;
 
 CREATE OR REPLACE VIEW vw_dashboard_summary AS
 SELECT
