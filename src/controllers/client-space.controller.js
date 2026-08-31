@@ -12,7 +12,26 @@ async function getMySpace(req, res) {
 
   const clients = await query('SELECT * FROM clients WHERE id = ?', [req.user.clientId]);
   const contracts = await query(
-    `SELECT c.*, ip.name AS plan_name, ip.bandwidth_mbps, ip.monthly_price_usd
+    `SELECT
+       c.*,
+       ip.name AS plan_name,
+       ip.bandwidth_mbps,
+       ip.monthly_price_usd,
+       COALESCE((
+         SELECT SUM(TIMESTAMPDIFF(SECOND, ss.suspended_at, ss.restored_at))
+         FROM service_suspensions ss
+         WHERE ss.contract_id = c.id
+           AND ss.restored_at IS NOT NULL
+       ), 0) AS completed_suspension_seconds,
+       CASE
+         WHEN c.status = 'suspendu' THEN COALESCE((
+           SELECT MAX(ss.suspended_at)
+           FROM service_suspensions ss
+           WHERE ss.contract_id = c.id
+             AND ss.restored_at IS NULL
+         ), c.updated_at)
+         ELSE NULL
+       END AS current_suspended_at
      FROM contracts c
      INNER JOIN internet_plans ip ON ip.id = c.plan_id
      WHERE c.client_id = ?

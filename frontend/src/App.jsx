@@ -5,7 +5,9 @@ import {
   BellRing,
   Boxes,
   Building2,
+  BookOpen,
   CheckCircle2,
+  ChevronDown,
   ClipboardList,
   FileText,
   Gauge,
@@ -51,6 +53,15 @@ const adminNav = [
   { id: 'invoices', label: 'Factures', icon: Receipt },
   { id: 'payments', label: 'Paiements', icon: BadgeDollarSign },
   { id: 'budget', label: 'Budget', icon: Building2 },
+  {
+    id: 'ghislain',
+    label: 'Ghislain',
+    icon: BadgeDollarSign,
+    children: [
+      { id: 'ghislain-cashbook', label: 'Livre de caisse', icon: BookOpen },
+      { id: 'ghislain-budget', label: 'Fiche budgetaire', icon: Building2 }
+    ]
+  },
   { id: 'equipment', label: 'Materiel', icon: Router },
   { id: 'reports', label: 'Rapports', icon: BarChart3 },
   { id: 'support', label: 'Support', icon: Ticket },
@@ -232,6 +243,7 @@ function App() {
     return section === 'register' ? 'register' : 'home';
   });
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [expandedNavGroups, setExpandedNavGroups] = useState({ ghislain: false });
   const [tokenState, setTokenState] = useState(localStorage.getItem('lwasiva_token') || '');
   const [currentUser, setCurrentUser] = useState(getCurrentUser());
   const [theme, setTheme] = useState(localStorage.getItem('lwasiva_theme') || 'light');
@@ -263,12 +275,26 @@ function App() {
     budgetSummary: { summary: { total_recettes_usd: 0, total_depenses_usd: 0, solde_usd: 0 }, byCategory: [] },
     budgetCategories: [],
     budgetEntries: [],
+    ghislainSummary: {
+      cashbook: { total_entrees_usd: 0, total_sorties_usd: 0, solde_usd: 0 },
+      budget: { total_prevu_usd: 0, total_realise_usd: 0, ecart_usd: 0 }
+    },
+    ghislainCashbookEntries: [],
+    ghislainBudgetEntries: [],
     clientSpace: { client: null, contracts: [], invoices: [], payments: [], tickets: [], equipmentStatus: [] }
   });
 
   const isLoggedIn = Boolean(tokenState);
   const isClient = currentUser?.role === 'client';
   const navItems = isClient ? clientNav : adminNav;
+  const flatNavItems = useMemo(() => navItems.flatMap((item) => item.children || [item]), [navItems]);
+
+  useEffect(() => {
+    const activeGroup = navItems.find((item) => item.children?.some((child) => child.id === active));
+    if (activeGroup) {
+      setExpandedNavGroups((previous) => ({ ...previous, [activeGroup.id]: true }));
+    }
+  }, [active, navItems]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -296,7 +322,7 @@ function App() {
         return;
       }
 
-      const [summary, clients, contracts, balances, equipmentStatus, invoices, unpaidInvoices, payments, kits, equipmentAssignments, tickets, quotes, users, accountRequests, notificationLogs, appMessages, adminAppMessages, contactMessages, allFeedback, budgetSummary, budgetCategories, budgetEntries] =
+      const [summary, clients, contracts, balances, equipmentStatus, invoices, unpaidInvoices, payments, kits, equipmentAssignments, tickets, quotes, users, accountRequests, notificationLogs, appMessages, adminAppMessages, contactMessages, allFeedback, budgetSummary, budgetCategories, budgetEntries, ghislainSummary, ghislainCashbookEntries, ghislainBudgetEntries] =
         await Promise.all([
           api.summary().catch(() => emptySummary),
           api.clients().catch(() => []),
@@ -319,7 +345,13 @@ function App() {
           api.allFeedback().catch(() => []),
           api.budgetSummary().catch(() => ({ summary: { total_recettes_usd: 0, total_depenses_usd: 0, solde_usd: 0 }, byCategory: [] })),
           api.budgetCategories().catch(() => []),
-          api.budgetEntries().catch(() => [])
+          api.budgetEntries().catch(() => []),
+          api.ghislainSummary().catch(() => ({
+            cashbook: { total_entrees_usd: 0, total_sorties_usd: 0, solde_usd: 0 },
+            budget: { total_prevu_usd: 0, total_realise_usd: 0, ecart_usd: 0 }
+          })),
+          api.ghislainCashbookEntries().catch(() => []),
+          api.ghislainBudgetEntries().catch(() => [])
         ]);
 
       setData({
@@ -347,6 +379,9 @@ function App() {
         budgetSummary,
         budgetCategories,
         budgetEntries,
+        ghislainSummary,
+        ghislainCashbookEntries,
+        ghislainBudgetEntries,
         clientSpace: { client: null, contracts: [], invoices: [], payments: [], tickets: [], equipmentStatus: [] }
       });
     } finally {
@@ -395,8 +430,8 @@ function App() {
 
   const activeTitle = useMemo(() => {
     if (!isLoggedIn) return active === 'login' ? 'Connexion' : 'Accueil';
-    return navItems.find((item) => item.id === active)?.label || 'Dashboard';
-  }, [active, isLoggedIn, navItems]);
+    return flatNavItems.find((item) => item.id === active)?.label || 'Dashboard';
+  }, [active, isLoggedIn, flatNavItems]);
 
   if (!isLoggedIn) {
     return (
@@ -413,7 +448,7 @@ function App() {
   }
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${isClient ? 'client-shell' : 'admin-shell'}`}>
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="brand">
           <div className="brand-mark">LN</div>
@@ -427,6 +462,48 @@ function App() {
         <nav className="nav-list">
           {navItems.map((item, index) => {
             const Icon = item.icon;
+            const hasChildren = Boolean(item.children?.length);
+            const groupActive = hasChildren && item.children.some((child) => child.id === active);
+
+            if (hasChildren) {
+              const isOpen = expandedNavGroups[item.id] || groupActive;
+
+              return (
+                <div className={`nav-group ${isOpen ? 'open' : ''}`} style={{ '--nav-index': index }} key={item.id}>
+                  <button
+                    type="button"
+                    className={`nav-parent ${groupActive ? 'active' : ''}`}
+                    onClick={() => setExpandedNavGroups((previous) => ({ ...previous, [item.id]: !isOpen }))}
+                    title={item.label}
+                  >
+                    <Icon size={18} />
+                    <span>{item.label}</span>
+                    <ChevronDown size={14} className="nav-chevron" />
+                  </button>
+                  <div className="nav-sublist">
+                    {item.children.map((child) => {
+                      const ChildIcon = child.icon;
+                      return (
+                        <button
+                          type="button"
+                          key={child.id}
+                          className={`nav-child ${active === child.id ? 'active' : ''}`}
+                          onClick={() => {
+                            setActive(child.id);
+                            setSidebarOpen(false);
+                          }}
+                          title={child.label}
+                        >
+                          <ChildIcon size={16} />
+                          <span>{child.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            }
+
             return (
               <button
                 key={item.id}
@@ -490,6 +567,8 @@ function App() {
           {!isClient && active === 'invoices' && <Invoices data={data} submit={submit} />}
           {!isClient && active === 'payments' && <Payments data={data} submit={submit} />}
           {!isClient && active === 'budget' && <Budget data={data} submit={submit} />}
+          {!isClient && active === 'ghislain-cashbook' && <GhislainWorkspace data={data} submit={submit} mode="cashbook" />}
+          {!isClient && active === 'ghislain-budget' && <GhislainWorkspace data={data} submit={submit} mode="budget" />}
           {!isClient && active === 'equipment' && <Equipment data={data} submit={submit} />}
           {!isClient && active === 'reports' && <Reports data={data} />}
           {!isClient && active === 'support' && <Support data={data} submit={submit} />}
@@ -1091,7 +1170,8 @@ function Countdowns({ data }) {
                 </div>
                 <div className="countdown-dates">
                   <span>Mise en service: {dateText(contract.activated_at)}</span>
-                  <strong>{countdown.isPaused ? `Suspendu le ${countdown.suspendedAt.toLocaleDateString('fr-FR')}` : `Echeance: ${countdown.expiresAt.toLocaleDateString('fr-FR')}`}</strong>
+                  <strong>{countdown.isPaused ? `Echeance conservee: ${countdown.expiresAt.toLocaleDateString('fr-FR')}` : `Echeance: ${countdown.expiresAt.toLocaleDateString('fr-FR')}`}</strong>
+                  {countdown.isPaused && <span>Suspendu le {countdown.suspendedAt.toLocaleDateString('fr-FR')}</span>}
                 </div>
                 <div className="countdown-value">
                   {countdown.isPaused ? (
@@ -2312,6 +2392,415 @@ function Budget({ data, submit }) {
   );
 }
 
+function emptyGhislainCashbookForm() {
+  return {
+    id: '',
+    movementType: 'sortie',
+    title: '',
+    amountUsd: '',
+    entryDate: todayInputDate(),
+    paymentMethod: 'especes',
+    reference: '',
+    thirdParty: '',
+    notes: ''
+  };
+}
+
+function emptyGhislainBudgetForm() {
+  return {
+    id: '',
+    entryType: 'depense',
+    category: '',
+    title: '',
+    plannedAmountUsd: '',
+    actualAmountUsd: '',
+    entryDate: todayInputDate(),
+    budgetPeriod: '',
+    status: 'prevu',
+    reference: '',
+    notes: ''
+  };
+}
+
+function ghislainTypeLabel(value) {
+  const labels = {
+    entree: 'Entree',
+    sortie: 'Sortie',
+    recette: 'Recette',
+    depense: 'Depense',
+    prevu: 'Prevu',
+    engage: 'Engage',
+    termine: 'Termine'
+  };
+  return labels[value] || value || '-';
+}
+
+function printGhislainCashbook(entries, summary) {
+  const rows = entries.length === 0
+    ? '<tr><td colspan="8">Aucune donnee</td></tr>'
+    : entries.map((item) => `
+      <tr>
+        <td>${escapeReportCell(dateText(item.entry_date))}</td>
+        <td>${escapeReportCell(ghislainTypeLabel(item.movement_type))}</td>
+        <td>${escapeReportCell(item.title)}</td>
+        <td>${escapeReportCell(item.third_party || '-')}</td>
+        <td>${escapeReportCell(item.reference || '-')}</td>
+        <td>${escapeReportCell(item.payment_method || '-')}</td>
+        <td>${item.movement_type === 'entree' ? escapeReportCell(money(item.amount_usd)) : '-'}</td>
+        <td>${item.movement_type === 'sortie' ? escapeReportCell(money(item.amount_usd)) : '-'}</td>
+      </tr>`).join('');
+  const html = `
+    <html>
+      <head><title>Livre de caisse Ghislain</title>${documentStyles()}</head>
+      <body>
+        <main class="doc">
+          <header class="doc-header">
+            <div>
+              <div class="brand-title">LWASIVA_NET</div>
+              <div class="brand-sub">Espace prive Ghislain</div>
+              <div class="brand-sub">Imprime le ${todayDisplayDate()}</div>
+            </div>
+            <div class="doc-title">
+              <h1>Livre de caisse</h1>
+              <span class="badge">${entries.length} ligne(s)</span>
+            </div>
+          </header>
+          <section class="report-meta">
+            <div><span>Total entrees</span><strong>${money(summary.total_entrees_usd)}</strong></div>
+            <div><span>Total sorties</span><strong>${money(summary.total_sorties_usd)}</strong></div>
+            <div><span>Solde caisse</span><strong>${money(summary.solde_usd)}</strong></div>
+          </section>
+          <table>
+            <thead><tr><th>Date</th><th>Type</th><th>Libelle</th><th>Personne</th><th>Reference</th><th>Methode</th><th>Entree</th><th>Sortie</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+          <section class="report-signatures">
+            <div><strong>Etabli par Ghislain</strong>Nom, date et signature</div>
+            <div><strong>Controle administratif</strong>Nom, date et signature</div>
+          </section>
+          <footer class="footer">LWASIVA_NET - Livre de caisse prive Ghislain</footer>
+        </main>
+      </body>
+    </html>`;
+  printHtml('Livre de caisse Ghislain', html);
+}
+
+function printGhislainCashbookSheet(item) {
+  const html = `
+    <html>
+      <head><title>Fiche caisse - ${escapeReportCell(item.title)}</title>${documentStyles()}</head>
+      <body>
+        <main class="doc compact-doc">
+          <header class="doc-header compact-header">
+            <div>
+              <div class="brand-title">LWASIVA_NET</div>
+              <div class="brand-sub">Fiche livre de caisse - Ghislain</div>
+            </div>
+            <div class="doc-title">
+              <h1>${escapeReportCell(ghislainTypeLabel(item.movement_type))}</h1>
+              <span class="badge">${money(item.amount_usd)}</span>
+            </div>
+          </header>
+          <section class="box">
+            <h2>Operation</h2>
+            <div class="field-line"><strong>Date</strong><span>${escapeReportCell(dateText(item.entry_date))}</span></div>
+            <div class="field-line"><strong>Libelle</strong><span>${escapeReportCell(item.title)}</span></div>
+            <div class="field-line"><strong>Montant</strong><span>${money(item.amount_usd)}</span></div>
+            <div class="field-line"><strong>Methode</strong><span>${escapeReportCell(item.payment_method || '-')}</span></div>
+            <div class="field-line"><strong>Reference</strong><span>${escapeReportCell(item.reference || '-')}</span></div>
+            <div class="field-line"><strong>Personne</strong><span>${escapeReportCell(item.third_party || '-')}</span></div>
+            <div class="field-line"><strong>Note</strong><span>${escapeReportCell(item.notes || '-')}</span></div>
+          </section>
+          <section class="signature compact-signature">
+            <div class="signature-box"><strong>Ghislain</strong><br/>Signature</div>
+            <div class="signature-box"><strong>Administration</strong><br/>Verification</div>
+          </section>
+          <footer class="footer">LWASIVA_NET - Fiche imprimee depuis l'espace Ghislain</footer>
+        </main>
+      </body>
+    </html>`;
+  printHtml(`Fiche caisse - ${item.title}`, html);
+}
+
+function printGhislainBudget(entries, summary, byCategory = []) {
+  const rows = entries.length === 0
+    ? '<tr><td colspan="9">Aucune donnee</td></tr>'
+    : entries.map((item) => `
+      <tr>
+        <td>${escapeReportCell(dateText(item.entry_date))}</td>
+        <td>${escapeReportCell(item.budget_period || '-')}</td>
+        <td>${escapeReportCell(ghislainTypeLabel(item.entry_type))}</td>
+        <td>${escapeReportCell(item.category)}</td>
+        <td>${escapeReportCell(item.title)}</td>
+        <td>${escapeReportCell(money(item.planned_amount_usd))}</td>
+        <td>${escapeReportCell(money(item.actual_amount_usd))}</td>
+        <td>${escapeReportCell(money(item.variance_usd))}</td>
+        <td>${escapeReportCell(ghislainTypeLabel(item.status))}</td>
+      </tr>`).join('');
+  const categoryRows = byCategory.length === 0
+    ? '<tr><td colspan="4">Aucun total par categorie</td></tr>'
+    : byCategory.map((item) => `<tr><td>${escapeReportCell(ghislainTypeLabel(item.entry_type))}</td><td>${escapeReportCell(item.category)}</td><td>${money(item.planned_usd)}</td><td>${money(item.actual_usd)}</td></tr>`).join('');
+  const html = `
+    <html>
+      <head><title>Fiche budgetaire Ghislain</title>${documentStyles()}</head>
+      <body>
+        <main class="doc">
+          <header class="doc-header">
+            <div>
+              <div class="brand-title">LWASIVA_NET</div>
+              <div class="brand-sub">Espace prive Ghislain</div>
+              <div class="brand-sub">Imprime le ${todayDisplayDate()}</div>
+            </div>
+            <div class="doc-title">
+              <h1>Fiche budgetaire</h1>
+              <span class="badge">${entries.length} ligne(s)</span>
+            </div>
+          </header>
+          <section class="report-meta">
+            <div><span>Total prevu</span><strong>${money(summary.total_prevu_usd)}</strong></div>
+            <div><span>Total realise</span><strong>${money(summary.total_realise_usd)}</strong></div>
+            <div><span>Ecart</span><strong>${money(summary.ecart_usd)}</strong></div>
+          </section>
+          <h2>Details</h2>
+          <table>
+            <thead><tr><th>Date</th><th>Periode</th><th>Type</th><th>Categorie</th><th>Libelle</th><th>Prevu</th><th>Realise</th><th>Ecart</th><th>Statut</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+          <h2>Totaux par categorie</h2>
+          <table>
+            <thead><tr><th>Type</th><th>Categorie</th><th>Prevu</th><th>Realise</th></tr></thead>
+            <tbody>${categoryRows}</tbody>
+          </table>
+          <section class="report-signatures">
+            <div><strong>Etabli par Ghislain</strong>Nom, date et signature</div>
+            <div><strong>Controle administratif</strong>Nom, date et signature</div>
+          </section>
+          <footer class="footer">LWASIVA_NET - Fiche budgetaire privee Ghislain</footer>
+        </main>
+      </body>
+    </html>`;
+  printHtml('Fiche budgetaire Ghislain', html);
+}
+
+function printGhislainBudgetSheet(item) {
+  const html = `
+    <html>
+      <head><title>Fiche budgetaire - ${escapeReportCell(item.title)}</title>${documentStyles()}</head>
+      <body>
+        <main class="doc compact-doc">
+          <header class="doc-header compact-header">
+            <div>
+              <div class="brand-title">LWASIVA_NET</div>
+              <div class="brand-sub">Fiche budgetaire - Ghislain</div>
+            </div>
+            <div class="doc-title">
+              <h1>${escapeReportCell(ghislainTypeLabel(item.entry_type))}</h1>
+              <span class="badge">${escapeReportCell(ghislainTypeLabel(item.status))}</span>
+            </div>
+          </header>
+          <section class="box">
+            <h2>Ligne budgetaire</h2>
+            <div class="field-line"><strong>Date</strong><span>${escapeReportCell(dateText(item.entry_date))}</span></div>
+            <div class="field-line"><strong>Periode</strong><span>${escapeReportCell(item.budget_period || '-')}</span></div>
+            <div class="field-line"><strong>Categorie</strong><span>${escapeReportCell(item.category)}</span></div>
+            <div class="field-line"><strong>Libelle</strong><span>${escapeReportCell(item.title)}</span></div>
+            <div class="field-line"><strong>Prevu</strong><span>${money(item.planned_amount_usd)}</span></div>
+            <div class="field-line"><strong>Realise</strong><span>${money(item.actual_amount_usd)}</span></div>
+            <div class="field-line"><strong>Ecart</strong><span>${money(item.variance_usd)}</span></div>
+            <div class="field-line"><strong>Reference</strong><span>${escapeReportCell(item.reference || '-')}</span></div>
+            <div class="field-line"><strong>Note</strong><span>${escapeReportCell(item.notes || '-')}</span></div>
+          </section>
+          <section class="signature compact-signature">
+            <div class="signature-box"><strong>Ghislain</strong><br/>Signature</div>
+            <div class="signature-box"><strong>Administration</strong><br/>Verification</div>
+          </section>
+          <footer class="footer">LWASIVA_NET - Fiche imprimee depuis l'espace Ghislain</footer>
+        </main>
+      </body>
+    </html>`;
+  printHtml(`Fiche budgetaire - ${item.title}`, html);
+}
+
+function GhislainWorkspace({ data, submit, mode }) {
+  const [cashbookForm, setCashbookForm] = useState(emptyGhislainCashbookForm);
+  const [budgetForm, setBudgetForm] = useState(emptyGhislainBudgetForm);
+  const cashbookSummary = data.ghislainSummary?.cashbook || { total_entrees_usd: 0, total_sorties_usd: 0, solde_usd: 0 };
+  const budgetSummary = data.ghislainSummary?.budget || { total_prevu_usd: 0, total_realise_usd: 0, ecart_usd: 0 };
+  const byCategory = data.ghislainSummary?.byCategory || [];
+  const cashbookEntries = data.ghislainCashbookEntries || [];
+  const budgetEntries = data.ghislainBudgetEntries || [];
+  const isCashbook = mode === 'cashbook';
+  const cashbookEditing = Boolean(cashbookForm.id);
+  const budgetEditing = Boolean(budgetForm.id);
+
+  function saveCashbookEntry() {
+    const action = cashbookEditing
+      ? () => api.updateGhislainCashbookEntry(cashbookForm.id, cashbookForm)
+      : () => api.createGhislainCashbookEntry(cashbookForm);
+    submit(action, cashbookEditing ? 'Ligne caisse modifiee' : 'Ligne caisse enregistree');
+    setCashbookForm(emptyGhislainCashbookForm());
+  }
+
+  function editCashbookEntry(item) {
+    setCashbookForm({
+      id: item.id,
+      movementType: item.movement_type,
+      title: item.title,
+      amountUsd: item.amount_usd,
+      entryDate: dateInputValue(item.entry_date) || todayInputDate(),
+      paymentMethod: item.payment_method || 'especes',
+      reference: item.reference || '',
+      thirdParty: item.third_party || '',
+      notes: item.notes || ''
+    });
+  }
+
+  function saveBudgetEntry() {
+    const action = budgetEditing
+      ? () => api.updateGhislainBudgetEntry(budgetForm.id, budgetForm)
+      : () => api.createGhislainBudgetEntry(budgetForm);
+    submit(action, budgetEditing ? 'Fiche budgetaire modifiee' : 'Fiche budgetaire enregistree');
+    setBudgetForm(emptyGhislainBudgetForm());
+  }
+
+  function editBudgetEntry(item) {
+    setBudgetForm({
+      id: item.id,
+      entryType: item.entry_type,
+      category: item.category,
+      title: item.title,
+      plannedAmountUsd: item.planned_amount_usd,
+      actualAmountUsd: item.actual_amount_usd,
+      entryDate: dateInputValue(item.entry_date) || todayInputDate(),
+      budgetPeriod: item.budget_period || '',
+      status: item.status || 'prevu',
+      reference: item.reference || '',
+      notes: item.notes || ''
+    });
+  }
+
+  return (
+    <>
+      <section className="ghislain-hero">
+        <div>
+          <span className="reports-eyebrow"><BookOpen size={14} /> Espace prive</span>
+          <h2>{isCashbook ? 'Livre de caisse Ghislain' : 'Fiche budgetaire Ghislain'}</h2>
+          <p>Ces fiches restent separees du budget et des rapports administratifs generaux.</p>
+        </div>
+        <div className="ghislain-hero-actions">
+          <button className={`small-button ${isCashbook ? 'active' : ''}`} type="button" onClick={() => printGhislainCashbook(cashbookEntries, cashbookSummary)}>
+            <Printer size={16} />
+            Imprimer caisse
+          </button>
+          <button className={`small-button ${!isCashbook ? 'active' : ''}`} type="button" onClick={() => printGhislainBudget(budgetEntries, budgetSummary, byCategory)}>
+            <Printer size={16} />
+            Imprimer budget
+          </button>
+        </div>
+      </section>
+
+      <div className="metric-grid ghislain-metric-grid">
+        <div className="metric"><BadgeDollarSign size={20} /><span>Entrees caisse</span><strong>{money(cashbookSummary.total_entrees_usd)}</strong></div>
+        <div className="metric"><Trash2 size={20} /><span>Sorties caisse</span><strong>{money(cashbookSummary.total_sorties_usd)}</strong></div>
+        <div className="metric"><Building2 size={20} /><span>Solde caisse</span><strong>{money(cashbookSummary.solde_usd)}</strong></div>
+        <div className="metric"><ClipboardList size={20} /><span>Budget prevu</span><strong>{money(budgetSummary.total_prevu_usd)}</strong></div>
+        <div className="metric"><CheckCircle2 size={20} /><span>Budget realise</span><strong>{money(budgetSummary.total_realise_usd)}</strong></div>
+        <div className="metric"><BarChart3 size={20} /><span>Ecart budget</span><strong>{money(budgetSummary.ecart_usd)}</strong></div>
+      </div>
+
+      {isCashbook ? (
+        <>
+          <QuickForm title={cashbookEditing ? 'Modifier une ligne du livre de caisse' : 'Nouvelle ligne du livre de caisse'} icon={BookOpen} onSubmit={saveCashbookEntry}>
+            <SelectInput label="Type" value={cashbookForm.movementType} onChange={(movementType) => setCashbookForm({ ...cashbookForm, movementType })} options={[
+              { value: 'entree', label: 'Entree caisse' },
+              { value: 'sortie', label: 'Sortie caisse' }
+            ]} />
+            <TextInput label="Libelle" value={cashbookForm.title} onChange={(title) => setCashbookForm({ ...cashbookForm, title })} />
+            <TextInput label="Montant USD" type="number" value={cashbookForm.amountUsd} onChange={(amountUsd) => setCashbookForm({ ...cashbookForm, amountUsd })} />
+            <TextInput label="Date" type="date" value={cashbookForm.entryDate} onChange={(entryDate) => setCashbookForm({ ...cashbookForm, entryDate })} />
+            <SelectInput label="Methode" value={cashbookForm.paymentMethod} onChange={(paymentMethod) => setCashbookForm({ ...cashbookForm, paymentMethod })} options={['especes', 'airtel_money', 'mpesa', 'orange_money', 'banque', 'autre']} />
+            <TextInput label="Reference / piece" value={cashbookForm.reference} onChange={(reference) => setCashbookForm({ ...cashbookForm, reference })} />
+            <TextInput label="Personne / service" value={cashbookForm.thirdParty} onChange={(thirdParty) => setCashbookForm({ ...cashbookForm, thirdParty })} />
+            <TextAreaInput label="Note" value={cashbookForm.notes} onChange={(notes) => setCashbookForm({ ...cashbookForm, notes })} />
+            {cashbookEditing && <button className="small-button" type="button" onClick={() => setCashbookForm(emptyGhislainCashbookForm())}><X size={17} /> Annuler</button>}
+          </QuickForm>
+
+          <div className="panel table-panel ghislain-panel">
+            <div className="report-panel-header">
+              <PanelHeader icon={BookOpen} title="Registre du livre de caisse" />
+              <button className="small-button" type="button" onClick={() => printGhislainCashbook(cashbookEntries, cashbookSummary)}><Printer size={17} /> Imprimer</button>
+            </div>
+            <div className="quote-list">
+              {cashbookEntries.length === 0 ? <p className="muted">Aucune ligne du livre de caisse.</p> : cashbookEntries.map((item) => (
+                <div className={`quote-item ghislain-record ${item.movement_type}`} key={item.id}>
+                  <div>
+                    <strong>{ghislainTypeLabel(item.movement_type)} - {item.title}</strong>
+                    <span>{dateText(item.entry_date)} - {item.third_party || 'Sans personne'} - {item.reference || 'Sans reference'} - {item.payment_method}</span>
+                  </div>
+                  <div className="quote-actions">
+                    <span className="status-chip">{money(item.amount_usd)}</span>
+                    <button className="icon-button" title="Imprimer la fiche" onClick={() => printGhislainCashbookSheet(item)}><Printer size={17} /></button>
+                    <button className="icon-button" title="Modifier" onClick={() => editCashbookEntry(item)}><Pencil size={17} /></button>
+                    <button className="icon-button danger" title="Supprimer" onClick={() => submit(() => api.deleteGhislainCashbookEntry(item.id), 'Ligne caisse supprimee')}><Trash2 size={17} /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          <QuickForm title={budgetEditing ? 'Modifier une fiche budgetaire Ghislain' : 'Nouvelle fiche budgetaire Ghislain'} icon={Building2} onSubmit={saveBudgetEntry}>
+            <SelectInput label="Type" value={budgetForm.entryType} onChange={(entryType) => setBudgetForm({ ...budgetForm, entryType })} options={[
+              { value: 'recette', label: 'Recette prevue' },
+              { value: 'depense', label: 'Depense prevue' }
+            ]} />
+            <TextInput label="Categorie" value={budgetForm.category} onChange={(category) => setBudgetForm({ ...budgetForm, category })} />
+            <TextInput label="Libelle" value={budgetForm.title} onChange={(title) => setBudgetForm({ ...budgetForm, title })} />
+            <TextInput label="Montant prevu USD" type="number" value={budgetForm.plannedAmountUsd} onChange={(plannedAmountUsd) => setBudgetForm({ ...budgetForm, plannedAmountUsd })} />
+            <TextInput label="Montant realise USD" type="number" value={budgetForm.actualAmountUsd} onChange={(actualAmountUsd) => setBudgetForm({ ...budgetForm, actualAmountUsd })} />
+            <TextInput label="Date" type="date" value={budgetForm.entryDate} onChange={(entryDate) => setBudgetForm({ ...budgetForm, entryDate })} />
+            <TextInput label="Periode" value={budgetForm.budgetPeriod} onChange={(budgetPeriod) => setBudgetForm({ ...budgetForm, budgetPeriod })} />
+            <SelectInput label="Statut" value={budgetForm.status} onChange={(status) => setBudgetForm({ ...budgetForm, status })} options={[
+              { value: 'prevu', label: 'Prevu' },
+              { value: 'engage', label: 'Engage' },
+              { value: 'termine', label: 'Termine' }
+            ]} />
+            <TextInput label="Reference" value={budgetForm.reference} onChange={(reference) => setBudgetForm({ ...budgetForm, reference })} />
+            <TextAreaInput label="Note" value={budgetForm.notes} onChange={(notes) => setBudgetForm({ ...budgetForm, notes })} />
+            {budgetEditing && <button className="small-button" type="button" onClick={() => setBudgetForm(emptyGhislainBudgetForm())}><X size={17} /> Annuler</button>}
+          </QuickForm>
+
+          <div className="panel table-panel ghislain-panel">
+            <div className="report-panel-header">
+              <PanelHeader icon={Building2} title="Registre des fiches budgetaires Ghislain" />
+              <button className="small-button" type="button" onClick={() => printGhislainBudget(budgetEntries, budgetSummary, byCategory)}><Printer size={17} /> Imprimer</button>
+            </div>
+            <div className="quote-list">
+              {budgetEntries.length === 0 ? <p className="muted">Aucune fiche budgetaire Ghislain.</p> : budgetEntries.map((item) => (
+                <div className={`quote-item ghislain-record ${item.entry_type}`} key={item.id}>
+                  <div>
+                    <strong>{ghislainTypeLabel(item.entry_type)} - {item.category} - {item.title}</strong>
+                    <span>{dateText(item.entry_date)} - {item.budget_period || 'Sans periode'} - prevu {money(item.planned_amount_usd)} - realise {money(item.actual_amount_usd)}</span>
+                  </div>
+                  <div className="quote-actions">
+                    <span className="status-chip">{ghislainTypeLabel(item.status)}</span>
+                    <button className="icon-button" title="Imprimer la fiche" onClick={() => printGhislainBudgetSheet(item)}><Printer size={17} /></button>
+                    <button className="icon-button" title="Modifier" onClick={() => editBudgetEntry(item)}><Pencil size={17} /></button>
+                    <button className="icon-button danger" title="Supprimer" onClick={() => submit(() => api.deleteGhislainBudgetEntry(item.id), 'Fiche budgetaire supprimee')}><Trash2 size={17} /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <TablePanel title="Totaux budgetaires Ghislain par categorie" icon={BarChart3} columns={['Type', 'Categorie', 'Prevu', 'Realise']} rows={byCategory.map((item) => [ghislainTypeLabel(item.entry_type), item.category, money(item.planned_usd), money(item.actual_usd)])} />
+        </>
+      )}
+    </>
+  );
+}
+
 function Equipment({ data, submit }) {
   const emptyAssignment = {
     id: '',
@@ -2574,8 +3063,18 @@ function Reports({ data }) {
     {
       title: 'Contrats et abonnements',
       icon: FileText,
-      columns: ['Contrat', 'Client', 'Bouquet', 'Debut', 'Fin', 'Statut'],
-      rows: data.contracts.map((item) => [item.contract_number, item.client_name, item.plan_name || '-', formatReportDate(item.start_date), formatReportDate(item.end_date), item.status])
+      columns: ['Contrat', 'Client', 'Bouquet', 'Mise en service', 'Echeance effective', 'Statut'],
+      rows: data.contracts.map((item) => {
+        const countdown = subscriptionCountdownForContract(item, data.invoices, now);
+        return [
+          item.contract_number,
+          item.client_name,
+          item.plan_name || '-',
+          formatReportDate(item.activated_at),
+          countdown ? formatReportDate(countdown.expiresAt) : '-',
+          item.status
+        ];
+      })
     },
     {
       title: 'Factures entierement payees',

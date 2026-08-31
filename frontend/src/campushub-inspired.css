@@ -557,6 +557,13 @@
   padding-bottom: 100px;
 }
 
+.nav-group {
+  display: grid;
+  gap: 5px;
+  animation: reveal-left 420ms ease-out both;
+  animation-delay: calc(var(--nav-index, 0) * 35ms);
+}
+
 .nav-list button {
   min-height: 43px;
   gap: 12px;
@@ -565,6 +572,42 @@
   color: rgba(230,242,239,.72);
   font-size: 12px;
   font-weight: 680;
+}
+
+.nav-list .nav-parent {
+  width: 100%;
+}
+
+.nav-chevron {
+  margin-left: auto;
+  transition: transform 180ms ease;
+}
+
+.nav-group.open .nav-chevron {
+  transform: rotate(180deg);
+}
+
+.nav-sublist {
+  display: none;
+  gap: 5px;
+  padding-left: 14px;
+}
+
+.nav-group.open .nav-sublist {
+  display: grid;
+}
+
+.nav-child {
+  min-height: 36px !important;
+  padding-left: 13px !important;
+  color: rgba(230,242,239,.64) !important;
+  background: rgba(255,255,255,.035) !important;
+}
+
+.nav-child.active,
+.nav-child:hover {
+  color: #fff !important;
+  background: linear-gradient(90deg, rgba(224, 170, 60, .18), rgba(255,255,255,.065)) !important;
 }
 
 .nav-list button svg {
@@ -682,6 +725,34 @@
 
 .topbar-profile strong { font-size: 11px; }
 .topbar-profile small { color: var(--muted); font-size: 8px; text-transform: uppercase; }
+
+.client-shell .sidebar {
+  width: 220px;
+}
+
+.client-shell .main {
+  margin-left: 220px;
+}
+
+.client-shell .nav-list {
+  gap: 4px;
+  padding-bottom: 72px;
+}
+
+.client-shell .nav-list button {
+  min-height: 38px;
+  border-radius: 8px;
+  padding: 0 10px;
+  font-size: 11px;
+}
+
+.client-shell .nav-list button svg {
+  width: 17px;
+}
+
+.client-shell .sidebar-status {
+  width: 194px;
+}
 
 .content {
   gap: 20px;
@@ -1263,6 +1334,78 @@
 .report-panel-header .small-button { box-shadow: 0 9px 20px color-mix(in srgb, var(--brand) 18%, transparent); }
 .report-panel-header .small-button:hover { transform: translateY(-2px); }
 
+.ghislain-hero {
+  min-height: 150px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 22px;
+  padding: 24px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--line));
+  border-radius: 12px;
+  color: #fff;
+  background:
+    linear-gradient(120deg, rgba(7, 63, 51, .98), rgba(8, 39, 32, .94)),
+    linear-gradient(90deg, rgba(224,173,60,.18), transparent);
+  box-shadow: 0 18px 44px rgba(4, 38, 29, .16);
+}
+
+.ghislain-hero h2 {
+  margin: 9px 0 6px;
+  color: #fff;
+  font-size: clamp(25px, 2.6vw, 36px);
+  letter-spacing: -.035em;
+}
+
+.ghislain-hero p {
+  margin: 0;
+  max-width: 650px;
+  color: rgba(236,249,245,.68);
+  font-size: 12px;
+}
+
+.ghislain-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.ghislain-hero-actions .small-button {
+  border-color: rgba(255,255,255,.16);
+  background: rgba(255,255,255,.1);
+  color: #fff;
+}
+
+.ghislain-hero-actions .small-button.active,
+.ghislain-hero-actions .small-button:hover {
+  border-color: transparent;
+  background: #e0ad3c;
+  color: #102019;
+}
+
+.ghislain-metric-grid {
+  grid-template-columns: repeat(6, minmax(120px, 1fr));
+}
+
+.ghislain-panel .quote-list {
+  gap: 8px;
+}
+
+.ghislain-record {
+  border-left: 4px solid var(--brand);
+}
+
+.ghislain-record.sortie,
+.ghislain-record.depense {
+  border-left-color: var(--accent);
+}
+
+.ghislain-record .status-chip {
+  font-weight: 850;
+}
+
 @keyframes admin-section-in { from { opacity: 0; transform: translateY(18px) scale(.992); } to { opacity: 1; transform: none; } }
 @keyframes dashboard-line-in { from { opacity: 0; transform: scaleX(0); } to { opacity: 1; transform: scaleX(1); } }
 @keyframes admin-live-pulse { 50% { box-shadow: 0 0 0 7px rgba(76,224,168,.08); transform: scale(.9); } }
@@ -1274,21 +1417,31 @@
 
 @media (max-width: 1180px) {
   .reports-metric-grid { grid-template-columns: repeat(3, 1fr); }
+  .ghislain-metric-grid { grid-template-columns: repeat(3, 1fr); }
   .report-catalog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 760px) {
   .reports-hero { min-height: 0; align-items: stretch; flex-direction: column; padding: 22px 18px; }
+  .ghislain-hero { min-height: 0; align-items: stretch; flex-direction: column; padding: 20px 16px; }
+  .client-shell .sidebar { width: min(236px, 78vw); }
+  .client-shell .main { margin-left: 0; }
+  .client-shell .nav-list { padding-bottom: 62px; }
+  .client-shell .nav-list button { min-height: 38px; }
+  .client-shell .sidebar-status { width: calc(min(236px, 78vw) - 26px); }
   .reports-hero-status { min-width: 0; }
   .reports-metric-grid { grid-template-columns: 1fr 1fr; }
+  .ghislain-metric-grid { grid-template-columns: 1fr 1fr; }
   .report-library-heading { align-items: flex-start; flex-direction: column; }
   .report-catalog-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 480px) {
   .reports-metric-grid { grid-template-columns: 1fr 1fr; }
+  .ghislain-metric-grid { grid-template-columns: 1fr; }
   .reports-metric { min-height: 105px; }
   .report-catalog-card { min-height: 88px; }
+  .ghislain-hero-actions { display: grid; justify-content: stretch; }
 }
 
 @media (prefers-reduced-motion: reduce) {

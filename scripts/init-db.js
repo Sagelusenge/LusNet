@@ -20,8 +20,20 @@ const files = [
   path.join(__dirname, '..', 'database', '006_app_messages_push.sql'),
   path.join(__dirname, '..', 'database', '007_budget.sql'),
   path.join(__dirname, '..', 'database', '008_other_plan.sql'),
-  path.join(__dirname, '..', 'database', '017_client_account_requests.sql')
+  path.join(__dirname, '..', 'database', '017_client_account_requests.sql'),
+  path.join(__dirname, '..', 'database', '018_ghislain_private_reports.sql')
 ];
+
+async function tableExists(connection, tableName) {
+  const [rows] = await connection.query(
+    `SELECT COUNT(*) AS count
+     FROM information_schema.tables
+     WHERE table_schema = DATABASE()
+       AND table_name = ?`,
+    [tableName]
+  );
+  return Number(rows[0]?.count || 0) > 0;
+}
 
 function splitSqlStatements(sql) {
   const statements = [];
@@ -64,6 +76,12 @@ async function main() {
 
   for (const file of files) {
     console.log(`Execution: ${path.relative(process.cwd(), file)}`);
+
+    if (path.basename(file) === '001_initial_schema.sql' && env.db.ssl && await tableExists(connection, 'users')) {
+      console.log('Schema initial deja present, passage au fichier suivant.');
+      continue;
+    }
+
     const sql = fs.readFileSync(file, 'utf8');
     const statements = splitSqlStatements(sql);
 
