@@ -1744,6 +1744,10 @@ function ClientSpace({ data, messages = [], setActive }) {
   const unpaid = data.invoices.filter(i => (i.invoice_type || 'facture') === 'facture' && !['brouillon','annulee'].includes(i.status) && invoiceRemaining(i) > 0);
   const balance = unpaid.reduce((total,i) => total + invoiceRemaining(i),0);
   const tickets = data.tickets.filter(t => !['resolu','ferme'].includes(t.status));
+  const equipment = (data.equipmentStatus || []).find(item => String(item.contract_id) === String(activeContract?.id || activeContract?.contract_id));
+  const nextInvoice = [...unpaid].sort((a,b) => String(a.due_date || '9999').localeCompare(String(b.due_date || '9999')))[0];
+  const recentPayments = [...(data.payments || [])].sort((a,b) => String(b.paid_at).localeCompare(String(a.paid_at))).slice(0,5);
+  const recentTickets = [...(data.tickets || [])].sort((a,b) => String(b.opened_at).localeCompare(String(a.opened_at))).slice(0,5);
   const cards = [
     ['Mon bouquet', activeContract?.plan_name || 'Aucun abonnement', Wifi],
     ['Échéance', countdown ? countdown.isPaused ? 'En pause' : countdown.remainingMs <= 0 ? 'Expiré' : countdown.expiresAt.toLocaleDateString('fr-FR', {timeZone:'Africa/Lubumbashi'}) : 'Non définie', Timer],
@@ -1756,6 +1760,34 @@ function ClientSpace({ data, messages = [], setActive }) {
     <div className="client-shortcuts">{[['client-contracts','Mes contrats',FileText],['client-invoices','Mes factures',Receipt],['client-payments','Mes reçus',Printer],['client-complaints','Contacter le support',Ticket]].map(([id,label,Icon]) => <button className="small-button" key={id} onClick={() => setActive(id)}><Icon size={17} />{label}</button>)}</div>
     <div className="two-columns"><section className="panel client-summary-panel"><PanelHeader icon={Wifi} title="Ma connexion" /><div className="client-status-list"><div><span>Contrat</span><strong>{activeContract?.contract_number || 'Aucun contrat'}</strong></div><div><span>Statut</span><strong>{activeContract?.status || 'Non activé'}</strong></div><div><span>Adresse</span><strong>{activeContract?.installation_address || data.client?.address || 'À renseigner'}</strong></div>{countdown && <div><span>Abonnement</span><strong>{countdown.isPaused ? 'Compteur en pause' : countdown.remainingMs <= 0 ? `Expiré depuis ${countdown.days} jours` : `${countdown.days} jours restants`}</strong></div>}</div></section>
     <section className="panel client-summary-panel"><PanelHeader icon={MessageSquare} title="Dernière information" />{messages[0] ? <div className="client-message-card"><strong>{messages[0].title}</strong><p>{messages[0].body}</p><small>{dateText(messages[0].created_at)}</small></div> : <p className="muted">Aucun nouveau message. Notre équipe reste disponible depuis la rubrique Réclamations.</p>}<p className="muted">{unpaid.length} facture(s) avec un solde à régler.</p></section></div>
+    <div className="two-columns">
+      <section className="panel client-summary-panel">
+        <PanelHeader icon={Boxes} title="Mon kit Internet" />
+        {equipment ? <div className="client-status-list">
+          <div><span>Kit installé</span><strong>{equipment.equipment_kit || 'Matériel du contrat'}</strong></div>
+          <div><span>Prix total du kit</span><strong>{money(equipment.equipment_total_usd)}</strong></div>
+          <div><span>Déjà payé</span><strong>{money(equipment.equipment_paid_usd)}</strong></div>
+          <div><span>Reste à payer sur le kit</span><strong>{money(Math.max(0, Number(equipment.equipment_remaining_usd || 0)))}</strong></div>
+          <div><span>Situation</span><strong>{Number(equipment.equipment_remaining_usd || 0) > 0 ? 'Paiement en cours' : 'Kit entièrement réglé'}</strong></div>
+        </div> : <p className="muted">Aucun kit renseigné pour ce contrat.</p>}
+        <p className="muted">Le solde du kit peut déjà figurer dans vos factures : il ne s’ajoute pas automatiquement au reste à payer affiché en haut.</p>
+      </section>
+      <section className="panel client-summary-panel">
+        <PanelHeader icon={Receipt} title="Prochaine facture à régler" />
+        {nextInvoice ? <><div className="client-status-list">
+          <div><span>Numéro</span><strong>{nextInvoice.invoice_number}</strong></div>
+          <div><span>Période</span><strong>{dateText(nextInvoice.period_start)} – {dateText(nextInvoice.period_end)}</strong></div>
+          <div><span>Total de la facture</span><strong>{money(nextInvoice.total_amount_usd)}</strong></div>
+          <div><span>Déjà payé</span><strong>{money(nextInvoice.paid_amount_usd)}</strong></div>
+          <div><span>Reste à payer</span><strong>{money(invoiceRemaining(nextInvoice))}</strong></div>
+          <div><span>Date limite</span><strong>{dateText(nextInvoice.due_date)}</strong></div>
+        </div><button className="small-button" onClick={() => printInvoice(clientDocumentRecord(nextInvoice,data))}><Printer size={16} />Imprimer la facture</button></> : <p className="muted">Aucune facture avec un solde à régler.</p>}
+      </section>
+    </div>
+    <div className="two-columns">
+      <TablePanel title="Mes derniers paiements" icon={BadgeDollarSign} columns={['Date','Référence','Montant','Reçu']} rows={recentPayments.map(item => [dateText(item.paid_at),item.payment_reference,money(item.amount_usd),<button className="small-button" onClick={() => printPaymentStatement(clientDocumentRecord(item,data),{invoices:data.invoices.map(invoice => clientDocumentRecord(invoice,data))})}><Printer size={16} />Imprimer</button>])} />
+      <TablePanel title="Mes réclamations récentes" icon={Ticket} columns={['Sujet','Date','Priorité','Statut']} rows={recentTickets.map(item => [item.title,dateText(item.opened_at),item.priority,item.status])} />
+    </div>
   </>;
 }
 
