@@ -43,6 +43,16 @@ import {
 } from 'lucide-react';
 import { api, getCurrentUser, setToken } from './api';
 
+const COMPANY_LOGO = '/lwasivanet-logo.jpeg';
+
+function CompanyLogo({ className = '' }) {
+  return <span className={`company-logo ${className}`}><img src={COMPANY_LOGO} alt="LwasivaNet — Votre fournisseur d’accès Internet" width="1448" height="1086" /></span>;
+}
+
+function documentBrand() {
+  return `<div class="document-logo"><img src="${new URL(COMPANY_LOGO, window.location.origin).href}" alt="LwasivaNet — Votre fournisseur d’accès Internet" width="1448" height="1086" /></div>`;
+}
+
 const adminNav = [
   { id: 'admin-dashboard', label: 'Dashboard', icon: Home },
   { id: 'quotes', label: 'Devis', icon: ClipboardList },
@@ -148,12 +158,18 @@ function invoiceStatusLabel(value) {
   return labels[value] || text(value);
 }
 
-function printHtml(title, html) {
+async function printHtml(title, html) {
   const win = window.open('', '_blank');
+  if (!win) {
+    window.alert('Autorisez les fenêtres contextuelles pour imprimer ce document.');
+    return;
+  }
   win.document.write(html);
   win.document.close();
-  win.focus();
-  win.print();
+  win.document.title = title;
+  await Promise.all(Array.from(win.document.images, (image) => image.decode().catch(() => {})));
+  await win.document.fonts.ready;
+  if (!win.closed) { win.focus(); win.print(); }
 }
 
 function documentStyles() {
@@ -166,6 +182,9 @@ function documentStyles() {
       .compact-doc{max-width:680px}
       .doc-header{display:flex;justify-content:space-between;gap:18px;border-bottom:3px solid #08765d;padding-bottom:12px;margin-bottom:14px}
       .compact-header{padding-bottom:8px;margin-bottom:8px}
+      .document-logo{width:260px;height:65px;overflow:hidden;background:white;border-radius:4px}
+      .document-logo img{display:block;width:100%;height:100%;object-fit:cover;object-position:center}
+      .compact-doc .document-logo{width:220px;height:55px}
       .brand-title{font-size:24px;font-weight:800;color:#044a3c;letter-spacing:0}
       .compact-doc .brand-title{font-size:20px}
       .brand-sub{color:#555;margin-top:3px}
@@ -243,6 +262,12 @@ function App() {
     return section === 'register' ? 'register' : 'home';
   });
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const closeOnEscape = (event) => { if (event.key === 'Escape') setSidebarOpen(false); };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [sidebarOpen]);
   const [expandedNavGroups, setExpandedNavGroups] = useState({ ghislain: false });
   const [tokenState, setTokenState] = useState(localStorage.getItem('lwasiva_token') || '');
   const [currentUser, setCurrentUser] = useState(getCurrentUser());
@@ -449,12 +474,12 @@ function App() {
 
   return (
     <div className={`app-shell ${isClient ? 'client-shell' : 'admin-shell'}`}>
-      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+      <aside id="workspace-navigation" className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="brand">
-          <div className="brand-mark">LN</div>
+          <CompanyLogo />
           <div>
             <strong>LWASIVA_NET</strong>
-            <span>{isClient ? 'Espace client' : 'Administration centrale'}</span>
+            <span>{isClient ? 'Espace client' : 'NOC · Opérations Goma'}</span>
           </div>
         </div>
 
@@ -522,14 +547,15 @@ function App() {
           })}
         </nav>
         <div className="sidebar-status">
-          <span><i /> Systeme operationnel</span>
+          <span><ShieldCheck size={14} /> Espace de gestion</span>
           <small>Goma, Nord-Kivu</small>
         </div>
       </aside>
 
+      {sidebarOpen && <button className="sidebar-backdrop" aria-label="Fermer le menu" onClick={() => setSidebarOpen(false)} />}
       <main className="main">
         <header className="topbar">
-          <button className="icon-button mobile-only" onClick={() => setSidebarOpen((value) => !value)} title="Menu">
+          <button className="icon-button mobile-only" onClick={() => setSidebarOpen((value) => !value)} title="Menu" aria-expanded={sidebarOpen} aria-controls="workspace-navigation">
             <Menu size={20} />
           </button>
           <div className="topbar-title">
@@ -633,7 +659,7 @@ function PublicShell({ active, setActive, toast, theme, setTheme, children }) {
       <header className="public-header">
         <div className="public-header-inner">
           <div className="brand public-brand">
-            <div className="brand-mark" aria-hidden="true">LN</div>
+            <CompanyLogo />
             <div className="public-brand-copy">
               <strong>LWASIVA_NET</strong>
               <span>Internet haut debit a Goma</span>
@@ -658,6 +684,7 @@ function PublicShell({ active, setActive, toast, theme, setTheme, children }) {
             <button onClick={() => openSection('contact')} className="nav-pill optional-nav" title="Nous contacter">
               <span>Contact</span>
             </button>
+            <button onClick={() => openSection('faq')} className="nav-pill optional-nav">FAQ</button>
             <button className="public-icon-button theme-toggle" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} title="Changer le theme" aria-label="Changer le theme">
               {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
             </button>
@@ -675,12 +702,12 @@ function PublicShell({ active, setActive, toast, theme, setTheme, children }) {
       <footer className="public-footer">
         <div className="public-footer__main">
           <div className="public-footer__brand">
-            <span className="brand-mark">LN</span>
-            <div><strong>LWASIVA_NET</strong><p>Internet local, fiable et suivi pour les foyers et entreprises de Goma.</p></div>
+            <CompanyLogo />
+            <div className="footer-brand-description"><p>Internet local, fiable et suivi pour les foyers et entreprises de Goma.</p><span>Votre satisfaction, notre priorité.</span></div>
           </div>
           <div><strong>Navigation</strong><button onClick={() => navigate('home')}>Accueil</button><button onClick={() => openSection('offres')}>Nos offres</button><button onClick={() => openSection('installation')}>Installation</button></div>
           <div><strong>Votre espace</strong><button onClick={() => navigate('login')}>Connexion</button><button onClick={() => navigate('register')}>Creer un compte</button><button onClick={() => openSection('contact')}>Contact</button></div>
-          <div><strong>Nous contacter</strong><span>+243 980 208 012</span><span>sagelusenge@gmail.com</span><span>Goma, Nord-Kivu</span></div>
+          <div><strong>Nous contacter</strong><a href="tel:+243980208012">+243 980 208 012</a><a href="mailto:sagelusenge@gmail.com">sagelusenge@gmail.com</a><span>Goma, Nord-Kivu</span></div>
         </div>
         <div className="public-footer__bottom"><span>© {new Date().getFullYear()} LWASIVA_NET</span><span>Connexion locale. Impact reel.</span></div>
       </footer>
@@ -712,11 +739,11 @@ function PublicHome({ plans, feedback, submit, setActive, busy }) {
           <span />
         </div>
         <div className="hero-content">
-          <span className="hero-kicker"><Globe2 size={15} /> Le reseau local qui vous rapproche</span>
-          <h1><span>Connecter Goma.</span><span>Construire</span><span>ensemble.</span></h1>
+          <span className="hero-kicker"><Globe2 size={15} /> Internet haut débit · Goma, Nord-Kivu</span>
+          <h1><span>Connecter Goma.</span><span>Construire ensemble.</span></h1>
           <p>LWASIVA_NET fournit une connexion Internet sans fil fiable aux foyers et entreprises de Goma, avec une installation suivie et un support de proximite.</p>
           <div className="hero-actions">
-            <a href="#devis" className="primary-link">Demander un devis <ArrowRight size={18} /></a>
+            <a href="#devis" className="primary-link">Demander un devis</a>
             <button className="secondary-link" onClick={() => setActive('login')}>Acceder a mon espace</button>
           </div>
           <div className="hero-stats">
@@ -727,7 +754,7 @@ function PublicHome({ plans, feedback, submit, setActive, busy }) {
         </div>
         <div className="hero-network">
           <div className="coverage-card">
-            <header><span><i /> Reseau operationnel</span><Wifi size={20} /></header>
+            <header><span><i /> Votre connexion locale</span><Wifi size={20} /></header>
             <div className="coverage-card__signal" aria-hidden="true">
               <span className="coverage-orbit coverage-orbit--one" />
               <span className="coverage-orbit coverage-orbit--two" />
@@ -747,12 +774,12 @@ function PublicHome({ plans, feedback, submit, setActive, busy }) {
         <div className="reveal-card">
           <Phone size={18} />
           <span>Contact officiel</span>
-          <strong>+243 980 208 012</strong>
+          <strong><a href="tel:+243980208012">+243 980 208 012</a></strong>
         </div>
         <div className="reveal-card">
           <Send size={18} />
           <span>E-mail professionnel</span>
-          <strong>sagelusenge@gmail.com</strong>
+          <strong><a href="mailto:sagelusenge@gmail.com">sagelusenge@gmail.com</a></strong>
         </div>
         <div className="reveal-card">
           <ShieldCheck size={18} />
@@ -766,55 +793,55 @@ function PublicHome({ plans, feedback, submit, setActive, busy }) {
         </div>
       </section>
 
-      <section className="public-section" id="offres">
-        <div className="section-heading">
-          <Wifi size={22} />
-          <h2>Nos offres Internet</h2>
+      <section className="public-section pricing-section" id="offres">
+        <div className="pricing-heading"><div><span className="section-eyebrow"><Wifi size={16} /> TARIFICATION FORFAITAIRE TRANSPARENTE</span><h2>Nos offres Internet</h2><p>Des formules conçues pour chaque besoin à Goma.<br />Assistance locale et activation sous contrat clair.</p></div><aside><ShieldCheck size={22} /><p><strong>Un abonnement en toute clarté.</strong>Les conditions du service et de l’installation sont précisées dans votre contrat.</p></aside></div>
+        <div className="stitch-pricing-grid">
+          {publicPlans.map((plan, index) => {
+            const featured = plan.name === 'Stream Plus';
+            const premium = plan.name === 'Pro Ultra';
+            const Icon = premium ? Building2 : featured ? Zap : Home;
+            return <article className={`offer-card ${featured ? 'offer-card--featured' : ''} ${premium ? 'offer-card--premium' : ''}`} key={plan.id}>
+              {featured && <span className="offer-ribbon">LE CHOIX POLYVALENT</span>}
+              <div className="offer-top"><span>{premium ? 'HAUTE PERFORMANCE' : featured ? 'TÉLÉTRAVAIL & FAMILLE' : 'POUR VOTRE QUOTIDIEN'}</span><Icon size={23} /></div>
+              <h3>{plan.name}</h3><p className="offer-description">{plan.recommended_usage}</p>
+              <div className="offer-speed"><strong>{plan.bandwidth_mbps}</strong><span>Mbps</span></div>
+              <div className="offer-price"><strong>{money(plan.monthly_price_usd)}</strong><span>/ mois</span></div>
+              <ul className="offer-benefits"><li><CheckCircle2 size={16} />{premium ? 'Pour les usages intensifs et plusieurs utilisateurs' : featured ? 'Streaming HD et appels vidéo' : 'Navigation et réseaux sociaux'}</li><li><CheckCircle2 size={16} />Kit antenne CPE et routeur Wi-Fi</li><li><CheckCircle2 size={16} />Installation et configuration accompagnées</li><li><CheckCircle2 size={16} />Assistance technique à Goma</li></ul>
+              <a className="offer-cta" href="#devis" onClick={() => setForm((current) => ({ ...current, planId: String(plan.id) }))}>Choisir {plan.name}</a>
+            </article>;
+          })}
         </div>
-        <div className="plan-grid">
-          {publicPlans.map((plan, index) => (
-            <div className="plan reveal-card" style={{ '--delay': `${index * 90}ms` }} key={plan.id}>
-              <div><Router size={22} /><strong>{plan.name}</strong></div>
-              <span>{plan.recommended_usage}</span>
-              <p>{bandwidthText(plan)}</p>
-              <b>{money(plan.monthly_price_usd)} / mois</b>
-            </div>
-          ))}
-        </div>
+        {publicPlans.length === 0 && <div className="offers-unavailable"><Wifi size={24} /><div><strong>Les offres sont momentanément indisponibles.</strong><p>Contactez notre équipe pour connaître les bouquets et tarifs disponibles.</p></div><a href="#devis">Demander un devis</a></div>}
+        <p className="pricing-footnote">Kit et frais d’installation précisés sur devis. Faisabilité technique vérifiée à votre adresse.</p>
       </section>
 
-      <section className="public-section info-grid">
+      <section className="technology-section" id="technologie"><div className="section-intro"><span>LA TECHNOLOGIE AU SERVICE DE VOTRE QUOTIDIEN</span><h2>La technologie sans fil<br />au service de Goma.</h2><p>À Goma, nous vous accompagnons de l’installation à votre utilisation quotidienne.</p></div><div className="public-section info-grid">
         <InfoCard icon={Building2} title="Entreprise" text="LWASIVA_NET fournit un acces Internet haut debit par liaison sans fil dans la ville de Goma." />
         <InfoCard icon={ShieldCheck} title="Contrat clair" text="Chaque abonnement est encadre par un contrat, une periode d essai et une interdiction de revente." />
         <InfoCard icon={Boxes} title="Kit installation" text="Antenne CPE, routeur Wi-Fi, cablage et accessoires, avec paiement possible par tranches." />
         <InfoCard icon={Phone} title="Support" text="Une equipe technique suit les pannes, interventions et demandes des abonnes." />
-      </section>
+      </div></section>
 
-      <section className="public-section service-showcase" id="installation">
-        <div className="showcase-copy">
-          <div className="section-heading">
-            <Wrench size={22} />
-            <h2>Installation et suivi</h2>
-          </div>
-          <p>Notre equipe installe le kit chez le client, verifie le signal, configure le routeur Wi-Fi et garde un suivi dans l'espace admin.</p>
-          <div className="step-list">
-            <div><CheckCircle2 size={18} /><span>Verification de l'adresse et du signal</span></div>
-            <div><CheckCircle2 size={18} /><span>Installation antenne CPE et routeur Wi-Fi</span></div>
-            <div><CheckCircle2 size={18} /><span>Activation du bouquet choisi</span></div>
-            <div><CheckCircle2 size={18} /><span>Support technique en cas de panne</span></div>
-          </div>
-        </div>
-        <div className="photo-grid">
-          <img src="/network-installation.jpg" alt="Installation reseau LWASIVA_NET" />
-          <img src="/network-equipment.jpg" alt="Equipement Internet LWASIVA_NET" />
+      <section className="enterprise-band" id="entreprises"><div className="enterprise-inner">
+        <div className="enterprise-copy"><span className="section-eyebrow">B2B & ORGANISATIONS NON GOUVERNEMENTALES</span><h2>Une connectivité taillée pour l’exigence de votre entreprise</h2><p>Hôtels, bureaux, commerces et organisations : construisons une solution adaptée à vos équipes, à vos usages et à vos sites à Goma.</p><div className="enterprise-benefits"><div><ShieldCheck size={24} /><h3>Liaison dédiée</h3><p>Une étude de faisabilité pour vos besoins de connexion point-à-point.</p></div><div><Phone size={24} /><h3>Accompagnement local</h3><p>Un interlocuteur pour l’installation et le suivi de votre connexion.</p></div></div><a href="#devis" className="primary-link" onClick={() => setForm((current) => ({ ...current, clientType: 'entreprise' }))}>Demander une étude personnalisée</a></div>
+        <figure className="enterprise-image"><img src="/network-equipment.jpg" alt="Équipements réseau pour la connexion Internet" loading="lazy" /><figcaption><span>INFRASTRUCTURE & ACCOMPAGNEMENT</span><strong>Votre activité mérite une connexion bien pensée.</strong></figcaption></figure>
+      </div></section>
+
+      <section className="public-section deployment-section" id="installation">
+        <div className="section-intro"><span>DÉPLOIEMENT TRANSPARENT</span><h2>Installation et suivi pas à pas</h2><p>Du premier test de faisabilité jusqu’à l’activation complète,<br />notre équipe locale vous accompagne.</p></div>
+        <div className="deployment-grid">
+          {[
+            ['01', ClipboardList, 'Demande', 'Remplissez le formulaire ou contactez-nous avec votre adresse exacte à Goma.', 'VOTRE PREMIER CONTACT'],
+            ['02', ShieldCheck, 'Validation', 'Notre équipe vérifie la visibilité radio et la faisabilité de l’installation.', 'ÉTUDE TECHNIQUE'],
+            ['03', FileText, 'Contrat & kit', 'Les conditions sont précisées dans le contrat. Nous installons l’antenne CPE et le routeur.', 'INSTALLATION ACCOMPAGNÉE'],
+            ['04', Wifi, 'Activation', 'Votre bouquet est activé après configuration et vérification de votre connexion.', 'BIENVENUE SUR LE RÉSEAU']
+          ].map(([number, Icon, title, description, label]) => <article key={number} className={`deployment-card ${number === '04' ? 'deployment-card--active' : ''}`}><span className="deployment-number" aria-hidden="true">{number}</span><h3><Icon size={20} />{title}</h3><p>{description}</p><small>{label}</small></article>)}
         </div>
       </section>
 
-      <section className="public-section process-strip">
-        <div className="reveal-card"><ClipboardList size={20} /><strong>1. Demande</strong><span>Le client envoie son devis depuis l'accueil.</span></div>
-        <div className="reveal-card"><ShieldCheck size={20} /><strong>2. Validation</strong><span>L'administration verifie et valide la demande.</span></div>
-        <div className="reveal-card"><FileText size={20} /><strong>3. Contrat</strong><span>Le contrat final est imprime depuis l'espace admin.</span></div>
-        <div className="reveal-card"><Wifi size={20} /><strong>4. Activation</strong><span>Le service Internet est active pour le client.</span></div>
+      <section className="public-section coverage-section" id="couverture">
+        <div><span className="section-eyebrow">ZONE D’INTERVENTION · GOMA, NORD-KIVU</span><h2>Votre adresse, notre point de départ.</h2><p>La réception dépend de votre emplacement et de la visibilité vers un relais. Indiquez votre quartier et votre avenue : notre équipe vérifiera la faisabilité avant de confirmer l’installation.</p><a href="#devis" className="primary-link" onClick={() => setForm((current) => ({ ...current, message: current.message || 'Je souhaite vérifier la couverture à mon adresse.' }))}>Demander une vérification de couverture</a></div>
+        <div className="coverage-explainer"><MapPin size={40} /><h3>Vérification sur votre site</h3><ul><li>Adresse et emplacement du bâtiment</li><li>Visibilité et qualité du signal</li><li>Choix et positionnement du kit</li><li>Proposition et conditions d’installation</li></ul><span>Éligibilité confirmée après étude technique.</span></div>
       </section>
 
       <section className="public-section testimonials-section" id="avis">
@@ -858,6 +885,17 @@ function PublicHome({ plans, feedback, submit, setActive, busy }) {
             <button className="primary-button" disabled={busy}><Plus size={17} /> {busy ? 'Envoi...' : 'Envoyer'}</button>
           </form>
         </div>
+      </section>
+
+      <section className="public-section faq-section" id="faq">
+        <div className="section-intro"><span>QUESTIONS FRÉQUENTES</span><h2>Comprendre notre service</h2><p>Les informations utiles avant de vous abonner.</p></div>
+        {[
+          ["Quels équipements composent le kit d’installation ?", "Le kit comprend une antenne CPE, un routeur Wi-Fi, le câblage et les accessoires nécessaires. Les éléments et leur coût sont précisés dans votre devis et votre contrat."],
+          ["Comment payer le kit et l’abonnement ?", "Le montant de l’abonnement dépend du bouquet choisi. Un paiement du kit par tranches peut être convenu avec l’administration ; les montants et échéances figurent dans votre contrat."],
+          ["Quand ma connexion sera-t-elle activée ?", "Après vérification de votre adresse et du signal, l’équipe convient avec vous d’un rendez-vous. Le délai est confirmé selon la faisabilité et la disponibilité du matériel."],
+          ["Pourquoi un contrat est-il nécessaire ?", "Le contrat précise le service souscrit, les conditions d’installation, les paiements et les responsabilités de chacun. La revente non autorisée de la connexion est interdite."],
+          ["Comment signaler un problème ?", "Depuis votre espace client, ouvrez une réclamation pour permettre son suivi. Vous pouvez aussi joindre notre équipe par téléphone ou WhatsApp au +243 980 208 012."]
+        ].map(([question, answer]) => <details key={question}><summary>{question}<ChevronDown size={18} /></summary><p>{answer}</p></details>)}
       </section>
 
       <section className="public-section contact-feedback-grid" id="contact">
@@ -929,8 +967,8 @@ function LoginPanel({ onLoggedIn, notify }) {
     <main className="login-page">
       <div className="login-card">
         <div className="login-visual">
-          <div className="brand-mark login-mark">LN</div>
-          <h1><span>Votre reseau.</span><span>Votre espace.</span></h1>
+          <CompanyLogo className="login-company-logo" />
+          <span className="login-eyebrow">LWASIVANET · PORTAIL SÉCURISÉ</span><h1><span>Votre réseau.</span><span>Sous contrôle.</span></h1>
           <p>Espace reserve aux agents et aux clients ayant deja un compte.</p>
           <div className="login-points">
             <span><ShieldCheck size={17} /> Acces securise</span>
@@ -980,7 +1018,7 @@ function Dashboard({ data, currentUser }) {
           <h2>Bonjour, {currentUser?.fullName || 'Administration LWASIVA_NET'}</h2>
           <p>Voici l'activite recente de votre reseau et les elements qui demandent votre attention.</p>
         </div>
-        <div className="dashboard-live"><i /><span>Donnees actualisees</span></div>
+        <div className="dashboard-live"><Globe2 size={16} /><span>Goma · Nord-Kivu</span></div>
       </section>
       <div className="metric-grid admin-metric-grid">
         {cards.map(([label, value, detail, Icon, tone], index) => (
@@ -990,6 +1028,13 @@ function Dashboard({ data, currentUser }) {
           </article>
         ))}
       </div>
+      <section className="panel noc-overview">
+        <div className="section-intro"><span>VUE OPÉRATIONNELLE</span><h2>Votre réseau, en un coup d’œil</h2><p>État des contrats et de la facturation enregistrés dans votre espace.</p></div>
+        <div className="noc-flow">
+          {[['Abonnés', data.summary.total_clients, Users], ['Contrats actifs', data.summary.active_contracts, Wifi], ['Équipements affectés', data.equipmentAssignments.length, Router], ['Tickets ouverts', data.summary.open_tickets, Ticket]].map(([label, value, Icon]) => <div className="noc-node" key={label}><span><Icon size={22} /></span><strong>{value}</strong><small>{label}</small></div>)}
+        </div>
+        <div className="noc-finances"><div><span>Encaissements du jour</span><strong>{money(data.summary.payments_today_usd)}</strong></div><div><span>Factures impayées</span><strong>{data.summary.unpaid_invoices}</strong></div><div><span>Contrats suspendus</span><strong>{data.summary.suspended_contracts}</strong></div></div>
+      </section>
       <PushNotificationPanel />
       <TablePanel title="Messages de LWASIVA_NET" icon={MessageSquare} columns={['Titre', 'Message', 'Date']} rows={(data.appMessages || []).slice(0, 6).map((item) => [item.title, item.body, item.created_at])} />
       <div className="two-columns">
@@ -1029,7 +1074,7 @@ function ClientRegistrationPanel({ submit, busy, setActive }) {
     <main className="login-page registration-page">
       <div className="login-card registration-card">
         <div className="login-visual">
-          <div className="brand-mark login-mark">LN</div>
+          <CompanyLogo className="login-company-logo" />
           <h1>Demande de compte</h1>
           <p>Votre compte restera bloque jusqu'a la verification par un administrateur LWASIVA_NET.</p>
           <div className="login-points">
@@ -1212,7 +1257,7 @@ function Quotes({ data, submit }) {
           <main class="doc">
             <header class="doc-header">
               <div>
-                <div class="brand-title">LWASIVA_NET</div>
+                ${documentBrand()}
                 <div class="brand-sub">Internet haut debit sans fil - Goma, Nord-Kivu, RDC</div>
                 <div class="brand-sub">Contact officiel : +243 980 208 012</div>
               </div>
@@ -1302,7 +1347,7 @@ function printContractDocument(item) {
         <main class="doc">
           <header class="doc-header">
             <div>
-              <div class="brand-title">LWASIVA_NET</div>
+              ${documentBrand()}
               <div class="brand-sub">Fournisseur d'Acces Internet - Goma, Nord-Kivu, RDC</div>
               <div class="brand-sub">Representant : KITSA LUSENGE LWASIVA Sage - +243 980 208 012</div>
             </div>
@@ -2077,7 +2122,7 @@ function Invoices({ data, submit }) {
           <main class="doc compact-doc">
             <header class="doc-header compact-header">
               <div>
-                <div class="brand-title">LWASIVA_NET</div>
+                ${documentBrand()}
                 <div class="brand-sub">Contact officiel : +243 980 208 012</div>
               </div>
               <div class="doc-title">
@@ -2217,7 +2262,7 @@ function Payments({ data, submit }) {
           <main class="doc">
             <header class="doc-header">
               <div>
-                <div class="brand-title">LWASIVA_NET</div>
+                ${documentBrand()}
                 <div class="brand-sub">Etat de paiement de facture</div>
                 <div class="brand-sub">Contact officiel : +243 980 208 012</div>
               </div>
@@ -2456,7 +2501,7 @@ function printGhislainCashbook(entries, summary) {
         <main class="doc">
           <header class="doc-header">
             <div>
-              <div class="brand-title">LWASIVA_NET</div>
+              ${documentBrand()}
               <div class="brand-sub">Espace prive Ghislain</div>
               <div class="brand-sub">Imprime le ${todayDisplayDate()}</div>
             </div>
@@ -2493,7 +2538,7 @@ function printGhislainCashbookSheet(item) {
         <main class="doc compact-doc">
           <header class="doc-header compact-header">
             <div>
-              <div class="brand-title">LWASIVA_NET</div>
+              ${documentBrand()}
               <div class="brand-sub">Fiche livre de caisse - Ghislain</div>
             </div>
             <div class="doc-title">
@@ -2547,7 +2592,7 @@ function printGhislainBudget(entries, summary, byCategory = []) {
         <main class="doc">
           <header class="doc-header">
             <div>
-              <div class="brand-title">LWASIVA_NET</div>
+              ${documentBrand()}
               <div class="brand-sub">Espace prive Ghislain</div>
               <div class="brand-sub">Imprime le ${todayDisplayDate()}</div>
             </div>
@@ -2590,7 +2635,7 @@ function printGhislainBudgetSheet(item) {
         <main class="doc compact-doc">
           <header class="doc-header compact-header">
             <div>
-              <div class="brand-title">LWASIVA_NET</div>
+              ${documentBrand()}
               <div class="brand-sub">Fiche budgetaire - Ghislain</div>
             </div>
             <div class="doc-title">
@@ -3233,7 +3278,7 @@ function printReport(title, columns, rows) {
         <main class="doc">
           <header class="doc-header">
             <div>
-              <div class="brand-title">LWASIVA_NET</div>
+              ${documentBrand()}
               <div class="brand-sub">Rapport administratif</div>
               <div class="brand-sub">Imprime le ${todayDisplayDate()}</div>
             </div>
