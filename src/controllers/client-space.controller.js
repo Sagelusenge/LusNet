@@ -17,7 +17,8 @@ async function getMySpace(req, res) {
        c.*,
        ip.name AS plan_name,
        ip.bandwidth_mbps,
-       ip.monthly_price_usd,
+       COALESCE(c.custom_monthly_price_usd, ip.monthly_price_usd) AS monthly_price_usd,
+       ip.recommended_usage,
        COALESCE((
          SELECT SUM(TIMESTAMPDIFF(SECOND, ss.suspended_at, ss.restored_at))
          FROM service_suspensions ss

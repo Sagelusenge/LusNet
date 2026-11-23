@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  Eye,
+  EyeOff,
+  LoaderCircle,
   BadgeDollarSign,
   BarChart3,
   BellRing,
@@ -85,6 +88,8 @@ const clientNav = [
   { id: 'client-space', label: 'Mon espace', icon: Home },
   { id: 'client-contracts', label: 'Mes contrats', icon: FileText },
   { id: 'client-invoices', label: 'Mes factures', icon: Receipt },
+  { id: 'client-payments', label: 'Mes reçus', icon: BadgeDollarSign },
+  { id: 'client-profile', label: 'Mon profil', icon: Users },
   { id: 'client-complaints', label: 'Reclamations', icon: Ticket }
 ];
 
@@ -312,6 +317,7 @@ function App() {
 
   const isLoggedIn = Boolean(tokenState);
   const isClient = currentUser?.role === 'client';
+  const profileName = isClient ? data.clientSpace.client?.full_name || currentUser?.fullName : currentUser?.fullName;
   const navItems = isClient ? clientNav : adminNav;
   const flatNavItems = useMemo(() => navItems.flatMap((item) => item.children || [item]), [navItems]);
 
@@ -574,8 +580,8 @@ function App() {
           </div>
           <div className="topbar-actions">
             <div className="topbar-profile">
-              <span>{String(currentUser?.fullName || 'LW').split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase()}</span>
-              <div><strong>{currentUser?.fullName || 'LWASIVA_NET'}</strong><small>{isClient ? 'Client' : 'Administrateur'}</small></div>
+              <span>{String(profileName || 'LW').split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase()}</span>
+              <div><strong>{profileName || 'LWASIVA_NET'}</strong><small>{isClient ? 'Client' : 'Administrateur'}</small></div>
             </div>
             <button className="icon-button" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} title="Changer le theme">
               {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
@@ -611,7 +617,9 @@ function App() {
           {!isClient && active === 'feedback' && <FeedbackAdmin data={data} submit={submit} />}
           {!isClient && active === 'notifications' && <Notifications data={data} submit={submit} />}
           {!isClient && active === 'users' && <UsersAdmin data={data} submit={submit} />}
-          {isClient && active === 'client-space' && <><PushNotificationPanel /><ClientSpace data={data.clientSpace} messages={data.appMessages} submit={submit} /></>}
+          {isClient && active === 'client-space' && <ClientSpace data={data.clientSpace} messages={data.appMessages} setActive={setActive} />}
+          {isClient && active === 'client-profile' && <ClientProfile data={data.clientSpace} submit={submit} />}
+          {isClient && active === 'client-payments' && <ClientPayments data={data.clientSpace} />}
           {isClient && active === 'client-contracts' && <ClientContracts data={data.clientSpace} />}
           {isClient && active === 'client-invoices' && <ClientInvoices data={data.clientSpace} />}
           {isClient && active === 'client-complaints' && <ClientComplaints data={data.clientSpace} submit={submit} />}
@@ -963,14 +971,18 @@ function InfoCard({ icon: Icon, title, text }) {
 function LoginPanel({ onLoggedIn, notify }) {
   const [form, setForm] = useState({ email: '', password: '' });
 
+  const [loggingIn, setLoggingIn] = useState(false);
+
   async function login(event) {
     event.preventDefault();
+    if (loggingIn) return;
+    setLoggingIn(true);
     try {
       const result = await api.login(form);
       onLoggedIn(result.token);
     } catch (error) {
       notify(error.message, 'error');
-    }
+    } finally { setLoggingIn(false); }
   }
 
   return (
@@ -995,10 +1007,10 @@ function LoginPanel({ onLoggedIn, notify }) {
               <p>Entrez vos identifiants pour continuer.</p>
             </div>
           </div>
-          <form className="login-form" onSubmit={login}>
+          <form className="login-form" onSubmit={login} aria-busy={loggingIn}>
             <TextInput label="Email" value={form.email} onChange={(email) => setForm({ ...form, email })} />
             <TextInput label="Mot de passe" type="password" value={form.password} onChange={(password) => setForm({ ...form, password })} />
-            <button className="primary-button login-submit">Se connecter</button>
+            <button className="primary-button login-submit" disabled={loggingIn}>{loggingIn && <LoaderCircle size={18} className="spin" />}{loggingIn ? 'Connexion en cours…' : 'Se connecter'}</button><span className="login-progress" role="status">{loggingIn ? 'Vérification de vos identifiants…' : ''}</span>
           </form>
           <div className="login-help">
             <strong>Besoin d'un compte ?</strong>
@@ -1726,117 +1738,54 @@ function FeedbackAdmin({ data, submit }) {
   );
 }
 
-function ClientSpace({ data, messages = [], submit }) {
-  const [profileForm, setProfileForm] = useState({ fullName: '', phone: '', email: '', address: '' });
-  const unpaid = data.invoices.filter((item) => item.status !== 'payee' && item.status !== 'annulee');
-  const unpaidTotal = unpaid.reduce((sum, item) => sum + invoiceRemaining(item), 0);
-  const activeContract = data.contracts.find((item) => item.status === 'actif') || data.contracts[0];
-  const countdown = activeContract ? subscriptionCountdownForContract(activeContract, data.invoices, new Date()) : null;
-  const isExpired = countdown && countdown.remainingMs <= 0;
-  const nextInvoice = [...unpaid].sort((a, b) => new Date(a.due_date) - new Date(b.due_date))[0];
-  const activeEquipment = (data.equipmentStatus || []).find((item) => String(item.contract_id) === String(activeContract?.id)) || (data.equipmentStatus || [])[0];
-  const equipmentRemaining = Number(activeEquipment?.equipment_remaining_usd || 0);
-  const openTickets = (data.tickets || []).filter((item) => item.status !== 'resolu' && item.status !== 'ferme');
-  const latestMessage = messages[0];
+function ClientSpace({ data, messages = [], setActive }) {
+  const activeContract = data.contracts.find(c => c.status === 'actif') || data.contracts[0];
+  const countdown = activeContract ? subscriptionCountdownForContract(activeContract, data.invoices) : null;
+  const unpaid = data.invoices.filter(i => (i.invoice_type || 'facture') === 'facture' && !['brouillon','annulee'].includes(i.status) && invoiceRemaining(i) > 0);
+  const balance = unpaid.reduce((total,i) => total + invoiceRemaining(i),0);
+  const tickets = data.tickets.filter(t => !['resolu','ferme'].includes(t.status));
+  const cards = [
+    ['Mon bouquet', activeContract?.plan_name || 'Aucun abonnement', Wifi],
+    ['Échéance', countdown ? countdown.isPaused ? 'En pause' : countdown.remainingMs <= 0 ? 'Expiré' : countdown.expiresAt.toLocaleDateString('fr-FR', {timeZone:'Africa/Lubumbashi'}) : 'Non définie', Timer],
+    ['Reste à payer', money(balance), Receipt],
+    ['Demandes en cours', tickets.length, Ticket]
+  ];
+  return <>
+    <section className="dashboard-welcome"><div><span>Votre espace personnel</span><h2>Bonjour, {data.client?.full_name || 'bienvenue'}</h2><p>Votre connexion, vos documents et votre assistance au même endroit.</p></div></section>
+    <div className="client-essential-grid">{cards.map(([label,value,Icon]) => <article className="metric" key={label}><Icon size={22} /><span>{label}</span><strong>{value}</strong></article>)}</div>
+    <div className="client-shortcuts">{[['client-contracts','Mes contrats',FileText],['client-invoices','Mes factures',Receipt],['client-payments','Mes reçus',Printer],['client-complaints','Contacter le support',Ticket]].map(([id,label,Icon]) => <button className="small-button" key={id} onClick={() => setActive(id)}><Icon size={17} />{label}</button>)}</div>
+    <div className="two-columns"><section className="panel client-summary-panel"><PanelHeader icon={Wifi} title="Ma connexion" /><div className="client-status-list"><div><span>Contrat</span><strong>{activeContract?.contract_number || 'Aucun contrat'}</strong></div><div><span>Statut</span><strong>{activeContract?.status || 'Non activé'}</strong></div><div><span>Adresse</span><strong>{activeContract?.installation_address || data.client?.address || 'À renseigner'}</strong></div>{countdown && <div><span>Abonnement</span><strong>{countdown.isPaused ? 'Compteur en pause' : countdown.remainingMs <= 0 ? `Expiré depuis ${countdown.days} jours` : `${countdown.days} jours restants`}</strong></div>}</div></section>
+    <section className="panel client-summary-panel"><PanelHeader icon={MessageSquare} title="Dernière information" />{messages[0] ? <div className="client-message-card"><strong>{messages[0].title}</strong><p>{messages[0].body}</p><small>{dateText(messages[0].created_at)}</small></div> : <p className="muted">Aucun nouveau message. Notre équipe reste disponible depuis la rubrique Réclamations.</p>}<p className="muted">{unpaid.length} facture(s) avec un solde à régler.</p></section></div>
+  </>;
+}
 
-  useEffect(() => {
-    setProfileForm({
-      fullName: data.client?.full_name || '',
-      phone: data.client?.phone || '',
-      email: data.client?.email || '',
-      address: data.client?.address || ''
-    });
-  }, [data.client]);
+function ClientProfile({ data, submit }) {
+  const [form,setForm] = useState({fullName:'',phone:'',email:'',address:''});
+  useEffect(() => { setForm({fullName:data.client?.full_name || '',phone:data.client?.phone || '',email:data.client?.email || '',address:data.client?.address || ''}); }, [data.client]);
+  return <><QuickForm title="Mon profil" icon={Users} onSubmit={() => submit(() => api.updateClientProfile(form), 'Profil mis à jour')}>
+    <TextInput label="Nom affiché" value={form.fullName} onChange={fullName => setForm({...form,fullName})} />
+    <TextInput label="Téléphone" value={form.phone} onChange={phone => setForm({...form,phone})} />
+    <TextInput label="E-mail" type="email" value={form.email} onChange={email => setForm({...form,email})} />
+    <TextInput label="Adresse" value={form.address} onChange={address => setForm({...form,address})} />
+  </QuickForm><PushNotificationPanel /></>;
+}
 
-  return (
-    <>
-      <div className="metric-grid">
-        <div className="metric"><Users size={20} /><span>Client</span><strong>{data.client?.full_name || '-'}</strong></div>
-        <div className="metric"><Wifi size={20} /><span>Bouquet</span><strong>{activeContract?.plan_name || '-'}</strong></div>
-        <div className="metric"><Timer size={20} /><span>Echeance</span><strong>{countdown ? (countdown.isPaused ? 'En pause' : countdown.expiresAt.toLocaleDateString('fr-FR', { timeZone: 'Africa/Lubumbashi' })) : '-'}</strong></div>
-        <div className="metric"><Receipt size={20} /><span>Factures a payer</span><strong>{unpaid.length}</strong></div>
-        <div className="metric"><BadgeDollarSign size={20} /><span>Reste a payer</span><strong>{money(unpaidTotal)}</strong></div>
-        <div className="metric"><Boxes size={20} /><span>Kit internet</span><strong>{equipmentRemaining > 0 ? money(equipmentRemaining) : 'En ordre'}</strong></div>
-        <div className="metric"><Ticket size={20} /><span>Reclamations ouvertes</span><strong>{openTickets.length}</strong></div>
-        <div className="metric"><MessageSquare size={20} /><span>Messages recus</span><strong>{messages.length}</strong></div>
-      </div>
-      <PushNotificationPanel />
-      <div className="two-columns">
-        <div className="panel client-summary-panel">
-          <PanelHeader icon={ShieldCheck} title="Etat du service" />
-          <div className="client-status-list">
-            <div><span>Contrat actif</span><strong>{activeContract?.contract_number || '-'}</strong></div>
-            <div><span>Adresse</span><strong>{activeContract?.installation_address || data.client?.address || '-'}</strong></div>
-            <div><span>Statut</span><strong>{activeContract?.status || 'Aucun contrat'}</strong></div>
-            <div><span>Debit</span><strong>{activeContract ? bandwidthText(activeContract) : '-'}</strong></div>
-            <div><span>Echeance abonnement</span><strong>{countdown ? (countdown.isPaused ? 'Compteur suspendu' : countdown.expiresAt.toLocaleDateString('fr-FR', { timeZone: 'Africa/Lubumbashi' })) : '-'}</strong></div>
-            <div><span>Temps restant</span><strong>{countdown ? (countdown.isPaused ? `${countdown.days} j ${countdown.hours} h figes` : isExpired ? `Expire depuis ${countdown.days} j` : `${countdown.days} j ${countdown.hours} h`) : '-'}</strong></div>
-          </div>
-        </div>
-        <div className="panel client-summary-panel">
-          <PanelHeader icon={Boxes} title="Kit internet" />
-          {activeEquipment ? (
-            <div className="client-status-list">
-              <div><span>Kit</span><strong>{activeEquipment.equipment_kit || 'Materiel contrat'}</strong></div>
-              <div><span>Total kit</span><strong>{money(activeEquipment.equipment_total_usd)}</strong></div>
-              <div><span>Deja paye</span><strong>{money(activeEquipment.equipment_paid_usd)}</strong></div>
-              <div><span>Reste kit</span><strong>{equipmentRemaining > 0 ? money(equipmentRemaining) : 'En ordre'}</strong></div>
-            </div>
-          ) : (
-            <p className="muted">Aucun kit rattache au contrat pour le moment.</p>
-          )}
-        </div>
-      </div>
-      <div className="two-columns">
-        <div className="panel client-summary-panel">
-          <PanelHeader icon={Receipt} title="Prochaine facture" />
-          {nextInvoice ? (
-            <div className="client-status-list">
-              <div><span>Numero</span><strong>{nextInvoice.invoice_number}</strong></div>
-              <div><span>Type</span><strong>{invoiceTypeLabel(nextInvoice.invoice_type)}</strong></div>
-              <div><span>Reste a payer</span><strong>{money(invoiceRemaining(nextInvoice))}</strong></div>
-              <div><span>Date limite</span><strong>{dateText(nextInvoice.due_date)}</strong></div>
-            </div>
-          ) : (
-            <p className="muted">Aucune facture a payer.</p>
-          )}
-        </div>
-        <div className="panel client-summary-panel">
-          <PanelHeader icon={MessageSquare} title="Dernier message" />
-          {latestMessage ? (
-            <div className="client-message-card">
-              <strong>{latestMessage.title}</strong>
-              <p>{latestMessage.body}</p>
-              <span>{latestMessage.created_at}</span>
-            </div>
-          ) : (
-            <p className="muted">Aucun message pour le moment.</p>
-          )}
-        </div>
-      </div>
-      <div className="two-columns">
-        <TablePanel title="Mes contrats" icon={FileText} columns={['Numero', 'Bouquet', 'Debit', 'Statut']} rows={data.contracts.map((item) => [item.contract_number, item.plan_name, bandwidthText(item), item.status])} />
-        <TablePanel title="Mes factures a payer" icon={Receipt} columns={['Numero', 'Type', 'Reste', 'Statut', 'Date limite']} rows={unpaid.map((item) => [item.invoice_number, invoiceTypeLabel(item.invoice_type), money(invoiceRemaining(item)), invoiceStatusLabel(item.status), item.due_date])} />
-      </div>
-      <QuickForm title="Mon profil" icon={Users} onSubmit={() => submit(() => api.updateClientProfile(profileForm), 'Profil mis a jour')}>
-        <TextInput label="Nom complet" value={profileForm.fullName} onChange={(fullName) => setProfileForm({ ...profileForm, fullName })} />
-        <TextInput label="Telephone" value={profileForm.phone} onChange={(phone) => setProfileForm({ ...profileForm, phone })} />
-        <TextInput label="Email" value={profileForm.email} onChange={(email) => setProfileForm({ ...profileForm, email })} />
-        <TextInput label="Adresse" value={profileForm.address} onChange={(address) => setProfileForm({ ...profileForm, address })} />
-      </QuickForm>
-      <ClientComplaintForm data={data} submit={submit} />
-      <TablePanel title="Mes reclamations recentes" icon={Ticket} columns={['Titre', 'Contrat', 'Priorite', 'Statut']} rows={(data.tickets || []).slice(0, 5).map((item) => [item.title, item.contract_number || '-', item.priority, item.status])} />
-      <TablePanel title="Mes derniers paiements" icon={BadgeDollarSign} columns={['Reference', 'Montant', 'Methode', 'Date']} rows={data.payments.map((item) => [item.payment_reference, money(item.amount_usd), item.method, item.paid_at])} />
-    </>
-  );
+function clientDocumentRecord(item, data) {
+  const contract = data.contracts.find(c => String(c.id) === String(item.contract_id || item.id));
+  return Object.fromEntries(Object.entries({ ...item, client_name:data.client?.full_name || '', client_phone:data.client?.phone || '', client_address:data.client?.address || '', contract_number:item.contract_number || contract?.contract_number || '' }).map(([key,value]) => [key,typeof value === 'string' ? escapeReportCell(value) : value]));
 }
 
 function ClientContracts({ data }) {
-  return <TablePanel title="Mes contrats" icon={FileText} columns={['Numero', 'Bouquet', 'Debit', 'Statut', 'Adresse']} rows={data.contracts.map((item) => [item.contract_number, item.plan_name, bandwidthText(item), item.status, item.installation_address])} />;
+  return <TablePanel title="Mes contrats" icon={FileText} columns={['Numéro','Bouquet','Statut','Document']} rows={data.contracts.map(item => [item.contract_number,item.plan_name,item.status,<button className="small-button" onClick={() => printContractDocument(clientDocumentRecord(item,data))}><Printer size={16} />Imprimer</button>])} />;
 }
 
 function ClientInvoices({ data }) {
-  return <TablePanel title="Mes factures" icon={Receipt} columns={['Numero', 'Type', 'Periode', 'Total', 'Reste', 'Statut', 'Date limite']} rows={data.invoices.map((item) => [item.invoice_number, invoiceTypeLabel(item.invoice_type), `${item.period_start} - ${item.period_end}`, money(item.total_amount_usd), money(invoiceRemaining(item)), invoiceStatusLabel(item.status), item.due_date])} />;
+  return <TablePanel title="Mes factures" icon={Receipt} columns={['Numéro','Type','Période','Total','Reste','Statut','Document']} rows={data.invoices.filter(i => i.status !== 'brouillon').map(item => [item.invoice_number,invoiceTypeLabel(item.invoice_type),`${item.period_start} - ${item.period_end}`,money(item.total_amount_usd),money(invoiceRemaining(item)),invoiceStatusLabel(item.status),<button className="small-button" onClick={() => printInvoice(clientDocumentRecord(item,data))}><Printer size={16} />Imprimer</button>])} />;
+}
+
+function ClientPayments({ data }) {
+  const safeData = { invoices:data.invoices.map(i => clientDocumentRecord(i,data)) };
+  return <TablePanel title="Mes reçus de paiement" icon={BadgeDollarSign} columns={['Référence','Date','Montant','Mode','Reçu']} rows={data.payments.map(item => [item.payment_reference,dateText(item.paid_at),money(item.amount_usd),item.method,<button className="small-button" onClick={() => printPaymentStatement(clientDocumentRecord(item,data),safeData)}><Printer size={16} />Imprimer</button>])} />;
 }
 
 function ClientComplaintForm({ data, submit }) {
@@ -2027,56 +1976,7 @@ function Plans({ data, submit, canEdit }) {
   </>;
 }
 
-function Invoices({ data, submit }) {
-  const emptyForm = { id: '', contractId: '', invoiceType: 'facture', status: 'non_reglee', periodStart: '', periodEnd: '', dueDate: '', installationAmountUsd: '', subscriptionAmountUsd: '', equipmentInstallmentAmountUsd: '', penaltyAmountUsd: '', discountAmountUsd: '' };
-  const [form, setForm] = useState(emptyForm);
-  const isEditing = Boolean(form.id);
-
-  function setContract(contractId) {
-    const contract = data.contracts.find((item) => String(item.contract_id) === String(contractId));
-    const hasExistingInvoice = data.invoices.some((item) => String(item.contract_id) === String(contractId));
-    setForm({
-      ...form,
-      contractId,
-      subscriptionAmountUsd: contract?.monthly_price_usd || '',
-      installationAmountUsd: !hasExistingInvoice ? contract?.equipment_initial_payment_usd || '' : ''
-    });
-  }
-
-  function editInvoice(item) {
-    setForm({
-      id: item.id,
-      contractId: item.contract_id,
-      invoiceType: item.invoice_type || 'facture',
-      status: item.status || 'non_reglee',
-      periodStart: dateInputValue(item.period_start),
-      periodEnd: dateInputValue(item.period_end),
-      dueDate: dateInputValue(item.due_date),
-      installationAmountUsd: item.installation_amount_usd || '',
-      subscriptionAmountUsd: item.subscription_amount_usd || '',
-      equipmentInstallmentAmountUsd: item.equipment_installment_amount_usd || '',
-      penaltyAmountUsd: item.penalty_amount_usd || '',
-      discountAmountUsd: item.discount_amount_usd || ''
-    });
-  }
-
-  function saveInvoice() {
-    const body = {
-      ...form,
-      contractId: form.contractId,
-      installationAmountUsd: form.installationAmountUsd || 0,
-      subscriptionAmountUsd: form.subscriptionAmountUsd || undefined,
-      equipmentInstallmentAmountUsd: form.equipmentInstallmentAmountUsd || 0,
-      penaltyAmountUsd: form.penaltyAmountUsd || 0,
-      discountAmountUsd: form.discountAmountUsd || 0
-    };
-
-    const action = isEditing ? () => api.updateInvoice(form.id, body) : () => api.createInvoice(body);
-    submit(action, isEditing ? 'Facture modifiee' : 'Facture creee');
-    setForm(emptyForm);
-  }
-
-  function printInvoice(item) {
+function printInvoice(item) {
     const rows = [
       ['Installation', item.installation_amount_usd],
       ['Abonnement Internet', item.subscription_amount_usd],
@@ -2136,6 +2036,123 @@ function Invoices({ data, submit }) {
       </html>`;
     printHtml(item.invoice_number, html);
   }
+
+function printPaymentStatement(item, data) {
+    const invoice = data.invoices.find((value) => String(value.id) === String(item.invoice_id)) || {};
+    const invoiceNumber = item.invoice_number || invoice.invoice_number;
+    const invoiceType = item.invoice_type || invoice.invoice_type;
+    const periodStart = item.period_start || invoice.period_start;
+    const periodEnd = item.period_end || invoice.period_end;
+    const dueDate = item.due_date || invoice.due_date;
+    const invoiceStatus = item.invoice_status || invoice.status;
+    const contractNumber = item.contract_number || invoice.contract_number;
+    const html = `
+      <html>
+        <head><title>${item.payment_reference}</title>${documentStyles()}</head>
+        <body>
+          <main class="doc">
+            <header class="doc-header">
+              <div>
+                ${documentBrand()}
+                <div class="brand-sub">Etat de paiement de facture</div>
+                <div class="brand-sub">Contact officiel : +243 980 208 012</div>
+              </div>
+              <div class="doc-title">
+                <h1>Recu de paiement</h1>
+                <span class="badge">${text(item.payment_reference)}</span>
+              </div>
+            </header>
+
+            <section class="grid">
+              <div class="box">
+                <h2>Client</h2>
+                <div class="field-line"><strong>Nom</strong><span>${text(item.client_name)}</span></div>
+                <div class="field-line"><strong>Telephone</strong><span>${text(item.client_phone)}</span></div>
+                <div class="field-line"><strong>Contrat</strong><span>${text(contractNumber)}</span></div>
+              </div>
+              <div class="box">
+                <h2>Facture</h2>
+                <div class="field-line"><strong>Numero</strong><span>${text(invoiceNumber)}</span></div>
+                <div class="field-line"><strong>Type</strong><span>${invoiceTypeLabel(invoiceType)}</span></div>
+                <div class="field-line"><strong>Periode</strong><span>${text(periodStart)} - ${text(periodEnd)}</span></div>
+                <div class="field-line"><strong>Date limite</strong><span>${dateText(dueDate)}</span></div>
+                <div class="field-line"><strong>Statut</strong><span>${invoiceStatusLabel(invoiceStatus)}</span></div>
+              </div>
+            </section>
+
+            <section class="box">
+              <h2>Paiement recu</h2>
+              <table>
+                <tbody>
+                  <tr><td>Montant paye</td><td><strong>${money(item.amount_usd)}</strong></td></tr>
+                  <tr><td>Methode</td><td>${text(item.method)}</td></tr>
+                  <tr><td>Transaction</td><td>${item.transaction_number || '-'}</td></tr>
+                  <tr><td>Date paiement</td><td>${dateText(item.paid_at)}</td></tr>
+                </tbody>
+              </table>
+              <p class="small">Ce document confirme uniquement le paiement reference ci-dessus. Le solde exact depend des paiements deja enregistres sur la facture.</p>
+            </section>
+
+            <section class="signature">
+              <div class="signature-box"><strong>Pour LWASIVA_NET</strong><p>Nom : KITSA LUSENGE LWASIVA Sage</p><p>Date : ${todayDisplayDate()}</p></div>
+              <div class="signature-box"><strong>Client</strong><p>Nom : ${text(item.client_name)}</p><p>Signature : ................................</p></div>
+            </section>
+            <footer class="footer">LWASIVA_NET - Reçu de paiement</footer>
+          </main>
+        </body>
+      </html>`;
+    printHtml(item.payment_reference, html);
+  }
+
+function Invoices({ data, submit }) {
+  const emptyForm = { id: '', contractId: '', invoiceType: 'facture', status: 'non_reglee', periodStart: '', periodEnd: '', dueDate: '', installationAmountUsd: '', subscriptionAmountUsd: '', equipmentInstallmentAmountUsd: '', penaltyAmountUsd: '', discountAmountUsd: '' };
+  const [form, setForm] = useState(emptyForm);
+  const isEditing = Boolean(form.id);
+
+  function setContract(contractId) {
+    const contract = data.contracts.find((item) => String(item.contract_id) === String(contractId));
+    const hasExistingInvoice = data.invoices.some((item) => String(item.contract_id) === String(contractId));
+    setForm({
+      ...form,
+      contractId,
+      subscriptionAmountUsd: contract?.monthly_price_usd || '',
+      installationAmountUsd: !hasExistingInvoice ? contract?.equipment_initial_payment_usd || '' : ''
+    });
+  }
+
+  function editInvoice(item) {
+    setForm({
+      id: item.id,
+      contractId: item.contract_id,
+      invoiceType: item.invoice_type || 'facture',
+      status: item.status || 'non_reglee',
+      periodStart: dateInputValue(item.period_start),
+      periodEnd: dateInputValue(item.period_end),
+      dueDate: dateInputValue(item.due_date),
+      installationAmountUsd: item.installation_amount_usd || '',
+      subscriptionAmountUsd: item.subscription_amount_usd || '',
+      equipmentInstallmentAmountUsd: item.equipment_installment_amount_usd || '',
+      penaltyAmountUsd: item.penalty_amount_usd || '',
+      discountAmountUsd: item.discount_amount_usd || ''
+    });
+  }
+
+  function saveInvoice() {
+    const body = {
+      ...form,
+      contractId: form.contractId,
+      installationAmountUsd: form.installationAmountUsd || 0,
+      subscriptionAmountUsd: form.subscriptionAmountUsd || undefined,
+      equipmentInstallmentAmountUsd: form.equipmentInstallmentAmountUsd || 0,
+      penaltyAmountUsd: form.penaltyAmountUsd || 0,
+      discountAmountUsd: form.discountAmountUsd || 0
+    };
+
+    const action = isEditing ? () => api.updateInvoice(form.id, body) : () => api.createInvoice(body);
+    submit(action, isEditing ? 'Facture modifiee' : 'Facture creee');
+    setForm(emptyForm);
+  }
+
 
   return (
     <>
@@ -2217,72 +2234,6 @@ function Payments({ data, submit }) {
     setForm(emptyForm);
   }
 
-  function printPaymentStatement(item) {
-    const invoice = data.invoices.find((value) => String(value.id) === String(item.invoice_id)) || {};
-    const invoiceNumber = item.invoice_number || invoice.invoice_number;
-    const invoiceType = item.invoice_type || invoice.invoice_type;
-    const periodStart = item.period_start || invoice.period_start;
-    const periodEnd = item.period_end || invoice.period_end;
-    const dueDate = item.due_date || invoice.due_date;
-    const invoiceStatus = item.invoice_status || invoice.status;
-    const contractNumber = item.contract_number || invoice.contract_number;
-    const html = `
-      <html>
-        <head><title>${item.payment_reference}</title>${documentStyles()}</head>
-        <body>
-          <main class="doc">
-            <header class="doc-header">
-              <div>
-                ${documentBrand()}
-                <div class="brand-sub">Etat de paiement de facture</div>
-                <div class="brand-sub">Contact officiel : +243 980 208 012</div>
-              </div>
-              <div class="doc-title">
-                <h1>Recu de paiement</h1>
-                <span class="badge">${text(item.payment_reference)}</span>
-              </div>
-            </header>
-
-            <section class="grid">
-              <div class="box">
-                <h2>Client</h2>
-                <div class="field-line"><strong>Nom</strong><span>${text(item.client_name)}</span></div>
-                <div class="field-line"><strong>Telephone</strong><span>${text(item.client_phone)}</span></div>
-                <div class="field-line"><strong>Contrat</strong><span>${text(contractNumber)}</span></div>
-              </div>
-              <div class="box">
-                <h2>Facture</h2>
-                <div class="field-line"><strong>Numero</strong><span>${text(invoiceNumber)}</span></div>
-                <div class="field-line"><strong>Type</strong><span>${invoiceTypeLabel(invoiceType)}</span></div>
-                <div class="field-line"><strong>Periode</strong><span>${text(periodStart)} - ${text(periodEnd)}</span></div>
-                <div class="field-line"><strong>Date limite</strong><span>${dateText(dueDate)}</span></div>
-                <div class="field-line"><strong>Statut</strong><span>${invoiceStatusLabel(invoiceStatus)}</span></div>
-              </div>
-            </section>
-
-            <section class="box">
-              <h2>Paiement recu</h2>
-              <table>
-                <tbody>
-                  <tr><td>Montant paye</td><td><strong>${money(item.amount_usd)}</strong></td></tr>
-                  <tr><td>Methode</td><td>${text(item.method)}</td></tr>
-                  <tr><td>Transaction</td><td>${item.transaction_number || '-'}</td></tr>
-                  <tr><td>Date paiement</td><td>${todayDisplayDate()}</td></tr>
-                </tbody>
-              </table>
-              <p class="small">Ce document confirme uniquement le paiement reference ci-dessus. Le solde exact depend des paiements deja enregistres sur la facture.</p>
-            </section>
-
-            <section class="signature">
-              <div class="signature-box"><strong>Pour LWASIVA_NET</strong><p>Nom : KITSA LUSENGE LWASIVA Sage</p><p>Date : ${todayDisplayDate()}</p></div>
-              <div class="signature-box"><strong>Client</strong><p>Nom : ${text(item.client_name)}</p><p>Signature : ................................</p></div>
-            </section>
-            <footer class="footer">LWASIVA_NET - Etat de paiement imprime par l'administration</footer>
-          </main>
-        </body>
-      </html>`;
-    printHtml(item.payment_reference, html);
-  }
 
   return (
     <>
@@ -2309,7 +2260,7 @@ function Payments({ data, submit }) {
                 <span>{item.invoice_number || '-'} - {invoiceTypeLabel(item.invoice_type)} - {money(item.amount_usd)} - {item.method} - {item.paid_at}</span>
               </div>
               <div className="quote-actions">
-                <button className="icon-button" title="Imprimer l'etat de paiement" onClick={() => printPaymentStatement(item)}><Printer size={17} /></button>
+                <button className="icon-button" title="Imprimer l'etat de paiement" onClick={() => printPaymentStatement(item, data)}><Printer size={17} /></button>
                 <button className="icon-button" title="Modifier" onClick={() => editPayment(item)}><Pencil size={17} /></button>
                 <button className="icon-button danger" title="Supprimer" onClick={() => submit(() => api.deletePayment(item.id), 'Paiement supprime')}><Trash2 size={17} /></button>
               </div>
@@ -3351,12 +3302,12 @@ function QuickForm({ title, icon, children, onSubmit }) {
 }
 
 function TextInput({ label, value, onChange, type = 'text' }) {
-  return (
-    <label className="field">
-      <span>{label}</span>
-      <input type={type} value={value ?? ''} onChange={(event) => onChange(event.target.value)} />
-    </label>
-  );
+  const [visible, setVisible] = useState(false);
+  const isPassword = type === 'password';
+  return <label className="field"><span>{label}</span><div className={isPassword ? 'password-input' : 'text-input-wrap'}>
+    <input type={isPassword && visible ? 'text' : type} value={value ?? ''} onChange={event => onChange(event.target.value)} />
+    {isPassword && <button type="button" className="password-toggle" aria-label={visible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'} aria-pressed={visible} onClick={() => setVisible(v => !v)}>{visible ? <EyeOff size={19} /> : <Eye size={19} />}</button>}
+  </div></label>;
 }
 
 function TextAreaInput({ label, value, onChange }) {

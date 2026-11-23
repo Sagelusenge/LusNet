@@ -303,3 +303,43 @@ td { font-size:14px; border-color:var(--line); }
   .mobile-header-logo { width:116px; height:29px; }
   .topbar-actions .icon-button,.topbar-actions .text-button { width:32px; min-width:32px; }
 }
+/* Unified client workspace and accessible sign-in controls. */
+.public-header .public-brand-copy { display:none !important; }
+.password-input { position:relative; width:100%; }
+.password-input input,.text-input-wrap input { width:100%; }
+.password-input input { padding-right:48px; }
+.password-toggle { position:absolute; right:3px; top:50%; transform:translateY(-50%); width:40px; height:40px; display:grid; place-items:center; border:0; border-radius:6px; background:transparent; color:var(--muted); }
+.password-toggle:hover { transform:translateY(-50%); color:var(--brand); background:var(--surface-soft); }
+.login-progress { min-height:20px; font-size:14px; color:var(--muted); }
+.login-submit:disabled { cursor:wait; opacity:.75; }
+.client-shell .sidebar { width:248px; background:var(--surface); border-right:1px solid var(--line); box-shadow:none; }
+.client-shell .main { margin-left:248px; }
+.client-shell .sidebar .brand { border-color:var(--line); }
+.client-shell .sidebar .brand span,.client-shell .sidebar-section-label { color:var(--muted); }
+.client-shell .nav-list { display:flex; flex-direction:column; gap:5px; padding-bottom:12px; }
+.client-shell .nav-list button { min-height:42px; height:auto; width:100%; flex:0 0 auto; padding:10px 12px; font-size:14px; color:var(--ink); border-radius:6px; }
+.client-shell .nav-list button svg { color:var(--muted); width:18px; }
+.client-shell .nav-list button:is(.active,:hover) { background:#0a58ca; color:white; box-shadow:none; }
+.client-shell .nav-list button:is(.active,:hover) svg { color:white; }
+.client-shell .sidebar-status { width:100%; background:var(--surface-soft); border-color:var(--line); color:var(--ink); }
+.client-shell .sidebar-status small { color:var(--muted); }
+.client-essential-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:20px; }
+.client-essential-grid .metric { display:flex; flex-direction:column; align-items:flex-start; gap:12px; min-height:160px; padding:24px; border:1px solid var(--line); border-bottom:3px solid var(--brand); border-radius:12px; background:var(--surface); box-shadow:none; }
+.client-essential-grid .metric::before,.client-essential-grid .metric::after { display:none; }
+.client-essential-grid .metric>svg { color:var(--brand); }
+.client-essential-grid .metric>span { font-size:14px; color:var(--muted); }
+.client-essential-grid .metric>strong { font-size:clamp(20px,2vw,28px); color:var(--ink); overflow-wrap:anywhere; }
+.client-shortcuts { display:flex; flex-wrap:wrap; gap:10px; }
+.client-shell .small-button { font-size:14px; min-height:40px; background:var(--surface-soft); color:var(--brand-strong); border:1px solid var(--line); border-radius:7px; }
+.client-summary-panel,.client-message-card { background:var(--surface); border-color:var(--line); }
+.client-status-list>div { border-color:var(--line); }
+.client-status-list span { color:var(--muted); font-size:14px; }
+.client-status-list strong { color:var(--ink); font-size:14px; overflow-wrap:anywhere; }
+.client-message-card p { color:var(--muted); font-size:16px; line-height:1.7; }
+/* Avoid overflow ancestors trapping the sticky header. */
+html,body { overflow-x:clip; }
+.app-shell,.app-shell .main { overflow:visible; }
+.app-shell .topbar { position:sticky; top:0; z-index:40; background:var(--surface); }
+@media(max-width:1000px) { .client-essential-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:760px) { .client-shell .sidebar { width:min(290px,85vw); z-index:101; } .client-shell .main { margin-left:0; } .client-essential-grid { gap:12px; } .client-essential-grid .metric { padding:18px; min-height:145px; } }
+@media(max-width:380px) { .client-essential-grid { grid-template-columns:1fr; } }
