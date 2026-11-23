@@ -21,6 +21,7 @@ async function listInvoices(req, res) {
        c.contract_number,
        cl.full_name AS client_name,
        cl.phone AS client_phone,
+       COALESCE(MAX(p.id), 0) AS last_payment_id,
        COALESCE(SUM(p.amount_usd), 0.00) AS paid_amount_usd
      FROM invoices i
      INNER JOIN contracts c ON c.id = i.contract_id

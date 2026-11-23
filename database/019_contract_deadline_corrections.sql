@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS contract_deadline_corrections (
+  contract_id BIGINT UNSIGNED PRIMARY KEY,
+  expires_on DATE NOT NULL,
+  invoice_id_cutoff BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  payment_id_cutoff BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  reason VARCHAR(500) NOT NULL,
+  corrected_by BIGINT UNSIGNED NULL,
+  corrected_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_deadline_contract FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE CASCADE
+) ENGINE=InnoDB;

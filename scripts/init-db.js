@@ -21,7 +21,8 @@ const files = [
   path.join(__dirname, '..', 'database', '007_budget.sql'),
   path.join(__dirname, '..', 'database', '008_other_plan.sql'),
   path.join(__dirname, '..', 'database', '017_client_account_requests.sql'),
-  path.join(__dirname, '..', 'database', '018_ghislain_private_reports.sql')
+  path.join(__dirname, '..', 'database', '018_ghislain_private_reports.sql'),
+  path.join(__dirname, '..', 'database', '019_contract_deadline_corrections.sql')
 ];
 
 async function tableExists(connection, tableName) {

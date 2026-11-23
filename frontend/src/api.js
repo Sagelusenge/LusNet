@@ -101,6 +101,8 @@ export const api = {
   updateClientProfile: (body) => apiRequest('/client-space/me', { method: 'PUT', body: JSON.stringify(body) }),
   summary: () => apiRequest('/dashboard/summary'),
   plans: () => apiRequest('/plans'),
+  updatePlan: (id, body) => apiRequest(`/plans/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  correctDeadline: (id, body) => apiRequest(`/contracts/${id}/deadline`, { method: 'PATCH', body: JSON.stringify(body) }),
   clients: (search = '') => apiRequest(`/clients${search ? `?search=${encodeURIComponent(search)}` : ''}`),
   createClient: (body) => apiRequest('/clients', { method: 'POST', body: JSON.stringify(body) }),
   updateClient: (id, body) => apiRequest(`/clients/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
@@ -132,3 +134,18 @@ export const api = {
   tickets: () => apiRequest('/support/tickets'),
   openTicket: (body) => apiRequest('/support/tickets', { method: 'POST', body: JSON.stringify(body) })
 };
+
+export async function downloadGlobalReport() {
+  const response = await fetch(`${API_BASE_URL}/reports/global.pdf`, { headers: { Authorization: `Bearer ${getToken()}` } });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.message || 'Le rapport global n’a pas pu être généré.');
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `rapport-global-lwasivanet-${new Date().toISOString().slice(0,10)}.pdf`;
+  document.body.appendChild(link); link.click(); link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+}

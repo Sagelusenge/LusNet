@@ -28,6 +28,7 @@ router.get('/health', (req, res) => {
   });
 });
 
+router.use('/reports', require('./reports.routes'));
 router.use('/auth', authRoutes);
 router.use('/budget', budgetRoutes);
 router.use('/clients', clientRoutes);

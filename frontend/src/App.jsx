@@ -41,7 +41,8 @@ import {
   Globe2,
   Zap
 } from 'lucide-react';
-import { api, getCurrentUser, setToken } from './api';
+import { api, getCurrentUser, setToken, downloadGlobalReport } from './api';
+import { subscriptionCountdownForContract } from './lib/subscriptions.mjs';
 
 const COMPANY_LOGO = '/lwasivanet-logo.jpeg';
 
@@ -418,6 +419,14 @@ function App() {
     loadAll();
   }, [tokenState]);
 
+  useEffect(() => {
+    if (isLoggedIn) return;
+    const refresh = () => { if (!document.hidden) loadAll(); };
+    window.addEventListener('focus', refresh);
+    const interval = window.setInterval(refresh, 60000);
+    return () => { window.removeEventListener('focus', refresh); window.clearInterval(interval); };
+  }, [isLoggedIn]);
+
   function notify(message, type = 'success') {
     setToast({ message, type });
     window.setTimeout(() => setToast(null), 3600);
@@ -558,6 +567,7 @@ function App() {
           <button className="icon-button mobile-only" onClick={() => setSidebarOpen((value) => !value)} title="Menu" aria-expanded={sidebarOpen} aria-controls="workspace-navigation">
             <Menu size={20} />
           </button>
+          <CompanyLogo className="mobile-header-logo" />
           <div className="topbar-title">
             <span>{isClient ? 'Espace client' : 'Administration'}</span>
             <h1>{activeTitle}</h1>
@@ -588,15 +598,15 @@ function App() {
           {!isClient && active === 'quotes' && <Quotes data={data} submit={submit} />}
           {!isClient && active === 'clients' && <Clients data={data} submit={submit} />}
           {!isClient && active === 'contracts' && <Contracts data={data} submit={submit} />}
-          {!isClient && active === 'countdowns' && <Countdowns data={data} />}
-          {!isClient && active === 'plans' && <Plans data={data} />}
+          {!isClient && active === 'countdowns' && <Countdowns data={data} submit={submit} canEdit={['admin', 'manager'].includes(currentUser?.role)} />}
+          {!isClient && active === 'plans' && <Plans data={data} submit={submit} canEdit={['admin', 'manager'].includes(currentUser?.role)} />}
           {!isClient && active === 'invoices' && <Invoices data={data} submit={submit} />}
           {!isClient && active === 'payments' && <Payments data={data} submit={submit} />}
           {!isClient && active === 'budget' && <Budget data={data} submit={submit} />}
           {!isClient && active === 'ghislain-cashbook' && <GhislainWorkspace data={data} submit={submit} mode="cashbook" />}
           {!isClient && active === 'ghislain-budget' && <GhislainWorkspace data={data} submit={submit} mode="budget" />}
           {!isClient && active === 'equipment' && <Equipment data={data} submit={submit} />}
-          {!isClient && active === 'reports' && <Reports data={data} />}
+          {!isClient && active === 'reports' && <Reports data={data} canExportGlobal={currentUser?.role === 'admin'} />}
           {!isClient && active === 'support' && <Support data={data} submit={submit} />}
           {!isClient && active === 'feedback' && <FeedbackAdmin data={data} submit={submit} />}
           {!isClient && active === 'notifications' && <Notifications data={data} submit={submit} />}
@@ -716,7 +726,7 @@ function PublicShell({ active, setActive, toast, theme, setTheme, children }) {
 }
 
 function PublicHome({ plans, feedback, submit, setActive, busy }) {
-  const publicPlans = plans.filter((plan) => !isOtherPlanName(plan.name));
+  const publicPlans = plans.filter((plan) => !isOtherPlanName(plan.name) && Number(plan.is_active) !== 0);
   const [form, setForm] = useState({
     fullName: '',
     clientType: 'particulier',
@@ -1107,58 +1117,6 @@ function ClientRegistrationPanel({ submit, busy, setActive }) {
   );
 }
 
-function subscriptionCountdown(activatedAt, now) {
-  if (!activatedAt) return null;
-
-  const startedAt = new Date(`${String(activatedAt).slice(0, 10)}T00:00:00`);
-  if (Number.isNaN(startedAt.getTime())) return null;
-
-  const durationMs = 30 * 24 * 60 * 60 * 1000;
-  const expiresAt = new Date(startedAt.getTime() + durationMs);
-  const remainingMs = expiresAt.getTime() - now.getTime();
-  const absoluteMs = Math.abs(remainingMs);
-  const days = Math.floor(absoluteMs / (24 * 60 * 60 * 1000));
-  const hours = Math.floor((absoluteMs / (60 * 60 * 1000)) % 24);
-  const minutes = Math.floor((absoluteMs / (60 * 1000)) % 60);
-  const progress = Math.max(0, Math.min(100, (remainingMs / durationMs) * 100));
-
-  return { startedAt, expiresAt, remainingMs, days, hours, minutes, progress };
-}
-
-function paidInvoiceEndDate(contract, invoices) {
-  const paidInvoices = invoices
-    .filter((invoice) => String(invoice.contract_id) === String(contract.contract_id || contract.id))
-    .filter((invoice) => invoice.status === 'payee' || Number(invoice.paid_amount_usd || 0) >= Number(invoice.total_amount_usd || 0))
-    .map((invoice) => new Date(`${String(invoice.period_end).slice(0, 10)}T23:59:59`))
-    .filter((date) => !Number.isNaN(date.getTime()))
-    .sort((a, b) => b.getTime() - a.getTime());
-
-  return paidInvoices[0] || null;
-}
-
-function subscriptionCountdownForContract(contract, invoices, now) {
-  const fallbackCountdown = subscriptionCountdown(contract.activated_at, now);
-  const paidEnd = paidInvoiceEndDate(contract, invoices);
-  const baseExpiresAt = paidEnd || fallbackCountdown?.expiresAt;
-  if (!baseExpiresAt) return null;
-
-  const startedAt = fallbackCountdown?.startedAt || new Date(`${String(contract.activated_at || baseExpiresAt).slice(0, 10)}T00:00:00`);
-  const completedSuspensionMs = Math.max(0, Number(contract.completed_suspension_seconds || 0) * 1000);
-  const expiresAt = new Date(baseExpiresAt.getTime() + completedSuspensionMs);
-  const suspendedAt = contract.status === 'suspendu' && contract.current_suspended_at ? new Date(contract.current_suspended_at) : null;
-  const isPaused = Boolean(suspendedAt && !Number.isNaN(suspendedAt.getTime()));
-  const effectiveNow = isPaused ? suspendedAt : now;
-  const remainingMs = expiresAt.getTime() - effectiveNow.getTime();
-  const absoluteMs = Math.abs(remainingMs);
-  const days = Math.floor(absoluteMs / (24 * 60 * 60 * 1000));
-  const hours = Math.floor((absoluteMs / (60 * 60 * 1000)) % 24);
-  const minutes = Math.floor((absoluteMs / (60 * 1000)) % 60);
-  const durationMs = Math.max(1, baseExpiresAt.getTime() - startedAt.getTime());
-  const progress = Math.max(0, Math.min(100, (remainingMs / durationMs) * 100));
-
-  return { startedAt, expiresAt, remainingMs, days, hours, minutes, progress, isPaused, suspendedAt };
-}
-
 function getSubscriptionStats(contracts, invoices = [], now = new Date()) {
   const eligibleContracts = contracts.filter((item) => item.activated_at && item.status !== 'brouillon' && item.status !== 'resilie');
   const countdowns = eligibleContracts
@@ -1172,7 +1130,8 @@ function getSubscriptionStats(contracts, invoices = [], now = new Date()) {
   };
 }
 
-function Countdowns({ data }) {
+function Countdowns({ data, submit, canEdit }) {
+  const [correction, setCorrection] = useState({ contractId: '', expiresOn: '', reason: '' });
   const [now, setNow] = useState(new Date());
   const eligibleContracts = data.contracts.filter((item) => item.activated_at && item.status !== 'brouillon' && item.status !== 'resilie');
 
@@ -1197,7 +1156,14 @@ function Countdowns({ data }) {
       </div>
 
       <div className="panel">
-        <PanelHeader icon={Timer} title="Compte a rebours des abonnements" />
+        <PanelHeader icon={Timer} title="Compte à rebours des abonnements" />
+        <p className="muted">Barres comparables : durée restante sur une échelle de 30 jours (plafond à 100 %). Les périodes expirées sont à zéro.</p>
+        {canEdit && <form className="form-grid" onSubmit={event => { event.preventDefault(); submit(() => api.correctDeadline(correction.contractId, correction), 'Échéance corrigée'); }}>
+          <SelectInput label="Contrat à corriger" value={correction.contractId} onChange={contractId => setCorrection({ ...correction, contractId })} options={eligibleContracts.map(c => ({ value:c.contract_id, label:`${c.client_name} — ${c.contract_number}` }))} />
+          <label className="field"><span>Dernier jour de service</span><input required type="date" value={correction.expiresOn} onChange={e => setCorrection({ ...correction, expiresOn:e.target.value })} /></label>
+          <label className="field"><span>Motif de correction</span><input required maxLength={500} value={correction.reason} onChange={e => setCorrection({ ...correction, reason:e.target.value })} /></label>
+          <button className="primary-button" disabled={!correction.contractId}>Corriger l’échéance</button>
+        </form>}
         <div className="countdown-list">
           {countdowns.length === 0 ? <p className="muted">Aucun contrat avec une date de mise en service.</p> : countdowns.map(({ contract, countdown }) => {
             const isExpired = countdown.remainingMs <= 0;
@@ -1214,8 +1180,8 @@ function Countdowns({ data }) {
                   </div>
                 </div>
                 <div className="countdown-dates">
-                  <span>Mise en service: {dateText(contract.activated_at)}</span>
-                  <strong>{countdown.isPaused ? `Echeance conservee: ${countdown.expiresAt.toLocaleDateString('fr-FR')}` : `Echeance: ${countdown.expiresAt.toLocaleDateString('fr-FR')}`}</strong>
+                  <span>Mise en service: {dateText(contract.activated_at)}</span><small>{countdown.source}</small>
+                  <strong>{countdown.isPaused ? `Echeance conservee: ${countdown.expiresAt.toLocaleDateString('fr-FR', { timeZone: 'Africa/Lubumbashi' })}` : `Echeance: ${countdown.expiresAt.toLocaleDateString('fr-FR', { timeZone: 'Africa/Lubumbashi' })}`}</strong>
                   {countdown.isPaused && <span>Suspendu le {countdown.suspendedAt.toLocaleDateString('fr-FR')}</span>}
                 </div>
                 <div className="countdown-value">
@@ -1236,7 +1202,7 @@ function Countdowns({ data }) {
                     </>
                   )}
                 </div>
-                <div className="countdown-progress" aria-label={`${Math.round(countdown.progress)} pourcent restant`}>
+                <div className="countdown-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(countdown.progress)} aria-label="Durée restante sur 30 jours">
                   <span style={{ width: `${countdown.progress}%` }} />
                 </div>
               </div>
@@ -1787,7 +1753,7 @@ function ClientSpace({ data, messages = [], submit }) {
       <div className="metric-grid">
         <div className="metric"><Users size={20} /><span>Client</span><strong>{data.client?.full_name || '-'}</strong></div>
         <div className="metric"><Wifi size={20} /><span>Bouquet</span><strong>{activeContract?.plan_name || '-'}</strong></div>
-        <div className="metric"><Timer size={20} /><span>Echeance</span><strong>{countdown ? (countdown.isPaused ? 'En pause' : countdown.expiresAt.toLocaleDateString('fr-FR')) : '-'}</strong></div>
+        <div className="metric"><Timer size={20} /><span>Echeance</span><strong>{countdown ? (countdown.isPaused ? 'En pause' : countdown.expiresAt.toLocaleDateString('fr-FR', { timeZone: 'Africa/Lubumbashi' })) : '-'}</strong></div>
         <div className="metric"><Receipt size={20} /><span>Factures a payer</span><strong>{unpaid.length}</strong></div>
         <div className="metric"><BadgeDollarSign size={20} /><span>Reste a payer</span><strong>{money(unpaidTotal)}</strong></div>
         <div className="metric"><Boxes size={20} /><span>Kit internet</span><strong>{equipmentRemaining > 0 ? money(equipmentRemaining) : 'En ordre'}</strong></div>
@@ -1803,7 +1769,7 @@ function ClientSpace({ data, messages = [], submit }) {
             <div><span>Adresse</span><strong>{activeContract?.installation_address || data.client?.address || '-'}</strong></div>
             <div><span>Statut</span><strong>{activeContract?.status || 'Aucun contrat'}</strong></div>
             <div><span>Debit</span><strong>{activeContract ? bandwidthText(activeContract) : '-'}</strong></div>
-            <div><span>Echeance abonnement</span><strong>{countdown ? (countdown.isPaused ? 'Compteur suspendu' : countdown.expiresAt.toLocaleDateString('fr-FR')) : '-'}</strong></div>
+            <div><span>Echeance abonnement</span><strong>{countdown ? (countdown.isPaused ? 'Compteur suspendu' : countdown.expiresAt.toLocaleDateString('fr-FR', { timeZone: 'Africa/Lubumbashi' })) : '-'}</strong></div>
             <div><span>Temps restant</span><strong>{countdown ? (countdown.isPaused ? `${countdown.days} j ${countdown.hours} h figes` : isExpired ? `Expire depuis ${countdown.days} j` : `${countdown.days} j ${countdown.hours} h`) : '-'}</strong></div>
           </div>
         </div>
@@ -2041,19 +2007,24 @@ function Contracts({ data, submit }) {
   );
 }
 
-function Plans({ data }) {
-  return (
-    <div className="plan-grid">
-      {data.plans.map((plan) => (
-        <div className="plan" key={plan.id}>
-          <div><Router size={22} /><strong>{plan.name}</strong></div>
-          <span>{plan.recommended_usage}</span>
-          <p>{bandwidthText(plan)}</p>
-          <b>{money(plan.monthly_price_usd)} / mois</b>
-        </div>
-      ))}
-    </div>
-  );
+function Plans({ data, submit, canEdit }) {
+  const [form, setForm] = useState(null);
+  function edit(plan) {
+    setForm({ id:plan.id, name:plan.name, bandwidthMbps:plan.bandwidth_mbps, recommendedUsage:plan.recommended_usage, monthlyPriceUsd:plan.monthly_price_usd, isActive:Boolean(Number(plan.is_active)) });
+  }
+  return <>
+    {form && <section className="panel"><PanelHeader icon={Gauge} title="Modifier le bouquet" /><p className="muted">Les changements sont publiés sur l’accueil après enregistrement. Les factures déjà émises conservent leurs montants.</p>
+      <form className="form-grid" onSubmit={event => { event.preventDefault(); submit(async () => { await api.updatePlan(form.id, form); setForm(null); }, 'Bouquet mis à jour sur le site'); }}>
+        <label className="field"><span>Nom</span><input required maxLength={120} value={form.name} onChange={e => setForm({ ...form, name:e.target.value })} /></label>
+        <label className="field"><span>Débit (Mbps)</span><input required type="number" min="0" step="1" value={form.bandwidthMbps} onChange={e => setForm({ ...form, bandwidthMbps:e.target.value })} /></label>
+        <label className="field"><span>Prix mensuel (USD)</span><input required type="number" min="0" max="99999999.99" step="0.01" value={form.monthlyPriceUsd} onChange={e => setForm({ ...form, monthlyPriceUsd:e.target.value })} /></label>
+        <label className="field"><span>Usages recommandés</span><input required maxLength={255} value={form.recommendedUsage} onChange={e => setForm({ ...form, recommendedUsage:e.target.value })} /></label>
+        <label className="field checkbox-field"><input type="checkbox" checked={form.isActive} onChange={e => setForm({ ...form, isActive:e.target.checked })} /><span>Bouquet disponible</span></label>
+        <div className="action-row"><button className="primary-button">Enregistrer</button><button className="secondary-button" type="button" onClick={() => setForm(null)}>Annuler</button></div>
+      </form>
+    </section>}
+    <div className="plan-grid">{data.plans.map(plan => <div className="plan" key={plan.id}><div><Router size={22} /><strong>{plan.name}</strong></div><span>{plan.recommended_usage}</span><p>{bandwidthText(plan)}</p><b>{money(plan.monthly_price_usd)} / mois</b><small>{Number(plan.is_active) ? 'Disponible' : 'Masqué de l’accueil'}</small>{canEdit && <button className="small-button" onClick={() => edit(plan)}><Pencil size={16} /> Modifier</button>}</div>)}</div>
+  </>;
 }
 
 function Invoices({ data, submit }) {
@@ -3015,7 +2986,13 @@ function Equipment({ data, submit }) {
   );
 }
 
-function Reports({ data }) {
+function Reports({ data, canExportGlobal }) {
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState('');
+  async function exportGlobal() {
+    setExporting(true); setExportError('');
+    try { await downloadGlobalReport(); } catch (error) { setExportError(error.message); } finally { setExporting(false); }
+  }
   const now = new Date();
   const [selectedPaymentClientId, setSelectedPaymentClientId] = useState('all');
   const [activeReportId, setActiveReportId] = useState('client-payments');
@@ -3060,7 +3037,7 @@ function Reports({ data }) {
         contract.client_name,
         contract.contract_number,
         contract.plan_name,
-        countdown.expiresAt.toLocaleDateString('fr-FR'),
+        countdown.expiresAt.toLocaleDateString('fr-FR', { timeZone: 'Africa/Lubumbashi' }),
         countdown.isPaused ? `En pause a ${countdown.days} j ${countdown.hours} h` : countdown.remainingMs <= 0 ? `Expire depuis ${countdown.days} j` : `${countdown.days} j ${countdown.hours} h restantes`
       ])
     },
@@ -3179,6 +3156,7 @@ function Reports({ data }) {
 
   return (
     <>
+      {canExportGlobal && <section className="panel global-report-panel"><PanelHeader icon={FileText} title="Rapport global de l’entreprise" /><p>Tous les mois depuis les premières opérations enregistrées : recettes, dépenses, solde de trésorerie, clients, contrats et annexes complètes de tous les modules.</p><p className="muted">Les paiements, le budget et la caisse Ghislain sont présentés séparément pour éviter les doubles comptes. Export réservé à l’administrateur.</p><button className="primary-button" disabled={exporting} onClick={exportGlobal}><FileText size={18} />{exporting ? 'Génération du PDF…' : 'Télécharger le rapport global PDF'}</button>{exportError && <p role="alert">{exportError}</p>}</section>}
       <section className="reports-hero">
         <div>
           <span className="reports-eyebrow"><BarChart3 size={14} /> Centre d'analyse</span>

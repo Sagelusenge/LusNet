@@ -1,3 +1,4 @@
+const { attachDeadlineDetails } = require('../services/contract-deadlines.service');
 const { query } = require('../config/database');
 const HttpError = require('../utils/http-error');
 
@@ -41,6 +42,7 @@ async function getMySpace(req, res) {
   const invoices = await query(
     `SELECT
        i.*,
+       COALESCE((SELECT MAX(p.id) FROM payments p WHERE p.invoice_id = i.id), 0) AS last_payment_id,
        COALESCE((SELECT SUM(p.amount_usd) FROM payments p WHERE p.invoice_id = i.id), 0.00) AS paid_amount_usd
      FROM invoices i
      INNER JOIN contracts c ON c.id = i.contract_id
@@ -92,7 +94,7 @@ async function getMySpace(req, res) {
     success: true,
     data: {
       client: clients[0] || null,
-      contracts,
+      contracts: await attachDeadlineDetails(contracts),
       invoices,
       payments,
       tickets,

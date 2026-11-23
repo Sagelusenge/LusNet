@@ -91,30 +91,20 @@ function deadlinePayload(contract, alertDay) {
 }
 
 async function findDeadlineContracts() {
-  return query(
-    `SELECT c.id AS contract_id, c.client_id, c.contract_number, c.activated_at,
-            TIMESTAMPADD(SECOND, COALESCE((
-              SELECT SUM(TIMESTAMPDIFF(SECOND, ss.suspended_at, ss.restored_at))
-              FROM service_suspensions ss
-              WHERE ss.contract_id = c.id AND ss.restored_at IS NOT NULL
-            ), 0), DATE_ADD(DATE(c.activated_at), INTERVAL 30 DAY)) AS expiration_date,
-            DATEDIFF(DATE(TIMESTAMPADD(SECOND, COALESCE((
-              SELECT SUM(TIMESTAMPDIFF(SECOND, ss.suspended_at, ss.restored_at))
-              FROM service_suspensions ss
-              WHERE ss.contract_id = c.id AND ss.restored_at IS NOT NULL
-            ), 0), DATE_ADD(DATE(c.activated_at), INTERVAL 30 DAY))), CURRENT_DATE) AS alert_day,
-            cl.full_name AS client_name, ip.name AS plan_name
-     FROM contracts c
-     INNER JOIN clients cl ON cl.id = c.client_id
-     INNER JOIN internet_plans ip ON ip.id = c.plan_id
-     WHERE c.activated_at IS NOT NULL
-       AND c.status IN ('essai', 'actif')
-       AND DATEDIFF(DATE(TIMESTAMPADD(SECOND, COALESCE((
-         SELECT SUM(TIMESTAMPDIFF(SECOND, ss.suspended_at, ss.restored_at))
-         FROM service_suspensions ss
-         WHERE ss.contract_id = c.id AND ss.restored_at IS NOT NULL
-       ), 0), DATE_ADD(DATE(c.activated_at), INTERVAL 30 DAY))), CURRENT_DATE) IN (5, 3, 1, 0)`
-  );
+  const { attachDeadlineDetails } = require('./contract-deadlines.service');
+  const { subscriptionCountdownForContract } = await import('../../frontend/src/lib/subscriptions.mjs');
+  const contracts = await query(`SELECT c.*, c.id AS contract_id, cl.full_name AS client_name, ip.name AS plan_name
+    FROM contracts c JOIN clients cl ON cl.id=c.client_id JOIN internet_plans ip ON ip.id=c.plan_id
+    WHERE c.activated_at IS NOT NULL AND c.status IN ('essai', 'actif')`);
+  const invoices = await query(`SELECT i.*, COALESCE((SELECT MAX(p.id) FROM payments p WHERE p.invoice_id=i.id),0) AS last_payment_id, COALESCE((SELECT SUM(p.amount_usd) FROM payments p WHERE p.invoice_id=i.id),0) AS paid_amount_usd FROM invoices i`);
+  const detailed = await attachDeadlineDetails(contracts);
+  const now = new Date();
+  const day = date => Math.floor((date.getTime() + 2 * 3600000) / 86400000);
+  return detailed.map(contract => {
+    const countdown = subscriptionCountdownForContract(contract, invoices, now);
+    if (!countdown || countdown.isPaused) return null;
+    return { ...contract, expiration_date:new Date(countdown.expiresAt.getTime()+2*3600000).toISOString().slice(0,10), alert_day:day(countdown.expiresAt)-day(now) };
+  }).filter(contract => contract && [5,3,1,0].includes(contract.alert_day));
 }
 
 async function deadlineRecipients(clientId) {

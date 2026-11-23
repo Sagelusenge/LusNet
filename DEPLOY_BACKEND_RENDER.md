@@ -109,3 +109,34 @@ npm.cmd start
 ```
 
 Apres modification, relancer Expo avec cette URL publique.
+
+## Échéances, bouquets et rapport global
+
+Le backend et le frontend doivent être déployés ensemble pour utiliser ces fonctions.
+`npm ci` installe notamment PDFKit, nécessaire au téléchargement PDF.
+
+- **Échéances** : les barres utilisent une échelle commune de 30 jours. Les factures proforma,
+  annulées, brouillon ou sans abonnement ne prolongent pas le service. Les suspensions sont
+  rattachées à la période concernée. Les dates de service sont interprétées à l’heure de Goma.
+- **Correction d’une échéance** : dans Échéances, un administrateur ou responsable peut
+  enregistrer le dernier jour de service et un motif. La table de correction est créée si
+  nécessaire ; la migration `database/019_contract_deadline_corrections.sql` peut également
+  être appliquée séparément. Une nouvelle facture payée ou un nouveau paiement de renouvellement
+  remplace ensuite la correction.
+- **Gloiredo** : `node scripts/correct-gloiredo-deadline.js` vérifie le contrat
+  `CTR-20260602-34488` sans le modifier. Avec la bonne configuration DB, ajouter `--apply`
+  enregistre le dernier jour de service au `2026-11-06`, conformément à la demande du responsable.
+  Le script contrôle le numéro de contrat et le nom avant toute écriture.
+- **Bouquets** : administrateurs et responsables peuvent modifier nom, débit, usages, prix et
+  disponibilité. Les prix existants des factures restent inchangés. L’accueil recharge les
+  offres au retour sur la fenêtre et toutes les 60 secondes. « Autre » reste réservé aux tarifs
+  personnalisés.
+- **Rapport global** : Rapports > Télécharger le rapport global PDF (administrateur uniquement).
+  L’export lit directement toutes les lignes des modules, dans un instantané cohérent de la base.
+  Les journaux budget, paiements clients et caisse Ghislain restent distincts afin d’éviter les
+  doubles comptes. Le solde mensuel présenté est un solde de trésorerie du budget, pas un bénéfice
+  comptable certifié. Le début de l’activité correspond aux premières écritures conservées.
+  Les modules manquants sont signalés ; les secrets sont exclus ; les pièces jointes sont
+  référencées mais leur contenu n’est pas incorporé. Les écritures supprimées ne sont pas récupérables.
+
+Vérification : `npm test` et `npm run build --prefix frontend`.

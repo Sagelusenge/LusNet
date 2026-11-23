@@ -1,3 +1,4 @@
+const { attachDeadlineDetails } = require('../services/contract-deadlines.service');
 const { query } = require('../config/database');
 const HttpError = require('../utils/http-error');
 
@@ -36,7 +37,7 @@ async function listContracts(req, res) {
      INNER JOIN contracts c ON c.id = vc.contract_id
      ORDER BY vc.activated_at DESC, vc.contract_id DESC`
   );
-  res.json({ success: true, data: rows });
+  res.json({ success: true, data: await attachDeadlineDetails(rows) });
 }
 
 async function getContractState(contractId) {

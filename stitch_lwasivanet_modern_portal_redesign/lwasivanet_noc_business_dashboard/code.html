@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+
+<html lang="fr"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"secondary-fixed":"#b6ebff","surface-variant":"#d3e4fe","on-secondary-container":"#00566a","background":"#f8f9ff","inverse-surface":"#213145","network-down":"#EF4444","outline":"#737785","primary-fixed":"#d9e2ff","secondary-container":"#00d2ff","on-tertiary":"#ffffff","signal-glow":"#38BDF8","network-idle":"#F59E0B","border-subtle":"#E2E8F0","tertiary":"#3f465c","tertiary-fixed-dim":"#bec6e0","on-background":"#0b1c30","secondary-fixed-dim":"#47d6ff","surface-container":"#e5eeff","primary-fixed-dim":"#b0c6ff","surface-container-high":"#dce9ff","surface-container-low":"#eff4ff","primary-container":"#0a58ca","on-secondary-fixed-variant":"#004e60","on-primary-container":"#ccd8ff","on-surface-variant":"#424653","tertiary-fixed":"#dae2fd","on-tertiary-fixed-variant":"#3f465c","on-secondary":"#ffffff","on-error-container":"#93000a","network-active":"#10B981","tertiary-container":"#565e74","secondary":"#00677f","surface-dim":"#cbdbf5","surface":"#f8f9ff","on-tertiary-fixed":"#131b2e","on-primary-fixed":"#001945","surface-dark-card":"#0F172A","on-surface":"#0b1c30","primary":"#00429d","inverse-primary":"#b0c6ff","inverse-on-surface":"#eaf1ff","outline-variant":"#c3c6d6","surface-container-lowest":"#ffffff","on-secondary-fixed":"#001f28","on-tertiary-container":"#d0d8f2","on-primary-fixed-variant":"#00419d","error-container":"#ffdad6","surface-bright":"#f8f9ff","surface-tint":"#0958ca","on-primary":"#ffffff","surface-container-highest":"#d3e4fe","surface-dark":"#0B132B","surface-light":"#F8FAFC","error":"#ba1a1a","on-error":"#ffffff"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"space-md":"1rem","margin-desktop":"4rem","gutter-desktop":"2rem","space-xl":"2.5rem","space-xs":"0.25rem","gutter":"1.5rem","space-2xl":"4rem","margin":"1.5rem","space-sm":"0.5rem","space-lg":"1.5rem"},"fontFamily":{"headline-sm":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"],"body-sm":["Plus Jakarta Sans"],"body-lg":["Plus Jakarta Sans"],"label-technical":["Inter"],"headline-xl-mobile":["Plus Jakarta Sans"],"body-md":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"label-lg":["Inter"],"headline-lg-mobile":["Plus Jakarta Sans"],"label-md":["Inter"],"headline-xl":["Plus Jakarta Sans"]},"fontSize":{"headline-sm":["20px",{"lineHeight":"28px","fontWeight":"600"}],"headline-md":["28px",{"lineHeight":"36px","letterSpacing":"-0.01em","fontWeight":"700"}],"body-sm":["14px",{"lineHeight":"20px","fontWeight":"400"}],"body-lg":["18px",{"lineHeight":"28px","fontWeight":"400"}],"label-technical":["11px",{"lineHeight":"14px","letterSpacing":"0.08em","fontWeight":"700"}],"headline-xl-mobile":["36px",{"lineHeight":"44px","letterSpacing":"-0.02em","fontWeight":"800"}],"body-md":["16px",{"lineHeight":"24px","fontWeight":"400"}],"headline-lg":["40px",{"lineHeight":"48px","letterSpacing":"-0.02em","fontWeight":"700"}],"label-lg":["14px",{"lineHeight":"20px","letterSpacing":"0.02em","fontWeight":"600"}],"headline-lg-mobile":["28px",{"lineHeight":"36px","letterSpacing":"-0.01em","fontWeight":"700"}],"label-md":["12px",{"lineHeight":"16px","letterSpacing":"0.04em","fontWeight":"500"}],"headline-xl":["56px",{"lineHeight":"64px","letterSpacing":"-0.03em","fontWeight":"800"}]}}}};</script></head><body class="bg-background font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-50 flex flex-col justify-between"><div class="flex flex-col"><div class="h-16 px-space-lg flex items-center justify-between bg-surface-container-lowest"><div class="flex items-center gap-space-sm"><div class="w-9 h-9 rounded-lg bg-primary flex items-center justify-center text-on-primary shadow-sm"><span class="material-symbols-outlined text-[20px]">cell_tower</span></div><div class="flex flex-col"><span class="font-headline-sm text-headline-sm tracking-tight text-primary leading-none">LwasivaNet</span><span class="font-label-technical text-label-technical text-secondary tracking-widest uppercase mt-0.5">NOC Operations Goma</span></div></div><button class="p-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[20px]">dock_to_right</span></button></div><div class="px-space-lg py-space-sm"><div class="bg-surface-container-low px-space-md py-space-sm rounded-lg flex items-center justify-between"><div class="flex items-center gap-space-sm"><span class="w-2.5 h-2.5 rounded-full bg-network-active animate-pulse"></span><span class="font-label-md text-label-md text-on-surface font-semibold">Backbone Régional</span></div><span class="font-label-technical text-label-technical px-space-xs py-0.5 rounded bg-surface-container-high text-primary font-bold">99.98%</span></div></div><nav class="flex flex-col gap-1 px-space-md mt-space-sm" data-active-classes="bg-primary-container text-on-primary font-semibold shadow-sm"><a aria-current="page" class="flex items-center gap-space-md px-space-md py-2.5 rounded-lg transition-all bg-primary-container text-on-primary font-semibold shadow-sm" data-path="noc-dashboard" href="#"><span class="material-symbols-outlined text-[20px]">speed</span><span class="font-label-lg text-label-lg">Centre NOC &amp; Télémétrie</span></a><a class="flex items-center gap-space-md px-space-md py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="network-topology" href="#"><span class="material-symbols-outlined text-[20px]">hub</span><span class="font-label-lg text-label-lg">Topologie &amp; BTS Goma</span></a><a class="flex items-center gap-space-md px-space-md py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="subscribers-management" href="#"><span class="material-symbols-outlined text-[20px]">group</span><span class="font-label-lg text-label-lg">Abonnés &amp; Forfaits</span></a><a class="flex items-center gap-space-md px-space-md py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="bandwidth-qos" href="#"><span class="material-symbols-outlined text-[20px]">network_check</span><span class="font-label-lg text-label-lg">Bande Passante &amp; QoS</span></a><a class="flex items-center gap-space-md px-space-md py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="incident-tickets" href="#"><span class="material-symbols-outlined text-[20px]">confirmation_number</span><span class="font-label-lg text-label-lg">Incidents &amp; Tickets</span></a><a class="flex items-center gap-space-md px-space-md py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="billing-invoices" href="#"><span class="material-symbols-outlined text-[20px]">receipt_long</span><span class="font-label-lg text-label-lg">Facturation &amp; MPesa</span></a><a class="flex items-center gap-space-md px-space-md py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="system-settings" href="#"><span class="material-symbols-outlined text-[20px]">settings</span><span class="font-label-lg text-label-lg">Configuration Réseau</span></a></nav></div><div class="p-space-md m-space-md bg-surface-container-low rounded-xl flex items-center justify-between"><div class="flex flex-col"><span class="font-label-technical text-label-technical text-on-surface-variant uppercase">Noeud Principal</span><span class="font-label-md text-label-md text-on-surface font-semibold">POP Lac Kivu-01</span></div><span class="font-label-technical text-label-technical px-space-xs py-0.5 rounded bg-network-active/10 text-network-active font-bold">ONLINE</span></div></aside><div class="pl-72"><header class="fixed top-0 left-72 right-0 h-16 bg-surface-container-lowest/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between px-space-lg"><div class="flex items-center gap-space-md flex-1 max-w-lg"><div class="relative w-full"><span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span><input class="w-full pl-10 pr-space-md py-1.5 bg-surface-container-low rounded-lg font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:bg-surface-container-lowest focus:ring-1 focus:ring-primary" placeholder="Rechercher IP, ONT, BTS, client ou circuit optique..." type="text"/></div></div><div class="flex items-center gap-space-md"><div class="hidden md:flex items-center gap-space-sm px-space-sm py-1 rounded-full bg-surface-container-low"><div class="w-2 h-2 rounded-full bg-network-active"></div><span class="font-label-technical text-label-technical text-on-surface uppercase">Liaison Rwanda Transit: 10 Gbps UP</span></div><div class="flex items-center gap-space-xs"><button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors relative"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-network-down"></span></button><button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[20px]">dark_mode</span></button><button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[20px]">terminal</span></button></div><div class="h-6 w-px bg-outline-variant"></div><div class="flex items-center gap-space-sm pl-space-xs"><div class="flex flex-col text-right hidden sm:flex"><span class="font-label-md text-label-md text-on-surface font-semibold leading-tight">Admin NOC Goma</span><span class="font-label-technical text-label-technical text-on-surface-variant">Super-Opérateur</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 bg-background px-space-lg min-h-screen"><div class="flex flex-col w-full">
+<!-- Top Command & Action Bar -->
+<section class="py-space-md mb-space-lg flex flex-col xl:flex-row xl:items-center justify-between gap-space-md">
+<div class="flex flex-col">
+<div class="flex items-center gap-space-sm mb-1">
+<h1 class="font-headline-md text-headline-md text-on-surface font-extrabold tracking-tight">Bonjour, Admin 👋</h1>
+<span class="px-space-xs py-0.5 rounded-full bg-network-active/15 text-network-active font-label-technical text-label-technical tracking-wider uppercase font-bold flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-network-active animate-ping"></span>
+          Live Feed Active
+        </span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">Voici l’état en direct de votre réseau <span class="font-semibold text-primary">LwasivaNet</span> et de vos abonnés à Goma (Nord-Kivu).</p>
+</div>
+<!-- Quick Toolset & Trigger Actions -->
+<div class="flex flex-wrap items-center gap-space-sm">
+<!-- Auto-refresh interval pill -->
+<div class="flex items-center gap-2 bg-surface-container-low px-space-md py-2 rounded-xl shadow-sm">
+<span class="material-symbols-outlined text-[18px] text-primary animate-spin" style="animation-duration: 9s;">sync</span>
+<span class="font-label-technical text-label-technical text-on-surface-variant">Actualisation :</span>
+<span class="font-label-technical text-label-technical text-primary font-bold">30s</span>
+</div>
+<!-- Currency Switcher -->
+<div class="inline-flex p-1 bg-surface-container-low rounded-xl shadow-sm" id="currency-switch">
+<button class="px-3 py-1 rounded-lg font-label-technical text-label-technical font-bold transition-all bg-primary-container text-on-primary shadow-sm" id="curr-usd" onclick="setCurrency('USD')">USD</button>
+<button class="px-3 py-1 rounded-lg font-label-technical text-label-technical font-semibold text-on-surface-variant hover:text-on-surface transition-all" id="curr-cdf" onclick="setCurrency('CDF')">CDF</button>
+</div>
+<!-- Dropdown Multi-Action Trigger -->
+<div class="relative">
+<button class="flex items-center gap-2 px-space-md py-2 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-lg text-label-lg font-bold shadow-md hover:shadow-lg transition-all" id="action-menu-btn" onclick="toggleActionMenu()">
+<span class="material-symbols-outlined text-[20px]">add_circle</span>
+<span>+ Nouvelle action</span>
+<span class="material-symbols-outlined text-[18px]">expand_more</span>
+</button>
+<!-- Dropdown panel -->
+<div class="hidden absolute right-0 mt-2 w-64 bg-surface-container-lowest rounded-xl shadow-xl z-50 p-2 border-subtle" id="action-dropdown">
+<button class="w-full text-left px-3 py-2 rounded-lg hover:bg-surface-container flex items-center gap-2.5 text-on-surface transition-colors" onclick="closeActionMenu()">
+<span class="material-symbols-outlined text-primary text-[20px]">person_add</span>
+<span class="font-label-md text-label-md font-semibold">Nouveau Client</span>
+</button>
+<button class="w-full text-left px-3 py-2 rounded-lg hover:bg-surface-container flex items-center gap-2.5 text-on-surface transition-colors" onclick="closeActionMenu()">
+<span class="material-symbols-outlined text-network-active text-[20px]">payments</span>
+<span class="font-label-md text-label-md font-semibold">Nouveau Paiement (M-Pesa/Cash)</span>
+</button>
+<button class="w-full text-left px-3 py-2 rounded-lg hover:bg-surface-container flex items-center gap-2.5 text-on-surface transition-colors" onclick="closeActionMenu()">
+<span class="material-symbols-outlined text-secondary-container text-[20px]">construction</span>
+<span class="font-label-md text-label-md font-semibold">Programmer Installation</span>
+</button>
+<button class="w-full text-left px-3 py-2 rounded-lg hover:bg-surface-container flex items-center gap-2.5 text-on-surface transition-colors" onclick="closeActionMenu()">
+<span class="material-symbols-outlined text-network-idle text-[20px]">confirmation_number</span>
+<span class="font-label-md text-label-md font-semibold">Créer Ticket Incident</span>
+</button>
+<button class="w-full text-left px-3 py-2 rounded-lg hover:bg-surface-container flex items-center gap-2.5 text-on-surface transition-colors" onclick="closeActionMenu()">
+<span class="material-symbols-outlined text-network-down text-[20px]">warning</span>
+<span class="font-label-md text-label-md font-semibold">Déclarer Coupure Secteur</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- 4 Core Metric Panels (Hero KPI Grid) -->
+<section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-space-md mb-space-xl">
+<!-- Metric 1: Total Subscribers -->
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between">
+<div class="flex items-center justify-between mb-space-md">
+<span class="font-label-technical text-label-technical text-on-surface-variant uppercase tracking-wider">Clients Abonnés</span>
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">badge</span>
+</div>
+</div>
+<div>
+<div class="flex items-baseline gap-2">
+<span class="font-headline-lg text-headline-lg font-extrabold text-on-surface tracking-tight">248</span>
+<span class="font-label-technical text-label-technical text-network-active font-bold px-2 py-0.5 rounded-full bg-network-active/10">+14 ce mois</span>
+</div>
+<div class="mt-space-sm pt-space-xs flex items-center justify-between font-label-md text-label-md text-on-surface-variant">
+<span>Particuliers : <strong class="text-on-surface font-semibold">186</strong></span>
+<span>Entreprises : <strong class="text-on-surface font-semibold">62</strong></span>
+</div>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full mt-3 overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 75%"></div>
+</div>
+</div>
+<!-- Metric 2: Live Link Status -->
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between">
+<div class="flex items-center justify-between mb-space-md">
+<span class="font-label-technical text-label-technical text-on-surface-variant uppercase tracking-wider">Connexions Actives</span>
+<div class="w-8 h-8 rounded-lg bg-network-active/10 flex items-center justify-center text-network-active">
+<span class="material-symbols-outlined text-[20px]">cell_wifi</span>
+</div>
+</div>
+<div>
+<div class="flex items-baseline gap-2">
+<span class="font-headline-lg text-headline-lg font-extrabold text-on-surface tracking-tight">234<span class="text-on-surface-variant font-normal text-headline-sm">/248</span></span>
+<span class="font-label-technical text-label-technical text-network-active font-bold px-2 py-0.5 rounded-full bg-network-active/10">94.3% En Ligne</span>
+</div>
+<div class="mt-space-sm pt-space-xs flex items-center gap-space-sm font-label-technical text-label-technical text-on-surface-variant">
+<span class="flex items-center gap-1 text-network-down font-bold"><span class="w-1.5 h-1.5 rounded-full bg-network-down"></span> 11 Hors-ligne</span>
+<span class="flex items-center gap-1 text-network-idle font-bold"><span class="w-1.5 h-1.5 rounded-full bg-network-idle"></span> 3 Suspendus</span>
+</div>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full mt-3 overflow-hidden flex">
+<div class="bg-network-active h-full" style="width: 94.3%"></div>
+<div class="bg-network-down h-full" style="width: 4.4%"></div>
+<div class="bg-network-idle h-full" style="width: 1.3%"></div>
+</div>
+</div>
+<!-- Metric 3: Monthly Billing -->
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between">
+<div class="flex items-center justify-between mb-space-md">
+<span class="font-label-technical text-label-technical text-on-surface-variant uppercase tracking-wider">Revenus du Mois</span>
+<div class="w-8 h-8 rounded-lg bg-primary-container/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">account_balance_wallet</span>
+</div>
+</div>
+<div>
+<div class="flex items-baseline gap-2">
+<span class="font-headline-lg text-headline-lg font-extrabold text-on-surface tracking-tight" id="revenue-val">$4,850</span>
+<span class="font-label-technical text-label-technical text-network-active font-bold px-2 py-0.5 rounded-full bg-network-active/10">+12.4% vs M-1</span>
+</div>
+<div class="mt-space-sm pt-space-xs flex items-center justify-between font-label-md text-label-md text-on-surface-variant">
+<span>Recouvrement factures :</span>
+<span class="font-label-technical text-label-technical font-bold text-on-surface">88.0%</span>
+</div>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full mt-3 overflow-hidden">
+<div class="bg-primary-container h-full rounded-full" style="width: 88%"></div>
+</div>
+</div>
+<!-- Metric 4: NOC Tickets & Critical SLA -->
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between">
+<div class="flex items-center justify-between mb-space-md">
+<span class="font-label-technical text-label-technical text-on-surface-variant uppercase tracking-wider">Incidents Réseau</span>
+<div class="w-8 h-8 rounded-lg bg-network-idle/15 flex items-center justify-center text-network-idle">
+<span class="material-symbols-outlined text-[20px]">troubleshoot</span>
+</div>
+</div>
+<div>
+<div class="flex items-baseline gap-2">
+<span class="font-headline-lg text-headline-lg font-extrabold text-network-idle tracking-tight">1 Actif</span>
+<span class="font-label-technical text-label-technical text-on-surface-variant font-bold">Relais Himbi Sec.2</span>
+</div>
+<div class="mt-space-sm pt-space-xs flex items-center justify-between font-label-md text-label-md text-on-surface-variant">
+<span>SLA Dépannage Goma :</span>
+<span class="font-label-technical text-label-technical font-bold text-network-active">96.4% respecté</span>
+</div>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full mt-3 overflow-hidden">
+<div class="bg-network-active h-full rounded-full" style="width: 96.4%"></div>
+</div>
+</div>
+</section>
+<!-- Section 3: Telecommunications Synoptic Transmission Diagram & Health Score -->
+<section class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm mb-space-xl">
+<div class="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-space-lg pb-space-sm">
+<div class="flex flex-col">
+<span class="font-label-technical text-label-technical text-secondary uppercase tracking-widest font-bold">Architecture Réseau Haut Débit</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-bold tracking-tight">Synoptique Physique de Transmission &amp; Métriques de Santé</h2>
+</div>
+<div class="flex items-center gap-space-sm mt-space-sm lg:mt-0">
+<span class="font-label-technical text-label-technical px-3 py-1 rounded-full bg-surface-container text-on-surface font-semibold">Topologie : Star-Mesh Hybride</span>
+<span class="font-label-technical text-label-technical px-3 py-1 rounded-full bg-network-active/10 text-network-active font-bold">Latence Backbone : 14ms</span>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-center">
+<!-- Synoptic Diagram (Horizontal Data Flow) -->
+<div class="lg:col-span-8 bg-surface-container-low p-space-md rounded-xl">
+<div class="flex flex-col sm:flex-row items-center justify-between gap-space-md relative">
+<!-- Step 1: Upstream Gateway -->
+<div class="flex flex-col items-center text-center p-space-sm bg-surface-container-lowest rounded-xl shadow-sm w-full sm:w-44 z-10">
+<div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-on-primary mb-2 shadow-sm">
+<span class="material-symbols-outlined text-[20px]">public</span>
+</div>
+<span class="font-label-md text-label-md font-bold text-on-surface">Transit International</span>
+<span class="font-label-technical text-label-technical text-on-surface-variant">Liaison Rwanda 10G</span>
+<span class="mt-2 text-network-active font-label-technical text-label-technical px-2 py-0.5 rounded bg-network-active/10 font-bold">100% UP</span>
+</div>
+<!-- Flow Arrow 1 -->
+<div class="hidden sm:flex flex-col items-center flex-1">
+<span class="font-label-technical text-label-technical text-primary font-bold">Fibre Optique</span>
+<div class="w-full h-1 bg-surface-container-high relative overflow-hidden my-1 rounded-full">
+<div class="w-1/3 h-full bg-primary animate-pulse"></div>
+</div>
+<span class="font-label-technical text-label-technical text-on-surface-variant">4.2 ms</span>
+</div>
+<!-- Step 2: Main POP Goma -->
+<div class="flex flex-col items-center text-center p-space-sm bg-surface-container-lowest rounded-xl shadow-sm w-full sm:w-44 z-10">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary mb-2 shadow-sm">
+<span class="material-symbols-outlined text-[20px]">dns</span>
+</div>
+<span class="font-label-md text-label-md font-bold text-on-surface">Nœud POP Goma</span>
+<span class="font-label-technical text-label-technical text-on-surface-variant">CCR2116 RouterOS</span>
+<span class="mt-2 text-network-active font-label-technical text-label-technical px-2 py-0.5 rounded bg-network-active/10 font-bold">NORMAL 28°C</span>
+</div>
+<!-- Flow Arrow 2 -->
+<div class="hidden sm:flex flex-col items-center flex-1">
+<span class="font-label-technical text-label-technical text-primary font-bold">Faisceaux 5GHz / 60G</span>
+<div class="w-full h-1 bg-surface-container-high relative overflow-hidden my-1 rounded-full">
+<div class="w-1/3 h-full bg-primary animate-pulse"></div>
+</div>
+<span class="font-label-technical text-label-technical text-on-surface-variant">14 Pylônes</span>
+</div>
+<!-- Step 3: Distribution Relay APs -->
+<div class="flex flex-col items-center text-center p-space-sm bg-surface-container-lowest rounded-xl shadow-sm w-full sm:w-44 z-10">
+<div class="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-on-secondary mb-2 shadow-sm">
+<span class="material-symbols-outlined text-[20px]">cloud_upload</span>
+</div>
+<span class="font-label-md text-label-md font-bold text-on-surface">14 Relais / APs</span>
+<span class="font-label-technical text-label-technical text-on-surface-variant">Couverture Ville</span>
+<span class="mt-2 text-network-idle font-label-technical text-label-technical px-2 py-0.5 rounded bg-network-idle/10 font-bold">13/14 OK (1 Degr.)</span>
+</div>
+<!-- Flow Arrow 3 -->
+<div class="hidden sm:flex flex-col items-center flex-1">
+<span class="font-label-technical text-label-technical text-secondary font-bold">AirMAX PTMP</span>
+<div class="w-full h-1 bg-surface-container-high relative overflow-hidden my-1 rounded-full">
+<div class="w-1/3 h-full bg-secondary-container"></div>
+</div>
+<span class="font-label-technical text-label-technical text-on-surface-variant">CCQ 96%</span>
+</div>
+<!-- Step 4: Client CPE Endpoints -->
+<div class="flex flex-col items-center text-center p-space-sm bg-surface-container-lowest rounded-xl shadow-sm w-full sm:w-44 z-10">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center text-primary mb-2 shadow-sm">
+<span class="material-symbols-outlined text-[20px]">router</span>
+</div>
+<span class="font-label-md text-label-md font-bold text-on-surface">234 CPE Clients</span>
+<span class="font-label-technical text-label-technical text-on-surface-variant">NanoBeam / LiteBeam</span>
+<span class="mt-2 text-network-active font-label-technical text-label-technical px-2 py-0.5 rounded bg-network-active/10 font-bold">94.3% CONNECTÉS</span>
+</div>
+</div>
+</div>
+<!-- Health Gauge & Detailed Telecom Telemetry -->
+<div class="lg:col-span-4 bg-surface-container-low p-space-md rounded-xl flex flex-col justify-between h-full">
+<div class="flex items-center justify-between mb-space-sm">
+<span class="font-label-technical text-label-technical text-on-surface-variant uppercase font-bold">Indice Global Santé Réseau</span>
+<span class="font-label-technical text-label-technical text-network-active font-bold px-2 py-0.5 rounded bg-network-active/10">EXCELLENT</span>
+</div>
+<div class="flex items-center gap-space-md my-space-sm">
+<!-- Circular Progress Ring (Inline SVG) -->
+<div class="relative w-24 h-24 flex-shrink-0">
+<svg class="w-full h-full transform -rotate-90" viewbox="0 0 36 36">
+<path class="text-surface-container-highest" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3.5"></path>
+<path class="text-network-active" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="98.6, 100" stroke-linecap="round" stroke-width="3.5"></path>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="font-headline-sm text-headline-sm font-extrabold text-on-surface">98.6%</span>
+</div>
+</div>
+<!-- Micro Metrology -->
+<div class="flex flex-col gap-1 w-full">
+<div class="flex justify-between items-center text-body-sm font-body-sm">
+<span class="text-on-surface-variant">Latence Moyenne :</span>
+<span class="font-bold text-on-surface font-label-technical">14 ms</span>
+</div>
+<div class="flex justify-between items-center text-body-sm font-body-sm">
+<span class="text-on-surface-variant">Perte de paquets :</span>
+<span class="font-bold text-network-active font-label-technical">0.04%</span>
+</div>
+<div class="flex justify-between items-center text-body-sm font-body-sm">
+<span class="text-on-surface-variant">CCQ Radio Moyen :</span>
+<span class="font-bold text-on-surface font-label-technical">96.2%</span>
+</div>
+<div class="flex justify-between items-center text-body-sm font-body-sm">
+<span class="text-on-surface-variant">Disponibilité (30j) :</span>
+<span class="font-bold text-primary font-label-technical">99.98%</span>
+</div>
+</div>
+</div>
+<div class="pt-space-xs text-center">
+<p class="font-label-technical text-label-technical text-on-surface-variant">Contrôle télémétrique MikroTik &amp; Ubiquiti UNMS synchronisé.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 4: Live Bandwidth Real-Time Graph & Allocation -->
+<section class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm mb-space-xl">
+<div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-space-md gap-space-sm">
+<div>
+<span class="font-label-technical text-label-technical text-secondary uppercase font-bold">Débit &amp; Consommation WAN</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-bold tracking-tight">Trafic Réseau en Temps Réel (Goma POP)</h2>
+</div>
+<!-- Time frame selector buttons -->
+<div class="flex items-center gap-1 bg-surface-container-low p-1 rounded-xl">
+<button class="px-3 py-1 rounded-lg font-label-technical text-label-technical font-bold bg-primary text-on-primary shadow-sm" onclick="setBandwidthRange('1h')">1h</button>
+<button class="px-3 py-1 rounded-lg font-label-technical text-label-technical font-medium text-on-surface-variant hover:text-on-surface" onclick="setBandwidthRange('6h')">6h</button>
+<button class="px-3 py-1 rounded-lg font-label-technical text-label-technical font-medium text-on-surface-variant hover:text-on-surface" onclick="setBandwidthRange('24h')">24h</button>
+<button class="px-3 py-1 rounded-lg font-label-technical text-label-technical font-medium text-on-surface-variant hover:text-on-surface" onclick="setBandwidthRange('7j')">7j</button>
+<button class="px-3 py-1 rounded-lg font-label-technical text-label-technical font-medium text-on-surface-variant hover:text-on-surface" onclick="setBandwidthRange('30j')">30j</button>
+</div>
+</div>
+<!-- Real-time badges -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-space-md mb-space-md">
+<div class="bg-surface-container-low p-space-md rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-3 h-3 rounded-full bg-primary-container"></div>
+<div>
+<span class="font-label-technical text-label-technical text-on-surface-variant uppercase">Download Actuel</span>
+<div class="font-headline-sm text-headline-sm font-extrabold text-on-surface" id="dl-rate">184.2 Mbps</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-primary text-[28px]">arrow_downward</span>
+</div>
+<div class="bg-surface-container-low p-space-md rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-3 h-3 rounded-full bg-secondary-container"></div>
+<div>
+<span class="font-label-technical text-label-technical text-on-surface-variant uppercase">Upload Actuel</span>
+<div class="font-headline-sm text-headline-sm font-extrabold text-on-surface" id="ul-rate">76.8 Mbps</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-secondary-container text-[28px]">arrow_upward</span>
+</div>
+<div class="bg-surface-container-low p-space-md rounded-xl flex items-center justify-between">
+<div>
+<span class="font-label-technical text-label-technical text-on-surface-variant uppercase">Capacité Allouée WAN</span>
+<div class="font-headline-sm text-headline-sm font-extrabold text-on-surface">300.0 Mbps</div>
+</div>
+<span class="font-label-technical text-label-technical px-2.5 py-1 rounded-full bg-primary/10 text-primary font-bold">61.4% utilisé</span>
+</div>
+<div class="bg-surface-container-low p-space-md rounded-xl flex items-center justify-between">
+<div>
+<span class="font-label-technical text-label-technical text-on-surface-variant uppercase">Pic Consommé (24h)</span>
+<div class="font-headline-sm text-headline-sm font-extrabold text-on-surface">262.4 Mbps</div>
+</div>
+<span class="font-label-technical text-label-technical text-on-surface-variant">Hier @ 20:45</span>
+</div>
+</div>
+<!-- Scalable Bandwidth Area Graph (SVG Vector Visualization) -->
+<div class="relative w-full h-64 bg-surface-container-low rounded-xl p-space-md flex flex-col justify-between overflow-hidden">
+<!-- Grid lines -->
+<div class="absolute inset-x-space-md inset-y-space-md flex flex-col justify-between pointer-events-none opacity-20">
+<div class="w-full h-px bg-outline"></div>
+<div class="w-full h-px bg-outline"></div>
+<div class="w-full h-px bg-outline"></div>
+<div class="w-full h-px bg-outline"></div>
+</div>
+<!-- Live Bandwidth Wave SVG -->
+<div class="relative w-full h-full flex items-end">
+<svg class="w-full h-44" preserveaspectratio="none" viewbox="0 0 800 200">
+<defs>
+<lineargradient id="dlGradient" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#0a58ca" stop-opacity="0.35"></stop>
+<stop offset="100%" stop-color="#0a58ca" stop-opacity="0.0"></stop>
+</lineargradient>
+<lineargradient id="ulGradient" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#00d2ff" stop-opacity="0.25"></stop>
+<stop offset="100%" stop-color="#00d2ff" stop-opacity="0.0"></stop>
+</lineargradient>
+</defs>
+<!-- Download Area -->
+<polygon fill="url(#dlGradient)" points="0,170 40,150 80,160 120,130 160,140 200,90 240,105 280,80 320,85 360,70 400,60 440,75 480,50 520,40 560,65 600,45 640,35 680,50 720,38 760,42 800,30 800,200 0,200"></polygon>
+<path d="M0,170 Q40,150 80,160 T160,140 T240,105 T320,85 T400,60 T480,50 T560,65 T640,35 T720,38 T800,30" fill="none" stroke="#0a58ca" stroke-width="2.5"></path>
+<!-- Upload Area -->
+<polygon fill="url(#ulGradient)" points="0,185 40,180 80,175 120,170 160,160 200,150 240,145 280,140 320,135 360,130 400,120 440,125 480,115 520,110 560,120 600,112 640,105 680,110 720,102 760,100 800,95 800,200 0,200"></polygon>
+<path d="M0,185 Q40,180 80,175 T160,160 T240,145 T320,135 T400,120 T480,115 T560,120 T640,105 T720,102 T800,95" fill="none" stroke="#00d2ff" stroke-width="2"></path>
+</svg>
+</div>
+<!-- Time Axis Legends -->
+<div class="flex justify-between items-center text-on-surface-variant font-label-technical text-label-technical pt-2 border-t border-surface-container">
+<span>Il y a 60 min</span>
+<span>-45 min</span>
+<span>-30 min</span>
+<span>-15 min</span>
+<span>Temps Réel (Now)</span>
+</div>
+</div>
+</section>
+<!-- Section 5: Goma Coverage Map & Interactive Relay AP Detail -->
+<section class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm mb-space-xl">
+<div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-space-md">
+<div>
+<span class="font-label-technical text-label-technical text-secondary uppercase font-bold">Cartographie d'Infrastructure &amp; Couverture</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-bold tracking-tight">Stations Relais &amp; Points d'Accès Goma</h2>
+</div>
+<span class="font-label-technical text-label-technical text-on-surface-variant mt-2 md:mt-0">Sélectionnez une station pour afficher ses données télémétriques</span>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg">
+<!-- Interactive Stylized Goma Map Representation -->
+<div class="lg:col-span-8 relative bg-surface-container-high rounded-xl overflow-hidden min-h-[380px] p-space-md flex flex-col justify-between" data-location="Goma, Nord-Kivu, DRC" style="">
+<!-- Map Canvas Visual Layer with decorative roads and lake boundaries -->
+<div class="absolute inset-0 bg-[#E2E8F0]/80">
+<!-- Stylized Lake Kivu watermark representation -->
+<div class="absolute bottom-0 inset-x-0 h-32 bg-secondary-fixed/50 rounded-t-3xl flex items-center justify-center">
+<span class="font-label-technical text-label-technical tracking-widest text-secondary font-bold uppercase opacity-60">Lac Kivu (Zone Portuaire &amp; Frontière)</span>
+</div>
+</div>
+<!-- Interactive Hotspot APs on the map -->
+<div class="relative w-full h-full min-h-[320px]">
+<!-- AP 1: Himbi 01 -->
+<div class="absolute top-1/4 left-1/4 cursor-pointer transform -translate-x-1/2 -translate-y-1/2 group" onclick="selectAP('Himbi 01', '192.168.10.14', 34, '-52 dBm', '97%', 'Online', 'network-active')">
+<div class="relative flex items-center justify-center">
+<span class="absolute w-8 h-8 rounded-full bg-network-active/30 animate-ping"></span>
+<div class="w-8 h-8 rounded-full bg-network-active text-on-primary flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[18px]">cell_tower</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest px-2 py-1 rounded shadow-md mt-1 font-label-technical text-label-technical font-bold text-on-surface whitespace-nowrap">
+              AP Himbi 01 (34 clients)
+            </div>
+</div>
+<!-- AP 2: Kyeshero Nord -->
+<div class="absolute top-1/3 left-2/3 cursor-pointer transform -translate-x-1/2 -translate-y-1/2 group" onclick="selectAP('Kyeshero Nord', '192.168.10.18', 28, '-56 dBm', '95%', 'Online', 'network-active')">
+<div class="relative flex items-center justify-center">
+<span class="absolute w-8 h-8 rounded-full bg-network-active/30 animate-ping"></span>
+<div class="w-8 h-8 rounded-full bg-network-active text-on-primary flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[18px]">cell_tower</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest px-2 py-1 rounded shadow-md mt-1 font-label-technical text-label-technical font-bold text-on-surface whitespace-nowrap">
+              AP Kyeshero Nord (28 cl.)
+            </div>
+</div>
+<!-- AP 3: Katindo Centre -->
+<div class="absolute top-1/2 left-1/2 cursor-pointer transform -translate-x-1/2 -translate-y-1/2 group" onclick="selectAP('Katindo Centre', '192.168.10.22', 42, '-48 dBm', '98%', 'Online', 'network-active')">
+<div class="relative flex items-center justify-center">
+<span class="absolute w-8 h-8 rounded-full bg-network-active/30 animate-ping"></span>
+<div class="w-8 h-8 rounded-full bg-network-active text-on-primary flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[18px]">cell_tower</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest px-2 py-1 rounded shadow-md mt-1 font-label-technical text-label-technical font-bold text-on-surface whitespace-nowrap">
+              AP Katindo Centre (42 cl.)
+            </div>
+</div>
+<!-- AP 4: Virunga Pylône (Degraded) -->
+<div class="absolute top-12 left-1/2 cursor-pointer transform -translate-x-1/2 -translate-y-1/2 group" onclick="selectAP('Virunga Pylône', '192.168.10.30', 19, '-69 dBm', '74%', 'Dégradé (Alignement en cours)', 'network-idle')">
+<div class="relative flex items-center justify-center">
+<span class="absolute w-8 h-8 rounded-full bg-network-idle/40 animate-ping"></span>
+<div class="w-8 h-8 rounded-full bg-network-idle text-on-primary flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[18px]">cell_tower</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest px-2 py-1 rounded shadow-md mt-1 font-label-technical text-label-technical font-bold text-network-idle whitespace-nowrap">
+              ⚠️ Virunga Pylône (19 cl.)
+            </div>
+</div>
+<!-- AP 5: Majengo Relais -->
+<div class="absolute top-1/4 right-12 cursor-pointer transform -translate-x-1/2 -translate-y-1/2 group" onclick="selectAP('Majengo Relais', '192.168.10.35', 22, '-54 dBm', '96%', 'Online', 'network-active')">
+<div class="relative flex items-center justify-center">
+<div class="w-8 h-8 rounded-full bg-network-active text-on-primary flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[18px]">cell_tower</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest px-2 py-1 rounded shadow-md mt-1 font-label-technical text-label-technical font-bold text-on-surface whitespace-nowrap">
+              AP Majengo Relais (22 cl.)
+            </div>
+</div>
+</div>
+<!-- Map Footer Badge -->
+<div class="relative z-10 flex items-center justify-between bg-surface-container-lowest/90 backdrop-blur px-3 py-1.5 rounded-lg">
+<span class="font-label-technical text-label-technical text-on-surface-variant font-semibold">Bassin opérationnel : Goma Urbain / Secteur Lac</span>
+<span class="font-label-technical text-label-technical text-primary font-bold">5 Points Clés Connectés</span>
+</div>
+</div>
+<!-- Detail Card of Selected AP -->
+<div class="lg:col-span-4 bg-surface-container-low p-space-lg rounded-xl flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between pb-space-sm mb-space-sm">
+<div class="flex items-center gap-2">
+<div class="w-9 h-9 rounded-lg bg-primary-container text-on-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">cloud_upload</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface" id="ap-name">AP Katindo Centre</span>
+<span class="font-label-technical text-label-technical text-on-surface-variant" id="ap-ip">IP : 192.168.10.22</span>
+</div>
+</div>
+<span class="font-label-technical text-label-technical px-2.5 py-1 rounded-full bg-network-active/15 text-network-active font-bold" id="ap-badge">ONLINE</span>
+</div>
+<div class="flex flex-col gap-space-sm mt-space-md">
+<div class="flex justify-between items-center bg-surface-container-lowest p-space-sm rounded-lg">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Clients Connectés</span>
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface" id="ap-clients">42 abonnés</span>
+</div>
+<div class="flex justify-between items-center bg-surface-container-lowest p-space-sm rounded-lg">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Niveau Signal Moyen</span>
+<span class="font-headline-sm text-headline-sm font-bold text-network-active" id="ap-signal">-48 dBm</span>
+</div>
+<div class="flex justify-between items-center bg-surface-container-lowest p-space-sm rounded-lg">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Qualité CCQ Radio</span>
+<span class="font-headline-sm text-headline-sm font-bold text-primary font-label-technical" id="ap-ccq">98% CCQ</span>
+</div>
+<div class="flex justify-between items-center bg-surface-container-lowest p-space-sm rounded-lg">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Débit Instantané Secteur</span>
+<span class="font-label-technical text-label-technical font-bold text-on-surface" id="ap-traffic">48.2 Mbps / 18.5 Mbps</span>
+</div>
+</div>
+</div>
+<div class="pt-space-md flex gap-2">
+<button class="flex-1 py-2 rounded-lg bg-primary text-on-primary font-label-technical text-label-technical font-bold hover:bg-primary-container transition-colors">
+            Ouvrir Interface Radio
+          </button>
+<button class="p-2 rounded-lg bg-surface-container-highest text-on-surface hover:bg-surface-container transition-colors" title="Ping Test">
+<span class="material-symbols-outlined text-[18px]">terminal</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 6: Subscriber Distribution & Signal Health Breakdown -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg mb-space-xl">
+<!-- Subscriber Status Breakdown -->
+<div class="lg:col-span-6 bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between mb-space-md">
+<div>
+<span class="font-label-technical text-label-technical text-secondary uppercase font-bold">Répartition de la Clientèle</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">État des Abonnements en Ligne</h3>
+</div>
+<span class="font-label-technical text-label-technical px-2.5 py-1 rounded bg-surface-container font-bold text-on-surface">Total : 248</span>
+</div>
+<!-- Segmented Bar Visualization -->
+<div class="my-space-md">
+<div class="w-full h-5 rounded-full overflow-hidden flex bg-surface-container-high shadow-inner">
+<div class="bg-network-active h-full" style="width: 94.3%" title="En ligne: 234"></div>
+<div class="bg-network-down h-full" style="width: 4.4%" title="Hors ligne: 11"></div>
+<div class="bg-network-idle h-full" style="width: 1.3%" title="Suspendu: 3"></div>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-space-sm pt-space-xs">
+<div class="bg-surface-container-low p-space-sm rounded-lg flex flex-col">
+<div class="flex items-center gap-1.5 mb-1">
+<span class="w-2.5 h-2.5 rounded-full bg-network-active"></span>
+<span class="font-label-technical text-label-technical text-on-surface-variant uppercase">En Ligne</span>
+</div>
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface">234</span>
+<span class="font-label-technical text-label-technical text-network-active font-semibold">94.3%</span>
+</div>
+<div class="bg-surface-container-low p-space-sm rounded-lg flex flex-col">
+<div class="flex items-center gap-1.5 mb-1">
+<span class="w-2.5 h-2.5 rounded-full bg-network-down"></span>
+<span class="font-label-technical text-label-technical text-on-surface-variant uppercase">Hors-Ligne</span>
+</div>
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface">11</span>
+<span class="font-label-technical text-label-technical text-network-down font-semibold">4.4%</span>
+</div>
+<div class="bg-surface-container-low p-space-sm rounded-lg flex flex-col">
+<div class="flex items-center gap-1.5 mb-1">
+<span class="w-2.5 h-2.5 rounded-full bg-network-idle"></span>
+<span class="font-label-technical text-label-technical text-on-surface-variant uppercase">Suspendus</span>
+</div>
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface">3</span>
+<span class="font-label-technical text-label-technical text-network-idle font-semibold">1.3% (Impayé)</span>
+</div>
+</div>
+</div>
+<!-- CPE Signal Quality Matrix -->
+<div class="lg:col-span-6 bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between mb-space-md">
+<div>
+<span class="font-label-technical text-label-technical text-secondary uppercase font-bold">Qualité Signal Radio CPE</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Télémétrie RSSI Globale</h3>
+</div>
+<span class="font-label-technical text-label-technical text-network-active font-bold px-2 py-0.5 rounded bg-network-active/10">SLA 94% Valide</span>
+</div>
+<div class="flex flex-col gap-space-sm">
+<!-- Range 1: Excellent -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between font-label-technical text-label-technical">
+<span class="text-on-surface font-semibold">Excellent (-45 dBm à -55 dBm)</span>
+<span class="text-network-active font-bold">68% (169 antennes)</span>
+</div>
+<div class="w-full bg-surface-container-high h-2.5 rounded-full overflow-hidden">
+<div class="bg-network-active h-full rounded-full" style="width: 68%"></div>
+</div>
+</div>
+<!-- Range 2: Bon -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between font-label-technical text-label-technical">
+<span class="text-on-surface font-semibold">Bon (-56 dBm à -65 dBm)</span>
+<span class="text-primary font-bold">26% (65 antennes)</span>
+</div>
+<div class="w-full bg-surface-container-high h-2.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 26%"></div>
+</div>
+</div>
+<!-- Range 3: Poor / Alignment needed -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between font-label-technical text-label-technical">
+<span class="text-on-surface font-semibold">À Réaligner (&gt; -68 dBm)</span>
+<span class="text-network-idle font-bold">6% (14 antennes)</span>
+</div>
+<div class="w-full bg-surface-container-high h-2.5 rounded-full overflow-hidden">
+<div class="bg-network-idle h-full rounded-full" style="width: 6%"></div>
+</div>
+</div>
+</div>
+<div class="pt-space-sm flex items-center justify-between font-body-sm text-body-sm text-on-surface-variant">
+<span>Seuil critique fixé à -72 dBm</span>
+<span class="font-label-technical text-label-technical text-primary font-bold">Rapport Hebdomadaire Prêt</span>
+</div>
+</div>
+</section>
+<!-- Section 7 & 8: Real-time Alerts, Daily Installations & Operational Log -->
+<section class="grid grid-cols-1 xl:grid-cols-12 gap-space-lg mb-space-2xl">
+<!-- Left: Incident & Alert Feeds (7) -->
+<div class="xl:col-span-6 bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-space-md">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-network-idle text-[22px]">notifications_active</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Alertes Réseau &amp; Événements</h3>
+</div>
+<button class="font-label-technical text-label-technical text-primary font-bold hover:underline">Marquer comme lu</button>
+</div>
+<div class="flex flex-col gap-space-sm">
+<!-- Alert 1 -->
+<div class="p-space-sm bg-surface-container-low rounded-xl flex items-start gap-space-sm">
+<div class="p-2 rounded-lg bg-network-idle/15 text-network-idle mt-0.5">
+<span class="material-symbols-outlined text-[18px]">wifi_tethering_error</span>
+</div>
+<div class="flex flex-col flex-1">
+<div class="flex items-center justify-between">
+<span class="font-label-technical text-label-technical font-bold text-network-idle uppercase">Alerte Signal CPE</span>
+<span class="font-label-technical text-label-technical text-on-surface-variant">Il y a 8 min</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface font-medium mt-0.5">Fluctuation importante sur Client #1042 (Quartier Himbi) : signal tombé à -71 dBm.</p>
+<div class="flex gap-2 mt-2">
+<button class="font-label-technical text-label-technical px-2 py-0.5 rounded bg-surface-container-highest text-on-surface hover:bg-surface-container font-bold">Créer ticket</button>
+<button class="font-label-technical text-label-technical px-2 py-0.5 rounded bg-surface-container text-on-surface-variant">Ignorer</button>
+</div>
+</div>
+</div>
+<!-- Alert 2 -->
+<div class="p-space-sm bg-surface-container-low rounded-xl flex items-start gap-space-sm">
+<div class="p-2 rounded-lg bg-network-active/15 text-network-active mt-0.5">
+<span class="material-symbols-outlined text-[18px]">paid</span>
+</div>
+<div class="flex flex-col flex-1">
+<div class="flex items-center justify-between">
+<span class="font-label-technical text-label-technical font-bold text-network-active uppercase">Paiement Reçu</span>
+<span class="font-label-technical text-label-technical text-on-surface-variant">Il y a 22 min</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface font-medium mt-0.5">Abonnement renouvelé via M-Pesa : Forfait Stream Plus (10 Mbps) - $20 USD (Client Hôtel Ihusi Annex).</p>
+</div>
+</div>
+<!-- Alert 3 -->
+<div class="p-space-sm bg-surface-container-low rounded-xl flex items-start gap-space-sm">
+<div class="p-2 rounded-lg bg-primary/10 text-primary mt-0.5">
+<span class="material-symbols-outlined text-[18px]">task_alt</span>
+</div>
+<div class="flex flex-col flex-1">
+<div class="flex items-center justify-between">
+<span class="font-label-technical text-label-technical font-bold text-primary uppercase">Installation Validée</span>
+<span class="font-label-technical text-label-technical text-on-surface-variant">Il y a 47 min</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface font-medium mt-0.5">Déploiement kit CPE Ubiquiti validé avec succès à Kyeshero par le technicien <strong class="text-on-surface">Bahati</strong> (Signal : -49 dBm).</p>
+</div>
+</div>
+</div>
+</div>
+<div class="pt-space-md text-center">
+<a class="font-label-technical text-label-technical text-primary font-bold hover:underline" href="#">Consulter le journal complet des alertes NOC →</a>
+</div>
+</div>
+<!-- Right: Field Installations & Activity Log (8) -->
+<div class="xl:col-span-6 bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-space-md">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[22px]">calendar_month</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Installations du Jour &amp; Journal</h3>
+</div>
+<span class="font-label-technical text-label-technical px-2.5 py-1 rounded bg-primary-container text-on-primary font-bold">3 Programmées</span>
+</div>
+<!-- Today's Field Work Schedule -->
+<div class="flex flex-col gap-space-sm mb-space-md">
+<div class="p-space-sm bg-surface-container-low rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center font-label-technical text-label-technical font-bold text-primary">09h</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md font-bold text-on-surface">Cabinet Juridique Virunga</span>
+<span class="font-label-technical text-label-technical text-on-surface-variant">Kyeshero • Kit Pro Ultra (30 Mbps)</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-technical text-label-technical text-on-surface-variant">Tech: Bahati</span>
+<span class="font-label-technical text-label-technical px-2 py-0.5 rounded bg-network-active/10 text-network-active font-bold">Terminé</span>
+</div>
+</div>
+<div class="p-space-sm bg-surface-container-low rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center font-label-technical text-label-technical font-bold text-primary">13h</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md font-bold text-on-surface">Résidence Dr. Kasereka</span>
+<span class="font-label-technical text-label-technical text-on-surface-variant">Himbi Avenue Alindi • Kit Stream Plus</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-technical text-label-technical text-on-surface-variant">Tech: Akili</span>
+<span class="font-label-technical text-label-technical px-2 py-0.5 rounded bg-primary/10 text-primary font-bold animate-pulse">En Cours</span>
+</div>
+</div>
+<div class="p-space-sm bg-surface-container-low rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center font-label-technical text-label-technical font-bold text-primary">15h</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md font-bold text-on-surface">ONG Amani Great Lakes</span>
+<span class="font-label-technical text-label-technical text-on-surface-variant">Centre-Ville Rond-Point BDGL • Pro Ultra</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-technical text-label-technical text-on-surface-variant">Tech: Bahati &amp; Alain</span>
+<span class="font-label-technical text-label-technical px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-bold">En Attente</span>
+</div>
+</div>
+</div>
+<!-- Activity Stream Log Table -->
+<div class="bg-surface-container-low rounded-xl p-space-sm">
+<span class="font-label-technical text-label-technical text-on-surface-variant uppercase font-bold block mb-2 px-1">Dernières Actions Système (Audit NOC)</span>
+<div class="flex flex-col gap-1.5 font-label-technical text-label-technical">
+<div class="flex items-center justify-between px-2 py-1 bg-surface-container-lowest rounded">
+<span class="text-on-surface"><strong class="text-primary font-bold">[11:42]</strong> Admin NOC : Réinitialisation port PoE AP Himbi Sec.2</span>
+<span class="text-on-surface-variant font-semibold">User: admin_goma</span>
+</div>
+<div class="flex items-center justify-between px-2 py-1 bg-surface-container-lowest rounded">
+<span class="text-on-surface"><strong class="text-primary font-bold">[11:15]</strong> Facturation : Facture #LW-4821 générée ($50 USD)</span>
+<span class="text-on-surface-variant font-semibold">Auto-System</span>
+</div>
+<div class="flex items-center justify-between px-2 py-1 bg-surface-container-lowest rounded">
+<span class="text-on-surface"><strong class="text-primary font-bold">[10:50]</strong> Queue Tree : Limitation bande passante appliquée client #982</span>
+<span class="text-on-surface-variant font-semibold">MikroTik API</span>
+</div>
+</div>
+</div>
+</div>
+<div class="pt-space-md text-center">
+<a class="font-label-technical text-label-technical text-primary font-bold hover:underline" href="#">Accéder au module planification &amp; techniciens →</a>
+</div>
+</div>
+</section>
+<!-- Interactive JavaScript -->
+<script>
+    // Currency Switcher Logic (USD vs CDF)
+    let currentCurrency = 'USD';
+    const rateCDF = 2800; // 1 USD = 2800 CDF rate
+
+    function setCurrency(curr) {
+      currentCurrency = curr;
+      const usdBtn = document.getElementById('curr-usd');
+      const cdfBtn = document.getElementById('curr-cdf');
+      const revVal = document.getElementById('revenue-val');
+
+      if (curr === 'USD') {
+        usdBtn.className = 'px-3 py-1 rounded-lg font-label-technical text-label-technical font-bold transition-all bg-primary-container text-on-primary shadow-sm';
+        cdfBtn.className = 'px-3 py-1 rounded-lg font-label-technical text-label-technical font-semibold text-on-surface-variant hover:text-on-surface transition-all';
+        revVal.textContent = '$4,850';
+      } else {
+        cdfBtn.className = 'px-3 py-1 rounded-lg font-label-technical text-label-technical font-bold transition-all bg-primary-container text-on-primary shadow-sm';
+        usdBtn.className = 'px-3 py-1 rounded-lg font-label-technical text-label-technical font-semibold text-on-surface-variant hover:text-on-surface transition-all';
+        const cdfAmount = (4850 * rateCDF).toLocaleString('fr-FR');
+        revVal.textContent = cdfAmount + ' CDF';
+      }
+    }
+
+    // Dropdown Action Menu
+    function toggleActionMenu() {
+      const dropdown = document.getElementById('action-dropdown');
+      dropdown.classList.toggle('hidden');
+    }
+
+    function closeActionMenu() {
+      document.getElementById('action-dropdown').classList.add('hidden');
+    }
+
+    // Close action menu on external click
+    window.addEventListener('click', function(e) {
+      const btn = document.getElementById('action-menu-btn');
+      const dropdown = document.getElementById('action-dropdown');
+      if (btn && dropdown && !btn.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.classList.add('hidden');
+      }
+    });
+
+    // Interactive Map Relay AP Inspector
+    function selectAP(name, ip, clients, signal, ccq, status, badgeClass) {
+      document.getElementById('ap-name').textContent = name;
+      document.getElementById('ap-ip').textContent = 'IP : ' + ip;
+      document.getElementById('ap-clients').textContent = clients + ' abonnés';
+      document.getElementById('ap-signal').textContent = signal;
+      document.getElementById('ap-ccq').textContent = ccq + ' CCQ';
+      
+      const badge = document.getElementById('ap-badge');
+      badge.textContent = status.toUpperCase();
+      badge.className = 'font-label-technical text-label-technical px-2.5 py-1 rounded-full font-bold bg-' + badgeClass + '/15 text-' + badgeClass;
+
+      // Realistic traffic variation simulation based on client load
+      const dl = (clients * 1.15).toFixed(1);
+      const ul = (clients * 0.45).toFixed(1);
+      document.getElementById('ap-traffic').textContent = dl + ' Mbps / ' + ul + ' Mbps';
+    }
+
+    // Dynamic Bandwidth Range Switcher simulation
+    function setBandwidthRange(range) {
+      const dl = document.getElementById('dl-rate');
+      const ul = document.getElementById('ul-rate');
+      if (range === '1h') {
+        dl.textContent = '184.2 Mbps';
+        ul.textContent = '76.8 Mbps';
+      } else if (range === '6h') {
+        dl.textContent = '210.4 Mbps';
+        ul.textContent = '88.3 Mbps';
+      } else if (range === '24h') {
+        dl.textContent = '198.5 Mbps';
+        ul.textContent = '81.0 Mbps';
+      } else {
+        dl.textContent = '175.0 Mbps';
+        ul.textContent = '72.5 Mbps';
+      }
+    }
+  </script>
+</div></main></div></body></html>

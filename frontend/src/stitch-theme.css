@@ -289,3 +289,17 @@ td { font-size:14px; border-color:var(--line); }
   gap: 8px;
   text-align: center;
 }
+/* Explicit logo visibility overrides the legacy mobile span rule. */
+.public-brand .company-logo { display:block; margin:0; }
+.mobile-header-logo { display:none; }
+@media(max-width:760px) {
+  .mobile-header-logo { display:block; width:140px; height:35px; }
+  .topbar { flex-wrap:wrap; }
+  .topbar-title { order:3; flex:1 0 100%; }
+  .topbar-actions { margin-left:auto; }
+  .public-brand { flex:0 1 auto; width:auto; min-width:0; }
+}
+@media(max-width:380px) {
+  .mobile-header-logo { width:116px; height:29px; }
+  .topbar-actions .icon-button,.topbar-actions .text-button { width:32px; min-width:32px; }
+}

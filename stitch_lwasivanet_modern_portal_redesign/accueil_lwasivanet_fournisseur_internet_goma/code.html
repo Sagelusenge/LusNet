@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+
+<html lang="fr"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><title>LwasivaNet - Fournisseur d'Accès Internet à Goma</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"primary-container":"#0a58ca","outline-variant":"#c3c6d6","surface-dark":"#0B132B","surface-variant":"#d3e4fe","outline":"#737785","error":"#ba1a1a","error-container":"#ffdad6","on-tertiary-fixed":"#131b2e","tertiary-container":"#565e74","surface-container-highest":"#d3e4fe","surface-dark-card":"#0F172A","on-primary-fixed":"#001945","signal-glow":"#38BDF8","inverse-on-surface":"#eaf1ff","secondary-container":"#00d2ff","primary-fixed":"#d9e2ff","on-primary-container":"#ccd8ff","on-error-container":"#93000a","on-secondary-fixed-variant":"#004e60","surface-bright":"#f8f9ff","on-tertiary":"#ffffff","on-surface-variant":"#424653","tertiary-fixed-dim":"#bec6e0","on-primary":"#ffffff","inverse-surface":"#213145","surface-dim":"#cbdbf5","surface-container":"#e5eeff","on-background":"#0b1c30","secondary":"#00677f","primary-fixed-dim":"#b0c6ff","surface-container-lowest":"#ffffff","on-tertiary-container":"#d0d8f2","primary":"#00429d","surface-container-low":"#eff4ff","surface":"#f8f9ff","on-secondary-container":"#00566a","network-down":"#EF4444","network-idle":"#F59E0B","network-active":"#10B981","on-secondary":"#ffffff","background":"#f8f9ff","surface-tint":"#0958ca","secondary-fixed":"#b6ebff","surface-container-high":"#dce9ff","on-tertiary-fixed-variant":"#3f465c","on-primary-fixed-variant":"#00419d","on-secondary-fixed":"#001f28","secondary-fixed-dim":"#47d6ff","on-error":"#ffffff","inverse-primary":"#b0c6ff","tertiary-fixed":"#dae2fd","tertiary":"#3f465c","surface-light":"#F8FAFC","border-subtle":"#E2E8F0","on-surface":"#0b1c30"},borderRadius:{DEFAULT:"0.25rem",lg:"0.5rem",xl:"0.75rem",full:"9999px"},spacing:{"margin":"1.5rem","space-xs":"0.25rem","gutter-desktop":"2rem","gutter":"1.5rem","space-md":"1rem","space-sm":"0.5rem","space-2xl":"4rem","margin-desktop":"4rem","space-xl":"2.5rem","space-lg":"1.5rem"},fontFamily:{"label-lg":["Inter"],"body-md":["Plus Jakarta Sans"],"body-sm":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"label-technical":["Inter"],"headline-md":["Plus Jakarta Sans"],"headline-sm":["Plus Jakarta Sans"],"label-md":["Inter"],"headline-lg-mobile":["Plus Jakarta Sans"],"headline-xl-mobile":["Plus Jakarta Sans"],"headline-xl":["Plus Jakarta Sans"],"body-lg":["Plus Jakarta Sans"]},fontSize:{"label-lg":["14px",{lineHeight:"20px",letterSpacing:"0.02em",fontWeight:"600"}],"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"body-sm":["14px",{lineHeight:"20px",fontWeight:"400"}],"headline-lg":["40px",{lineHeight:"48px",letterSpacing:"-0.02em",fontWeight:"700"}],"label-technical":["11px",{lineHeight:"14px",letterSpacing:"0.08em",fontWeight:"700"}],"headline-md":["28px",{lineHeight:"36px",letterSpacing:"-0.01em",fontWeight:"700"}],"headline-sm":["20px",{lineHeight:"28px",fontWeight:"600"}],"label-md":["12px",{lineHeight:"16px",letterSpacing:"0.04em",fontWeight:"500"}],"headline-lg-mobile":["28px",{lineHeight:"36px",letterSpacing:"-0.01em",fontWeight:"700"}],"headline-xl-mobile":["36px",{lineHeight:"44px",letterSpacing:"-0.02em",fontWeight:"800"}],"headline-xl":["56px",{lineHeight:"64px",letterSpacing:"-0.03em",fontWeight:"800"}],"body-lg":["18px",{lineHeight:"28px",fontWeight:"400"}]}}}}</script></head><body class="bg-surface font-body-md text-on-surface antialiased selection:bg-secondary-container selection:text-on-secondary-container"><header class="fixed top-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-20 max-w-[1280px] mx-auto px-gutter lg:px-gutter-desktop flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-md shrink-0"><div class="flex items-center gap-space-sm"><img alt="Logo LwasivaNet" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBGKusNzPLR5WHvuUOFXO64zie8y820ZUWNcxXUzVMxePRjPCdsRrHyzNaW0-WWkUR19nIe3Ga9HbJ_jn0nTBl1HSN_8CdQXXeYWK9npzT2UoVKjvTiDurX2MD8ZWQH_R7c46vv_zhwVDm8LWFg0Bn6liTX2bH61KWLJMfr3_SHUouvsQRtsCQMak8mPicT-Y3rPEbgE4s6t-IQcnJ8gzCVp7xOW6fjRfrmIjelKc7c"/><span class="font-headline-sm text-headline-sm text-primary font-bold tracking-tight hidden sm:inline-block">LwasivaNet</span></div><div class="hidden xl:flex items-center gap-space-xs px-space-sm py-space-xs rounded-full bg-surface-container-high/60"><span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-network-active opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-network-active"></span></span><span class="font-label-technical text-label-technical text-network-active uppercase">Goma, Nord-Kivu • Réseau opérationnel</span></div></div><nav class="hidden lg:flex items-center gap-space-xs xl:gap-space-sm shrink-0" data-active-classes="bg-primary-container text-on-primary-container rounded-lg"><a aria-current="page" class="px-space-sm py-space-xs font-label-md transition-colors bg-primary-container text-on-primary-container rounded-lg" data-path="accueil" href="#">Accueil</a><a class="px-space-sm py-space-xs font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="a-propos" href="#">À propos</a><a class="px-space-sm py-space-xs font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="nos-offres" href="#">Nos offres</a><a class="px-space-sm py-space-xs font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="solutions-pro" href="#">Solutions Pro</a><a class="px-space-sm py-space-xs font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="point-a-point" href="#">Point-à-point</a><a class="px-space-sm py-space-xs font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="couverture" href="#">Couverture</a><a class="px-space-sm py-space-xs font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="installation" href="#">Installation</a><a class="px-space-sm py-space-xs font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="faq" href="#">FAQ</a><a class="px-space-sm py-space-xs font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="contact" href="#">Contact</a></nav><div class="flex items-center gap-space-sm shrink-0"><a class="hidden sm:inline-flex items-center px-space-md py-space-xs font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" data-path="espace-client" href="#">Accéder à mon espace</a><a class="inline-flex items-center px-space-md py-space-xs rounded-lg bg-primary-container text-on-primary font-label-lg text-label-lg shadow-[0_0_20px_rgba(0,210,255,0.45)] hover:bg-primary transition-all" data-path="demander-un-devis" href="#">Demander un devis</a><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-20 bg-surface min-h-[calc(100vh-80px)]"><div class="flex flex-col w-full">
+<!-- 1. HERO SECTION PREMIUM -->
+<section class="relative w-full overflow-hidden bg-surface-dark text-on-primary">
+<!-- Ambient photonic radial glow overlays -->
+<div class="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-gradient-to-b from-primary-container/30 via-secondary-container/10 to-transparent blur-3xl opacity-70"></div>
+<div class="pointer-events-none absolute top-1/3 -right-24 w-96 h-96 bg-secondary-container/15 rounded-full blur-3xl"></div>
+<div class="max-w-[1280px] mx-auto px-gutter lg:px-gutter-desktop py-space-xl lg:py-space-2xl relative z-10">
+<!-- Network live pill -->
+<div class="inline-flex items-center gap-space-xs px-space-md py-1.5 rounded-full bg-surface-dark-card shadow-[0_0_24px_rgba(56,189,248,0.2)] mb-space-lg">
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-network-active opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-network-active"></span>
+</span>
+<span class="font-label-technical text-label-technical text-signal-glow tracking-widest uppercase">
+          RÉSEAU OPÉRATIONNEL — GOMA, NORD-KIVU
+        </span>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-xl items-center">
+<!-- Text content column -->
+<div class="lg:col-span-7 flex flex-col gap-space-md">
+<div class="space-y-space-xs">
+<span class="font-label-technical text-label-technical text-secondary-container uppercase tracking-wider">
+              Liaisons sans fil professionnelles &amp; Desserte urbaine
+            </span>
+<h1 class="font-headline-xl text-headline-xl tracking-tight text-on-primary">
+              Connecter <span class="text-transparent bg-clip-text bg-gradient-to-r from-secondary-container via-signal-glow to-primary-fixed">Goma</span>.<br/>Construire ensemble.
+            </h1>
+</div>
+<p class="font-body-lg text-body-lg text-surface-container-highest max-w-2xl">
+            LWASIVA_NET fournit une connexion Internet sans fil fiable aux foyers et entreprises de Goma, avec une installation suivie et un support technique de proximité irréprochable.
+          </p>
+<!-- Key Guarantees Chips -->
+<div class="flex flex-wrap items-center gap-space-sm pt-space-xs">
+<div class="flex items-center gap-space-xs px-space-sm py-1 rounded bg-surface-dark-card/90 text-surface-container-highest">
+<span class="material-symbols-outlined text-signal-glow text-[18px]">verified_user</span>
+<span class="font-label-md text-label-md">Contrat clair &amp; transparent</span>
+</div>
+<div class="flex items-center gap-space-xs px-space-sm py-1 rounded bg-surface-dark-card/90 text-surface-container-highest">
+<span class="material-symbols-outlined text-secondary-container text-[18px]">speed</span>
+<span class="font-label-md text-label-md">5 à 30 Mbps réels</span>
+</div>
+<div class="flex items-center gap-space-xs px-space-sm py-1 rounded bg-surface-dark-card/90 text-surface-container-highest">
+<span class="material-symbols-outlined text-network-active text-[18px]">cell_tower</span>
+<span class="font-label-md text-label-md">Équipe locale réactive</span>
+</div>
+</div>
+<!-- CTAs -->
+<div class="flex flex-wrap items-center gap-space-md pt-space-md">
+<a class="inline-flex items-center gap-space-xs px-space-xl py-space-sm rounded-lg bg-primary-container text-on-primary font-label-lg text-label-lg shadow-[0_0_24px_rgba(0,210,255,0.45)] hover:brightness-110 transition-all" href="#devis-form">
+<span>Demander un devis</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</a>
+<a class="inline-flex items-center gap-space-xs px-space-lg py-space-sm rounded-lg bg-surface-dark-card text-signal-glow font-label-lg text-label-lg hover:bg-surface-dark-card/70 transition-all" href="#nos-offres">
+<span>Découvrir nos offres</span>
+<span class="material-symbols-outlined text-[18px]">expand_more</span>
+</a>
+</div>
+<!-- Interactive Case Selector -->
+<div class="pt-space-lg">
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-space-xs p-1.5 rounded-xl bg-surface-dark-card/70 backdrop-blur-md">
+<button class="hero-tab-btn px-space-sm py-space-xs rounded-lg text-center font-label-technical text-label-technical transition-all bg-primary-container text-on-primary" id="hero-tab-0" onclick="selectHeroTab(0)">
+                1. Foyers &amp; Familles
+              </button>
+<button class="hero-tab-btn px-space-sm py-space-xs rounded-lg text-center font-label-technical text-label-technical transition-all text-surface-container-highest hover:text-on-primary" id="hero-tab-1" onclick="selectHeroTab(1)">
+                2. PME &amp; Bureaux
+              </button>
+<button class="hero-tab-btn px-space-sm py-space-xs rounded-lg text-center font-label-technical text-label-technical transition-all text-surface-container-highest hover:text-on-primary" id="hero-tab-2" onclick="selectHeroTab(2)">
+                3. Point-à-Point
+              </button>
+<button class="hero-tab-btn px-space-sm py-space-xs rounded-lg text-center font-label-technical text-label-technical transition-all text-surface-container-highest hover:text-on-primary" id="hero-tab-3" onclick="selectHeroTab(3)">
+                4. Support 7j/7
+              </button>
+</div>
+<div class="mt-space-sm px-space-md py-space-xs rounded-lg bg-surface-dark-card/40 text-surface-variant font-body-sm text-body-sm flex items-center justify-between" id="hero-tab-content">
+<span>Navigation stable, réseaux sociaux illimités, visioconférences sans interruption dès 15$/mois.</span>
+<span class="material-symbols-outlined text-secondary-container text-[18px]">sensors</span>
+</div>
+</div>
+</div>
+<!-- Telemetry & Node Visual Card -->
+<div class="lg:col-span-5 flex flex-col gap-space-md">
+<div class="relative rounded-2xl bg-surface-dark-card/85 p-space-lg backdrop-blur-xl shadow-2xl overflow-hidden">
+<!-- Background node pattern illustration -->
+<div class="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-primary/20 blur-2xl pointer-events-none"></div>
+<div class="flex items-center justify-between pb-space-md">
+<div class="flex items-center gap-space-xs">
+<span class="p-2 rounded-lg bg-surface-dark text-secondary-container">
+<span class="material-symbols-outlined text-[24px]">router</span>
+</span>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-primary">CPE Gateway Status</h3>
+<p class="font-label-technical text-label-technical text-surface-variant uppercase">Goma Node Backbone</p>
+</div>
+</div>
+<span class="px-space-sm py-0.5 rounded-full bg-network-active/20 text-network-active font-label-technical text-label-technical">
+                99.8% UPTIME
+              </span>
+</div>
+<!-- Signal Gauges -->
+<div class="space-y-space-md py-space-xs">
+<div class="p-space-sm rounded-xl bg-surface-dark/80 flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-signal-glow text-[20px]">explore</span>
+<div>
+<span class="font-label-technical text-label-technical text-surface-container-highest block uppercase">Zone Desservie</span>
+<span class="font-headline-sm text-headline-sm text-on-primary">Goma &amp; Périphérie</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-network-active text-[22px]">check_circle</span>
+</div>
+<div class="p-space-sm rounded-xl bg-surface-dark/80 flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-secondary-container text-[20px]">speed</span>
+<div>
+<span class="font-label-technical text-label-technical text-surface-container-highest block uppercase">Bande Passante Max</span>
+<span class="font-headline-sm text-headline-sm text-secondary-container">Jusqu'à 30 Mbps</span>
+</div>
+</div>
+<span class="font-label-technical text-label-technical px-space-xs py-0.5 rounded bg-secondary/30 text-secondary-container">Faible latence</span>
+</div>
+<div class="p-space-sm rounded-xl bg-surface-dark/80 flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-signal-glow text-[20px]">handshake</span>
+<div>
+<span class="font-label-technical text-label-technical text-surface-container-highest block uppercase">Accompagnement</span>
+<span class="font-body-md text-body-md text-on-primary font-bold">Installation &amp; Suivi</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-signal-glow text-[20px]">verified</span>
+</div>
+</div>
+<!-- Visual representation graphic of microwave signal -->
+<div class="mt-space-md pt-space-md flex items-center justify-between text-surface-container-highest">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-secondary-container text-[18px]">satellite_alt</span>
+<span class="font-label-technical text-label-technical uppercase">LWASIVA_NET NODE 01</span>
+</div>
+<span class="font-label-technical text-label-technical text-secondary-container uppercase">Connexion locale, impact réel.</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 2. BANDEAU DE RÉASSURANCE & CONTACT RAPIDE -->
+<section class="w-full bg-surface-container-low py-space-lg relative z-20 shadow-sm">
+<div class="max-w-[1280px] mx-auto px-gutter lg:px-gutter-desktop">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md">
+<!-- Card 1 -->
+<a class="p-space-md rounded-xl bg-surface-container-lowest shadow-sm flex items-center gap-space-md hover:-translate-y-1 transition-transform group" href="tel:+243980208012">
+<div class="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center text-primary group-hover:bg-primary-container group-hover:text-on-primary transition-colors shrink-0">
+<span class="material-symbols-outlined text-[24px]">call</span>
+</div>
+<div class="min-w-0">
+<span class="font-label-technical text-label-technical text-outline uppercase block">Contact officiel</span>
+<span class="font-headline-sm text-headline-sm text-on-surface truncate block">+243 980 208 012</span>
+</div>
+</a>
+<!-- Card 2 -->
+<a class="p-space-md rounded-xl bg-surface-container-lowest shadow-sm flex items-center gap-space-md hover:-translate-y-1 transition-transform group" href="mailto:sagelusenge@gmail.com">
+<div class="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center text-primary group-hover:bg-primary-container group-hover:text-on-primary transition-colors shrink-0">
+<span class="material-symbols-outlined text-[24px]">mail</span>
+</div>
+<div class="min-w-0">
+<span class="font-label-technical text-label-technical text-outline uppercase block">E-mail professionnel</span>
+<span class="font-headline-sm text-headline-sm text-on-surface truncate block">sagelusenge@gmail.com</span>
+</div>
+</a>
+<!-- Card 3 -->
+<div class="p-space-md rounded-xl bg-surface-container-lowest shadow-sm flex items-center gap-space-md">
+<div class="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[24px]">location_on</span>
+</div>
+<div class="min-w-0">
+<span class="font-label-technical text-label-technical text-outline uppercase block">Zone d'intervention</span>
+<span class="font-headline-sm text-headline-sm text-on-surface truncate block">Goma, Nord-Kivu</span>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="p-space-md rounded-xl bg-surface-container-lowest shadow-sm flex items-center gap-space-md">
+<div class="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[24px]">wifi_tethering</span>
+</div>
+<div class="min-w-0">
+<span class="font-label-technical text-label-technical text-outline uppercase block">Technologie active</span>
+<span class="font-headline-sm text-headline-sm text-on-surface truncate block">Liaison sans fil / Wi-Fi</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 3. SECTION OFFRES INTERNET (DONNÉES RÉELLES EXACTES) -->
+<section class="w-full py-space-2xl bg-surface" id="nos-offres">
+<div class="max-w-[1280px] mx-auto px-gutter lg:px-gutter-desktop">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-space-md mb-space-xl">
+<div class="max-w-xl">
+<div class="flex items-center gap-space-xs text-primary mb-space-xs">
+<span class="material-symbols-outlined text-[20px]">wifi</span>
+<span class="font-label-technical text-label-technical uppercase tracking-wider">Tarification forfaitaire transparente</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Nos offres Internet</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-space-xs">
+            Des formules conçues pour chaque besoin à Goma. Connexion continue sans surprise, assistance locale et activation sous contrat clair.
+          </p>
+</div>
+<div class="p-space-sm rounded-xl bg-surface-container-low max-w-sm">
+<p class="font-label-md text-label-md text-secondary">
+<strong class="font-bold">Contrat clair :</strong> Période d'essai incluse, assistance de proximité et interdiction formelle de revente clandestine.
+          </p>
+</div>
+</div>
+<!-- Pricing Cards Bento / 3 Tiers -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-space-lg items-stretch">
+<!-- Tier 1: Basic Home -->
+<div class="flex flex-col justify-between p-space-xl rounded-2xl bg-surface-container-lowest shadow-md hover:shadow-lg transition-all relative">
+<div>
+<div class="flex items-center justify-between mb-space-md">
+<span class="px-space-sm py-1 rounded-full bg-surface-container text-primary font-label-technical text-label-technical uppercase">
+                Idéal Foyers
+              </span>
+<span class="material-symbols-outlined text-outline text-[24px]">home</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Basic Home</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Navigation, réseaux sociaux, vidéo SD &amp; devoirs scolaires.</p>
+<div class="my-space-lg">
+<div class="flex items-baseline gap-space-xs">
+<span class="font-headline-xl text-headline-xl font-bold text-primary">5</span>
+<span class="font-headline-sm text-headline-sm text-outline">Mbps</span>
+</div>
+<div class="mt-space-xs flex items-baseline gap-1">
+<span class="font-headline-md text-headline-md font-bold text-on-surface">15.00 USD</span>
+<span class="font-label-md text-label-md text-outline">/ mois</span>
+</div>
+</div>
+<ul class="space-y-space-sm mb-space-xl">
+<li class="flex items-center gap-space-xs font-body-sm text-body-sm text-on-surface">
+<span class="material-symbols-outlined text-network-active text-[18px]">check</span>
+<span>Débit constant jusqu'à 5 Mbps</span>
+</li>
+<li class="flex items-center gap-space-xs font-body-sm text-body-sm text-on-surface">
+<span class="material-symbols-outlined text-network-active text-[18px]">check</span>
+<span>Téléchargement et streaming standard</span>
+</li>
+<li class="flex items-center gap-space-xs font-body-sm text-body-sm text-on-surface">
+<span class="material-symbols-outlined text-network-active text-[18px]">check</span>
+<span>Support d'assistance WhatsApp dédié</span>
+</li>
+<li class="flex items-center gap-space-xs font-body-sm text-body-sm text-on-surface">
+<span class="material-symbols-outlined text-network-active text-[18px]">check</span>
+<span>Activation via Kit antenne CPE client</span>
+</li>
+</ul>
+</div>
+<a class="w-full text-center py-space-sm px-space-md rounded-lg bg-surface-container text-primary font-label-lg text-label-lg hover:bg-primary-container hover:text-on-primary transition-colors" href="#devis-form">
+            Choisir Basic Home
+          </a>
+</div>
+<!-- Tier 2: Stream Plus (Featured) -->
+<div class="flex flex-col justify-between p-space-xl rounded-2xl bg-surface-container-lowest shadow-xl ring-2 ring-secondary-container relative transform lg:-translate-y-2">
+<div class="absolute -top-3.5 left-1/2 -translate-x-1/2 px-space-md py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-technical text-label-technical tracking-wide uppercase font-bold shadow-sm">
+            ★ Le Plus Populaire
+          </div>
+<div>
+<div class="flex items-center justify-between mb-space-md">
+<span class="px-space-sm py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-technical text-label-technical uppercase">
+                Télétravail &amp; Famille
+              </span>
+<span class="material-symbols-outlined text-secondary text-[24px]">stream</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Stream Plus</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Streaming HD, télétravail, appels vidéo fluides &amp; multitâches.</p>
+<div class="my-space-lg">
+<div class="flex items-baseline gap-space-xs">
+<span class="font-headline-xl text-headline-xl font-bold text-secondary">10</span>
+<span class="font-headline-sm text-headline-sm text-outline">Mbps</span>
+</div>
+<div class="mt-space-xs flex items-baseline gap-1">
+<span class="font-headline-md text-headline-md font-bold text-on-surface">20.00 USD</span>
+<span class="font-label-md text-label-md text-outline">/ mois</span>
+</div>
+</div>
+<ul class="space-y-space-sm mb-space-xl">
+<li class="flex items-center gap-space-xs font-body-sm text-body-sm text-on-surface">
+<span class="material-symbols-outlined text-network-active text-[18px]">check</span>
+<span>Bande passante doublée (10 Mbps réels)</span>
+</li>
+<li class="flex items-center gap-space-xs font-body-sm text-body-sm text-on-surface">
+<span class="material-symbols-outlined text-network-active text-[18px]">check</span>
+<span>Streaming HD sans mise en mémoire tampon</span>
+</li>
+<li class="flex items-center gap-space-xs font-body-sm text-body-sm text-on-surface">
+<span class="material-symbols-outlined text-network-active text-[18px]">check</span>
+<span>Idéal réunions Google Meet, Zoom &amp; Teams</span>
+</li>
+<li class="flex items-center gap-space-xs font-body-sm text-body-sm text-on-surface">
+<span class="material-symbols-outlined text-network-active text-[18px]">check</span>
+<span>Priorité de monitoring sur le noeud Goma</span>
+</li>
+</ul>
+</div>
+<a class="w-full text-center py-space-sm px-space-md rounded-lg bg-primary-container text-on-primary font-label-lg text-label-lg shadow-[0_0_20px_rgba(0,210,255,0.45)] hover:bg-primary transition-all" href="#devis-form">
+            Choisir Stream Plus
+          </a>
+</div>
+<!-- Tier 3: Pro Ultra -->
+<div class="flex flex-col justify-between p-space-xl rounded-2xl bg-surface-dark-card text-on-primary shadow-xl relative">
+<div>
+<div class="flex items-center justify-between mb-space-md">
+<span class="px-space-sm py-1 rounded-full bg-signal-glow/20 text-signal-glow font-label-technical text-label-technical uppercase">
+                Haute Performance
+              </span>
+<span class="material-symbols-outlined text-signal-glow text-[24px]">corporate_fare</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-primary">Pro Ultra</h3>
+<p class="font-body-sm text-body-sm text-surface-container-highest mt-1">Streaming 4K, gaming intensif, multi-utilisateurs &amp; bureaux.</p>
+<div class="my-space-lg">
+<div class="flex items-baseline gap-space-xs">
+<span class="font-headline-xl text-headline-xl font-bold text-signal-glow">30</span>
+<span class="font-headline-sm text-headline-sm text-outline-variant">Mbps</span>
+</div>
+<div class="mt-space-xs flex items-baseline gap-1">
+<span class="font-headline-md text-headline-md font-bold text-on-primary">50.00 USD</span>
+<span class="font-label-md text-label-md text-outline-variant">/ mois</span>
+</div>
+</div>
+<ul class="space-y-space-sm mb-space-xl">
+<li class="flex items-center gap-space-xs font-body-sm text-body-sm text-surface-container-highest">
+<span class="material-symbols-outlined text-network-active text-[18px]">check</span>
+<span>Vitesse maximale jusqu'à 30 Mbps</span>
+</li>
+<li class="flex items-center gap-space-xs font-body-sm text-body-sm text-surface-container-highest">
+<span class="material-symbols-outlined text-network-active text-[18px]">check</span>
+<span>Connecte 10+ appareils simultanés</span>
+</li>
+<li class="flex items-center gap-space-xs font-body-sm text-body-sm text-surface-container-highest">
+<span class="material-symbols-outlined text-network-active text-[18px]">check</span>
+<span>Support technique d'astreinte prioritaire</span>
+</li>
+<li class="flex items-center gap-space-xs font-body-sm text-body-sm text-surface-container-highest">
+<span class="material-symbols-outlined text-network-active text-[18px]">check</span>
+<span>SLA d'intervention rapide garanti</span>
+</li>
+</ul>
+</div>
+<a class="w-full text-center py-space-sm px-space-md rounded-lg bg-surface-dark text-signal-glow font-label-lg text-label-lg hover:bg-primary-container hover:text-on-primary transition-all" href="#devis-form">
+            Choisir Pro Ultra
+          </a>
+</div>
+</div>
+</div>
+</section>
+<!-- 4. INFRASTRUCTURE & ARCHITECTURE POINT-À-POINT -->
+<section class="w-full py-space-2xl bg-surface-container-low">
+<div class="max-w-[1280px] mx-auto px-gutter lg:px-gutter-desktop">
+<div class="text-center max-w-2xl mx-auto mb-space-xl">
+<span class="font-label-technical text-label-technical text-primary uppercase tracking-widest block mb-space-xs">
+          Technologie hertzienne robuste
+        </span>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">La technologie Point-à-Point au service de Goma</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-space-xs">
+          À Goma, les contraintes de sol volcanique rendent l'enfouissement de la fibre complexe. Nos faisceaux sans fil directs vous garantissent une disponibilité à toute épreuve.
+        </p>
+</div>
+<!-- Network Flow Diagram -->
+<div class="p-space-lg lg:p-space-xl rounded-2xl bg-surface-container-lowest shadow-md">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-space-md relative items-center">
+<!-- Step 1 Node -->
+<div class="flex flex-col items-center text-center p-space-md rounded-xl bg-surface-container-low">
+<div class="w-16 h-16 rounded-2xl bg-primary text-on-primary flex items-center justify-center mb-space-sm shadow-md">
+<span class="material-symbols-outlined text-[32px]">cell_tower</span>
+</div>
+<span class="font-label-technical text-label-technical text-primary uppercase">Émetteur Maître</span>
+<h4 class="font-headline-sm text-headline-sm text-on-surface mt-1">Station Centrale Goma</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Pylône haute portée avec lien dorsal optique sécurisé.</p>
+</div>
+<!-- Step 2 Node -->
+<div class="flex flex-col items-center text-center p-space-md rounded-xl bg-surface-container-low">
+<div class="w-16 h-16 rounded-2xl bg-secondary text-on-secondary flex items-center justify-center mb-space-sm shadow-md">
+<span class="material-symbols-outlined text-[32px]">satellite_alt</span>
+</div>
+<span class="font-label-technical text-label-technical text-secondary uppercase">Liaison Hertzienne</span>
+<h4 class="font-headline-sm text-headline-sm text-on-surface mt-1">Antenne CPE Réceptrice</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Installée sur votre toit ou mât, pointée vers le relais.</p>
+</div>
+<!-- Step 3 Node -->
+<div class="flex flex-col items-center text-center p-space-md rounded-xl bg-surface-container-low">
+<div class="w-16 h-16 rounded-2xl bg-primary-container text-on-primary flex items-center justify-center mb-space-sm shadow-md">
+<span class="material-symbols-outlined text-[32px]">router</span>
+</div>
+<span class="font-label-technical text-label-technical text-signal-glow uppercase">Distribution Locale</span>
+<h4 class="font-headline-sm text-headline-sm text-on-surface mt-1">Routeur Wi-Fi Haute Portée</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Câblage blindé PoE et diffusion gigabit intérieure.</p>
+</div>
+<!-- Step 4 Node -->
+<div class="flex flex-col items-center text-center p-space-md rounded-xl bg-surface-container-low">
+<div class="w-16 h-16 rounded-2xl bg-surface-dark text-secondary-container flex items-center justify-center mb-space-sm shadow-md">
+<span class="material-symbols-outlined text-[32px]">devices</span>
+</div>
+<span class="font-label-technical text-label-technical text-secondary-container uppercase">Vos Appareils</span>
+<h4 class="font-headline-sm text-headline-sm text-on-surface mt-1">Usages 100% Fluides</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Smartphones, laptops, caméras IP et télévisions connectées.</p>
+</div>
+</div>
+<div class="mt-space-lg p-space-md rounded-xl bg-surface-container flex flex-col md:flex-row items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-md">
+<span class="material-symbols-outlined text-primary text-[28px]">insights</span>
+<div>
+<h5 class="font-headline-sm text-headline-sm text-on-surface">Pourquoi le sans fil est la meilleure solution à Goma ?</h5>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Absence de coupures liées aux chantiers routiers, insensibilité aux glissements de terrain et rétablissement en quelques minutes.</p>
+</div>
+</div>
+<a class="px-space-md py-space-xs rounded-lg bg-primary text-on-primary font-label-md text-label-md shrink-0" href="#devis-form">
+            Tester mon récepteur
+          </a>
+</div>
+</div>
+</div>
+</section>
+<!-- 5. SECTION ENTREPRISES & PRO (DARK BEDROCK) -->
+<section class="w-full py-space-2xl bg-surface-dark text-on-primary">
+<div class="max-w-[1280px] mx-auto px-gutter lg:px-gutter-desktop">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-xl items-center">
+<div class="lg:col-span-6 flex flex-col gap-space-md">
+<span class="font-label-technical text-label-technical text-secondary-container uppercase tracking-widest">
+            B2B &amp; Organisations non-gouvernementales
+          </span>
+<h2 class="font-headline-lg text-headline-lg text-on-primary">
+            Une connectivité taillée pour l'exigence de votre entreprise
+          </h2>
+<p class="font-body-md text-body-md text-surface-container-highest">
+            Hotels, sièges d'ONG internationales, institutions bancaires et commerces du Nord-Kivu font confiance à l'infrastructure LwasivaNet pour leur fonctionnement critique.
+          </p>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-space-md pt-space-xs">
+<div class="p-space-md rounded-xl bg-surface-dark-card">
+<span class="material-symbols-outlined text-signal-glow text-[24px] mb-space-xs">lock</span>
+<h4 class="font-headline-sm text-headline-sm text-on-primary">Liaison Dédiée</h4>
+<p class="font-body-sm text-body-sm text-surface-container-highest mt-1">Bande passante symétrique garantie sans contention réseau.</p>
+</div>
+<div class="p-space-md rounded-xl bg-surface-dark-card">
+<span class="material-symbols-outlined text-secondary-container text-[24px] mb-space-xs">support_agent</span>
+<h4 class="font-headline-sm text-headline-sm text-on-primary">Astreinte 24/7</h4>
+<p class="font-body-sm text-body-sm text-surface-container-highest mt-1">Intervention sur site à Goma en moins de 2 heures ouvrées.</p>
+</div>
+</div>
+<div class="pt-space-xs">
+<a class="inline-flex items-center gap-space-xs px-space-xl py-space-sm rounded-lg bg-primary-container text-on-primary font-label-lg text-label-lg shadow-[0_0_24px_rgba(0,210,255,0.35)] hover:brightness-110 transition-all" href="#devis-form">
+<span>Demander une étude personnalisée</span>
+<span class="material-symbols-outlined text-[18px]">business_center</span>
+</a>
+</div>
+</div>
+<div class="lg:col-span-6">
+<div class="relative rounded-2xl overflow-hidden shadow-2xl">
+<!-- Professional Telecom Server Rack & Engineer Image -->
+<img class="w-full h-96 object-cover rounded-2xl" data-alt="High tech telecom server room and microwave wireless antenna networking rack in modern operational center in Goma, deep midnight blue illumination, glowing cyan LED optical indicators, network patch panel cabling, clean and institutional corporate telecoms atmosphere" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDC6SUFNC4qOn3CiFhlxCIDhTt63rstUD8pxs7lSWBfArCFW1UsAsJxAMAaxQ__MiJ1YHVMCA43xaLYjPwSuiKiP3jGmMeyKkS-z2618y4k8TSR4KZbmPswmPzzLhrEkajHO2K7GLZh_PKNwC9mYOWiB-rnISEIseChmvrxJ7aPFHhfHR6PDyOfrL_bZPsxTMgSVDB6h_MIuDbovlm6Snv5KValsi47el1Bb9O72Mui"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-dark via-surface-dark/40 to-transparent flex flex-col justify-end p-space-lg">
+<div class="flex items-center justify-between">
+<div>
+<span class="font-label-technical text-label-technical text-signal-glow uppercase">Supervision Proactive</span>
+<p class="font-headline-sm text-headline-sm text-on-primary">Monitoring 24h/24 de chaque station CPE</p>
+</div>
+<span class="material-symbols-outlined text-network-active text-[32px]">monitoring</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 6. PROCESSUS EN 4 ÉTAPES ('COMMENT ÇA MARCHE ?') -->
+<section class="w-full py-space-2xl bg-surface">
+<div class="max-w-[1280px] mx-auto px-gutter lg:px-gutter-desktop">
+<div class="text-center max-w-xl mx-auto mb-space-xl">
+<span class="font-label-technical text-label-technical text-primary uppercase tracking-widest block mb-space-xs">Déploiement Transparent</span>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Installation et suivi pas à pas</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-space-xs">
+          Du premier test de faisabilité jusqu'à l'activation complète, notre équipe locale vous accompagne.
+        </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-space-lg">
+<!-- Step 1 -->
+<div class="p-space-lg rounded-2xl bg-surface-container-low flex flex-col justify-between hover:bg-surface-container transition-colors">
+<div>
+<span class="font-headline-xl text-headline-xl font-bold text-outline-variant/60 block mb-space-xs">01</span>
+<div class="flex items-center gap-space-xs text-primary mb-space-xs">
+<span class="material-symbols-outlined text-[20px]">assignment</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Demande</h3>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Le client remplit le formulaire ou prend contact avec son adresse exacte à Goma.</p>
+</div>
+<div class="mt-space-md pt-space-sm font-label-technical text-label-technical text-outline uppercase">Étape initiale</div>
+</div>
+<!-- Step 2 -->
+<div class="p-space-lg rounded-2xl bg-surface-container-low flex flex-col justify-between hover:bg-surface-container transition-colors">
+<div>
+<span class="font-headline-xl text-headline-xl font-bold text-outline-variant/60 block mb-space-xs">02</span>
+<div class="flex items-center gap-space-xs text-primary mb-space-xs">
+<span class="material-symbols-outlined text-[20px]">task_alt</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Validation</h3>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Notre administration vérifie la visibilité hertzienne et confirme la couverture de votre quartier.</p>
+</div>
+<div class="mt-space-md pt-space-sm font-label-technical text-label-technical text-outline uppercase">Test technique</div>
+</div>
+<!-- Step 3 -->
+<div class="p-space-lg rounded-2xl bg-surface-container-low flex flex-col justify-between hover:bg-surface-container transition-colors">
+<div>
+<span class="font-headline-xl text-headline-xl font-bold text-outline-variant/60 block mb-space-xs">03</span>
+<div class="flex items-center gap-space-xs text-primary mb-space-xs">
+<span class="material-symbols-outlined text-[20px]">description</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Contrat &amp; Kit</h3>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Édition du contrat transparent. Pose du kit : antenne CPE, mât, câblage blindé et routeur Wi-Fi.</p>
+</div>
+<div class="mt-space-md pt-space-sm font-label-technical text-label-technical text-secondary uppercase">Paiement par tranches possible</div>
+</div>
+<!-- Step 4 -->
+<div class="p-space-lg rounded-2xl bg-primary-container text-on-primary flex flex-col justify-between shadow-lg">
+<div>
+<span class="font-headline-xl text-headline-xl font-bold text-secondary-container/50 block mb-space-xs">04</span>
+<div class="flex items-center gap-space-xs mb-space-xs">
+<span class="material-symbols-outlined text-[20px] text-secondary-container">wifi_protected_setup</span>
+<h3 class="font-headline-sm text-headline-sm text-on-primary">Activation</h3>
+</div>
+<p class="font-body-sm text-body-sm text-on-primary-container">Votre bouquet sélectionné est immédiatement fonctionnel avec monitoring en direct depuis l'espace client.</p>
+</div>
+<div class="mt-space-md pt-space-sm font-label-technical text-label-technical text-secondary-container uppercase">Service opérationnel</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 7. SECTION COUVERTURE GOMA & INTERVENTION LOCALE -->
+<section class="w-full py-space-2xl bg-surface-container-low">
+<div class="max-w-[1280px] mx-auto px-gutter lg:px-gutter-desktop">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-xl items-center">
+<div class="lg:col-span-5 flex flex-col gap-space-md">
+<div>
+<span class="font-label-technical text-label-technical text-primary uppercase tracking-widest block mb-space-xs">Cartographie de desserte</span>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Couverture dans toute la ville de Goma</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-space-xs">
+              Nos stations relais couvrent les principaux quartiers résidentiels et d'affaires du Nord-Kivu avec une qualité de signal constante.
+            </p>
+</div>
+<!-- Neighborhood quick checklist -->
+<div class="grid grid-cols-2 gap-space-xs font-body-sm text-body-sm text-on-surface">
+<div class="flex items-center gap-2 p-2 rounded-lg bg-surface-container-lowest shadow-sm">
+<span class="material-symbols-outlined text-network-active text-[18px]">cell_tower</span>
+<span>Centre-ville</span>
+</div>
+<div class="flex items-center gap-2 p-2 rounded-lg bg-surface-container-lowest shadow-sm">
+<span class="material-symbols-outlined text-network-active text-[18px]">cell_tower</span>
+<span>Himbi</span>
+</div>
+<div class="flex items-center gap-2 p-2 rounded-lg bg-surface-container-lowest shadow-sm">
+<span class="material-symbols-outlined text-network-active text-[18px]">cell_tower</span>
+<span>Kyeshero</span>
+</div>
+<div class="flex items-center gap-2 p-2 rounded-lg bg-surface-container-lowest shadow-sm">
+<span class="material-symbols-outlined text-network-active text-[18px]">cell_tower</span>
+<span>Katindo</span>
+</div>
+<div class="flex items-center gap-2 p-2 rounded-lg bg-surface-container-lowest shadow-sm">
+<span class="material-symbols-outlined text-network-active text-[18px]">cell_tower</span>
+<span>Virunga</span>
+</div>
+<div class="flex items-center gap-2 p-2 rounded-lg bg-surface-container-lowest shadow-sm">
+<span class="material-symbols-outlined text-network-active text-[18px]">cell_tower</span>
+<span>Majengo &amp; Mabanga</span>
+</div>
+</div>
+<!-- Fast eligibility check -->
+<div class="p-space-md rounded-xl bg-surface-container-lowest shadow-sm flex flex-col gap-space-sm">
+<span class="font-headline-sm text-headline-sm text-on-surface">Vérifier mon adresse</span>
+<div class="flex flex-col sm:flex-row gap-space-xs">
+<input class="flex-1 px-space-md py-space-xs rounded-lg bg-surface-light border-0 text-on-surface placeholder:text-outline font-body-sm text-body-sm focus:ring-2 focus:ring-primary-container" id="quartier-check-input" placeholder="Entrez votre quartier (ex: Himbi...)" type="text"/>
+<button class="px-space-md py-space-xs rounded-lg bg-primary-container text-on-primary font-label-md text-label-md shrink-0" onclick="checkEligibility()">
+                Tester éligibilité
+              </button>
+</div>
+<p class="font-label-technical text-label-technical text-network-active hidden" id="eligibility-result">
+              ✓ Couverture optimale détectée avec relais à portée directe.
+            </p>
+</div>
+</div>
+<div class="lg:col-span-7">
+<!-- Stylized Google Maps Static Trigger Container -->
+<div class="relative w-full h-[400px] rounded-2xl overflow-hidden shadow-xl" data-location="Goma, Nord-Kivu, Democratic Republic of the Congo" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBoBxZdGzVQobBXt2eGCmA0_i7SzKtkyU75TXuMeUXubyH096P9b0saZz_NokGui8L5UDj1UUs7EnWGjAeWMINrpsKJsC18hfIDB1F1YeQdxo0-GfkygZww35Y_uUyd3qA4WgFG4QcK0yg4W7rw1g7Tjyceh6_cuYd-zLloUIfoiXEjmmuQ3ygnBqGm-I7SEWV3dpve38ROTg_p8HWR23SkcHyQ3JWKx8f-2s2XVfFb')">
+<!-- Visual Card overlay on Map -->
+<div class="absolute bottom-space-md left-space-md right-space-md p-space-md rounded-xl bg-surface-dark/90 backdrop-blur-md text-on-primary flex flex-col sm:flex-row items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-sm">
+<span class="p-2 rounded-lg bg-primary text-secondary-container">
+<span class="material-symbols-outlined text-[20px]">radar</span>
+</span>
+<div>
+<span class="font-headline-sm text-headline-sm text-on-primary block">Réseau Local Actif</span>
+<span class="font-label-technical text-label-technical text-secondary-container">Multiples points de relais sans fil à Goma</span>
+</div>
+</div>
+<a class="px-space-md py-1.5 rounded-lg bg-network-active text-on-primary font-label-md text-label-md flex items-center gap-1 shrink-0" href="https://wa.me/243980208012" rel="noopener noreferrer" target="_blank">
+<span class="material-symbols-outlined text-[16px]">map</span>
+                Demander un repérage
+              </a>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 8. TÉMOIGNAGE & CONFIANCE (DONNÉES RÉELLES) -->
+<section class="w-full py-space-2xl bg-surface">
+<div class="max-w-[1280px] mx-auto px-gutter lg:px-gutter-desktop">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-space-md mb-space-xl">
+<div>
+<span class="font-label-technical text-label-technical text-primary uppercase tracking-widest block mb-space-xs">Retours d'expérience</span>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Appréciations clients approuvées</h2>
+</div>
+<a class="inline-flex items-center gap-space-xs font-label-lg text-label-lg text-primary hover:text-primary-container transition-colors" href="#devis-form">
+<span>Déposer mon avis client</span>
+<span class="material-symbols-outlined text-[18px]">rate_review</span>
+</a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-lg">
+<!-- Review 1 (Official Real Feedback) -->
+<div class="p-space-xl rounded-2xl bg-surface-container-lowest shadow-md flex flex-col justify-between relative overflow-hidden">
+<div class="absolute -right-4 -bottom-4 text-surface-container text-[120px] font-bold select-none pointer-events-none opacity-40">
+            “
+          </div>
+<div>
+<div class="flex items-center gap-1 text-network-idle mb-space-md">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface italic relative z-10">
+              « Bon débit pour plusieurs utilisateurs et support technique très réactif lors des réglages météo. »
+            </p>
+</div>
+<div class="mt-space-xl pt-space-md flex items-center gap-space-sm relative z-10">
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-bold">
+              PU
+            </div>
+<div>
+<span class="font-headline-sm text-headline-sm text-on-surface block">Abonné Pro Ultra</span>
+<span class="font-label-technical text-label-technical text-outline uppercase">Centre-ville, Goma</span>
+</div>
+</div>
+</div>
+<!-- Review 2 -->
+<div class="p-space-xl rounded-2xl bg-surface-container-lowest shadow-md flex flex-col justify-between relative overflow-hidden">
+<div class="absolute -right-4 -bottom-4 text-surface-container text-[120px] font-bold select-none pointer-events-none opacity-40">
+            “
+          </div>
+<div>
+<div class="flex items-center gap-1 text-network-idle mb-space-md">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface italic relative z-10">
+              « Stream Plus à 20$ est parfaitement dimensionné pour mes réunions en visio sans coupure. Installation soignée. »
+            </p>
+</div>
+<div class="mt-space-xl pt-space-md flex items-center gap-space-sm relative z-10">
+<div class="w-10 h-10 rounded-full bg-secondary text-on-secondary flex items-center justify-center font-bold">
+              SP
+            </div>
+<div>
+<span class="font-headline-sm text-headline-sm text-on-surface block">Consultant Indépendant</span>
+<span class="font-label-technical text-label-technical text-outline uppercase">Himbi, Goma</span>
+</div>
+</div>
+</div>
+<!-- Review 3 -->
+<div class="p-space-xl rounded-2xl bg-surface-container-lowest shadow-md flex flex-col justify-between relative overflow-hidden">
+<div class="absolute -right-4 -bottom-4 text-surface-container text-[120px] font-bold select-none pointer-events-none opacity-40">
+            “
+          </div>
+<div>
+<div class="flex items-center gap-1 text-network-idle mb-space-md">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface italic relative z-10">
+              « Enfin un contrat clair et sans mauvaises surprises. Le technicien a vérifié la force du signal avant même de signer. »
+            </p>
+</div>
+<div class="mt-space-xl pt-space-md flex items-center gap-space-sm relative z-10">
+<div class="w-10 h-10 rounded-full bg-tertiary text-on-tertiary flex items-center justify-center font-bold">
+              BH
+            </div>
+<div>
+<span class="font-headline-sm text-headline-sm text-on-surface block">Famille Résidentielle</span>
+<span class="font-label-technical text-label-technical text-outline uppercase">Kyeshero, Goma</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 9. SECTION CONTACT DIRECT & DEMANDE DE DEVIS INTERACTIVE -->
+<section class="w-full py-space-2xl bg-surface-container-low scroll-mt-24" id="devis-form">
+<div class="max-w-[1280px] mx-auto px-gutter lg:px-gutter-desktop">
+<div class="text-center max-w-xl mx-auto mb-space-xl">
+<span class="font-label-technical text-label-technical text-primary uppercase tracking-widest block mb-space-xs">Formulaire Officiel</span>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Demande de devis &amp; Contact rapide</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-space-xs">
+          Remplissez vos coordonnées ci-dessous. Un conseiller technique étudie votre positionnement sous quelques heures.
+        </p>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-xl items-start">
+<!-- Direct Contacts Sidebar -->
+<div class="lg:col-span-4 p-space-xl rounded-2xl bg-surface-dark text-on-primary flex flex-col justify-between shadow-xl">
+<div>
+<div class="flex items-center gap-space-xs text-signal-glow mb-space-md">
+<span class="material-symbols-outlined text-[24px]">support_agent</span>
+<span class="font-label-technical text-label-technical uppercase tracking-wider">Assistance de Proximité</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-primary mb-space-md">LWASIVA_NET Goma</h3>
+<p class="font-body-sm text-body-sm text-surface-container-highest mb-space-lg">
+              Nos agents techniques opèrent sur tout le périmètre urbain pour vos installations, dépannages et augmentations de débit.
+            </p>
+<div class="space-y-space-md">
+<div class="flex items-start gap-space-sm">
+<span class="material-symbols-outlined text-secondary-container text-[20px]">call</span>
+<div>
+<span class="font-label-technical text-label-technical text-surface-container-highest block uppercase">Appels &amp; Urgences</span>
+<a class="font-headline-sm text-headline-sm text-on-primary hover:text-secondary-container transition-colors" href="tel:+243980208012">+243 980 208 012</a>
+</div>
+</div>
+<div class="flex items-start gap-space-sm">
+<span class="material-symbols-outlined text-secondary-container text-[20px]">chat</span>
+<div>
+<span class="font-label-technical text-label-technical text-surface-container-highest block uppercase">Assistance WhatsApp</span>
+<a class="font-headline-sm text-headline-sm text-network-active hover:underline" href="https://wa.me/243980208012" rel="noopener noreferrer" target="_blank">+243 980 208 012</a>
+</div>
+</div>
+<div class="flex items-start gap-space-sm">
+<span class="material-symbols-outlined text-secondary-container text-[20px]">email</span>
+<div>
+<span class="font-label-technical text-label-technical text-surface-container-highest block uppercase">Email Support</span>
+<a class="font-headline-sm text-headline-sm text-on-primary hover:text-secondary-container transition-colors" href="mailto:sagelusenge@gmail.com">sagelusenge@gmail.com</a>
+</div>
+</div>
+<div class="flex items-start gap-space-sm">
+<span class="material-symbols-outlined text-secondary-container text-[20px]">pin_drop</span>
+<div>
+<span class="font-label-technical text-label-technical text-surface-container-highest block uppercase">Zone d'intervention</span>
+<span class="font-body-md text-body-md text-on-primary">Goma, Province du Nord-Kivu, RDC</span>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-space-xl pt-space-md bg-surface-dark-card p-space-md rounded-xl">
+<span class="font-label-technical text-label-technical text-signal-glow block uppercase">Règle de satisfaction</span>
+<p class="font-body-sm text-body-sm text-surface-container-highest mt-1">« Votre satisfaction, notre priorité. »</p>
+</div>
+</div>
+<!-- Quote Request Form -->
+<div class="lg:col-span-8 p-space-xl rounded-2xl bg-surface-container-lowest shadow-md">
+<form class="space-y-space-md" onsubmit="handleQuoteSubmit(event)">
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-space-md">
+<div class="space-y-1">
+<label class="font-label-md text-label-md text-on-surface" for="full_name">Nom complet *</label>
+<input class="w-full px-space-md py-space-sm rounded-lg bg-surface-light border-0 text-on-surface placeholder:text-outline font-body-sm text-body-sm focus:ring-2 focus:ring-primary-container" id="full_name" placeholder="Votre nom et prénom" required="" type="text"/>
+</div>
+<div class="space-y-1">
+<label class="font-label-md text-label-md text-on-surface" for="client_type">Type de client *</label>
+<select class="w-full px-space-md py-space-sm rounded-lg bg-surface-light border-0 text-on-surface font-body-sm text-body-sm focus:ring-2 focus:ring-primary-container" id="client_type" required="">
+<option value="particulier">Particulier / Foyer</option>
+<option value="entreprise">Entreprise / PME</option>
+<option value="ong">Organisation / ONG</option>
+<option value="autre">Autre structure</option>
+</select>
+</div>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-space-md">
+<div class="space-y-1">
+<label class="font-label-md text-label-md text-on-surface" for="phone_number">Téléphone / WhatsApp *</label>
+<input class="w-full px-space-md py-space-sm rounded-lg bg-surface-light border-0 text-on-surface placeholder:text-outline font-body-sm text-body-sm focus:ring-2 focus:ring-primary-container" id="phone_number" placeholder="+243 ..." required="" type="tel"/>
+</div>
+<div class="space-y-1">
+<label class="font-label-md text-label-md text-on-surface" for="email_addr">Adresse e-mail</label>
+<input class="w-full px-space-md py-space-sm rounded-lg bg-surface-light border-0 text-on-surface placeholder:text-outline font-body-sm text-body-sm focus:ring-2 focus:ring-primary-container" id="email_addr" placeholder="votre-email@domaine.com" type="email"/>
+</div>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-space-md">
+<div class="space-y-1">
+<label class="font-label-md text-label-md text-on-surface" for="neighborhood">Quartier &amp; Avenue à Goma *</label>
+<input class="w-full px-space-md py-space-sm rounded-lg bg-surface-light border-0 text-on-surface placeholder:text-outline font-body-sm text-body-sm focus:ring-2 focus:ring-primary-container" id="neighborhood" placeholder="Ex: Himbi, Av. de la Paix" required="" type="text"/>
+</div>
+<div class="space-y-1">
+<label class="font-label-md text-label-md text-on-surface" for="service_plan">Bouquet souhaité *</label>
+<select class="w-full px-space-md py-space-sm rounded-lg bg-surface-light border-0 text-on-surface font-body-sm text-body-sm focus:ring-2 focus:ring-primary-container" id="service_plan" required="">
+<option value="stream_plus">Stream Plus (10 Mbps - 20 USD/mois) [Recommandé]</option>
+<option value="basic_home">Basic Home (5 Mbps - 15 USD/mois)</option>
+<option value="pro_ultra">Pro Ultra (30 Mbps - 50 USD/mois)</option>
+<option value="custom_pro">Liaison Point-à-point dédiée sur-mesure</option>
+</select>
+</div>
+</div>
+<div class="space-y-1">
+<label class="font-label-md text-label-md text-on-surface" for="message_text">Précisions éventuelles ou question</label>
+<textarea class="w-full px-space-md py-space-sm rounded-lg bg-surface-light border-0 text-on-surface placeholder:text-outline font-body-sm text-body-sm focus:ring-2 focus:ring-primary-container" id="message_text" placeholder="Indiquez vos besoins particuliers ou contraintes de lieu..." rows="3"></textarea>
+</div>
+<div class="pt-space-xs flex flex-col sm:flex-row items-center justify-between gap-space-md">
+<p class="font-body-sm text-body-sm text-outline">
+                En soumettant ce formulaire, vous recevrez une confirmation sous 24h ouvrées.
+              </p>
+<button class="w-full sm:w-auto inline-flex items-center justify-center gap-space-xs px-space-xl py-space-sm rounded-lg bg-primary-container text-on-primary font-label-lg text-label-lg shadow-[0_0_20px_rgba(0,210,255,0.35)] hover:bg-primary transition-all shrink-0" type="submit">
+<span class="material-symbols-outlined text-[18px]">send</span>
+<span>Envoyer ma demande</span>
+</button>
+</div>
+<div class="hidden p-space-md rounded-xl bg-network-active/15 text-network-active font-body-md text-body-md" id="form-success-alert">
+              ✓ Votre demande a bien été envoyée. L'équipe LwasivaNet vous contactera directement pour programmer le test de signal.
+            </div>
+</form>
+</div>
+</div>
+</div>
+</section>
+<!-- 10. FAQ & ASSISTANCE TECHNIQUE -->
+<section class="w-full py-space-2xl bg-surface">
+<div class="max-w-[1280px] mx-auto px-gutter lg:px-gutter-desktop">
+<div class="text-center max-w-xl mx-auto mb-space-xl">
+<span class="font-label-technical text-label-technical text-primary uppercase tracking-widest block mb-space-xs">Questions fréquentes</span>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Comprendre notre service</h2>
+</div>
+<div class="max-w-3xl mx-auto space-y-space-sm">
+<!-- FAQ 1 -->
+<div class="p-space-md rounded-xl bg-surface-container-low">
+<button class="w-full flex items-center justify-between text-left font-headline-sm text-headline-sm text-on-surface" onclick="toggleFaq(1)">
+<span>Quels équipements sont fournis dans le kit d'installation ?</span>
+<span class="material-symbols-outlined text-primary text-[24px] transition-transform" id="faq-icon-1">expand_more</span>
+</button>
+<div class="hidden mt-space-sm font-body-md text-body-md text-on-surface-variant" id="faq-content-1">
+            Le kit comprend l'antenne extérieure CPE (faisceau de réception dirigé), les fixations et mât, le câble blindé résistant aux intempéries ainsi qu'un routeur Wi-Fi configuré pour votre habitation ou bureau.
+          </div>
+</div>
+<!-- FAQ 2 -->
+<div class="p-space-md rounded-xl bg-surface-container-low">
+<button class="w-full flex items-center justify-between text-left font-headline-sm text-headline-sm text-on-surface" onclick="toggleFaq(2)">
+<span>Comment se déroule le paiement du kit et de l'abonnement ?</span>
+<span class="material-symbols-outlined text-primary text-[24px] transition-transform" id="faq-icon-2">expand_more</span>
+</button>
+<div class="hidden mt-space-sm font-body-md text-body-md text-on-surface-variant" id="faq-content-2">
+            Les forfaits mensuels sont réglés d'avance selon le bouquet choisi (15$, 20$ ou 50$). Pour le kit d'installation initial, des facilités de paiement par tranches peuvent être accordées après accord avec la direction.
+          </div>
+</div>
+<!-- FAQ 3 -->
+<div class="p-space-md rounded-xl bg-surface-container-low">
+<button class="w-full flex items-center justify-between text-left font-headline-sm text-headline-sm text-on-surface" onclick="toggleFaq(3)">
+<span>Quels sont les délais d'activation à Goma ?</span>
+<span class="material-symbols-outlined text-primary text-[24px] transition-transform" id="faq-icon-3">expand_more</span>
+</button>
+<div class="hidden mt-space-sm font-body-md text-body-md text-on-surface-variant" id="faq-content-3">
+            Dès validation du test de visibilité radio, notre équipe technique intervient généralement dans un délai de 24 à 48 heures. Votre accès est opérationnel dès le départ du technicien.
+          </div>
+</div>
+<!-- FAQ 4 -->
+<div class="p-space-md rounded-xl bg-surface-container-low">
+<button class="w-full flex items-center justify-between text-left font-headline-sm text-headline-sm text-on-surface" onclick="toggleFaq(4)">
+<span>Pourquoi chaque abonnement est encadré par un contrat formel ?</span>
+<span class="material-symbols-outlined text-primary text-[24px] transition-transform" id="faq-icon-4">expand_more</span>
+</button>
+<div class="hidden mt-space-sm font-body-md text-body-md text-on-surface-variant" id="faq-content-4">
+            Le contrat protège à la fois la qualité de votre bande passante et la sécurité du réseau. Il interdit la revente non autorisée pour éviter la congestion et garantit vos droits au support et à la stabilité contractuelle.
+          </div>
+</div>
+</div>
+</div>
+</section>
+<!-- Interactive Scripts -->
+<script>
+    const heroTabContentData = [
+      { text: "Navigation stable, réseaux sociaux illimités, travail scolaire et streaming SD sans coupure dès 15$/mois.", icon: "home" },
+      { text: "Bande passante garantie jusqu'à 30 Mbps pour plusieurs postes, téléversement fluide et SLA prioritaire.", icon: "business" },
+      { text: "Faisceaux hertziens micro-ondes robustes reliant votre site au point d'échange principal de Goma.", icon: "cell_tower" },
+      { text: "Support local direct via WhatsApp (+243 980 208 012) et interventions physiques rapides en cas d'incident.", icon: "headset_mic" }
+    ];
+
+    function selectHeroTab(index) {
+      document.querySelectorAll('.hero-tab-btn').forEach((btn, i) => {
+        if (i === index) {
+          btn.className = "hero-tab-btn px-space-sm py-space-xs rounded-lg text-center font-label-technical text-label-technical transition-all bg-primary-container text-on-primary";
+        } else {
+          btn.className = "hero-tab-btn px-space-sm py-space-xs rounded-lg text-center font-label-technical text-label-technical transition-all text-surface-container-highest hover:text-on-primary";
+        }
+      });
+      const container = document.getElementById('hero-tab-content');
+      if (container) {
+        container.innerHTML = `<span>${heroTabContentData[index].text}</span><span class="material-symbols-outlined text-secondary-container text-[18px]">${heroTabContentData[index].icon}</span>`;
+      }
+    }
+
+    function checkEligibility() {
+      const input = document.getElementById('quartier-check-input');
+      const res = document.getElementById('eligibility-result');
+      if (input && input.value.trim().length > 1) {
+        res.classList.remove('hidden');
+        res.textContent = `✓ Relais disponible pour « ${input.value.trim()} » — Signal optimal détecté (Couverture active).`;
+      } else {
+        res.classList.remove('hidden');
+        res.textContent = "Veuillez entrer le nom de votre quartier pour tester.";
+      }
+    }
+
+    function toggleFaq(id) {
+      const content = document.getElementById(`faq-content-${id}`);
+      const icon = document.getElementById(`faq-icon-${id}`);
+      if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        icon.style.transform = 'rotate(180deg)';
+      } else {
+        content.classList.add('hidden');
+        icon.style.transform = 'rotate(0deg)';
+      }
+    }
+
+    function handleQuoteSubmit(e) {
+      e.preventDefault();
+      const alertBox = document.getElementById('form-success-alert');
+      if (alertBox) {
+        alertBox.classList.remove('hidden');
+        setTimeout(() => {
+          alertBox.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      }
+    }
+  </script>
+</div></main><a aria-label="Assistance WhatsApp LwasivaNet" class="fixed bottom-space-lg right-space-lg z-40 flex items-center gap-space-xs px-space-md py-space-sm rounded-full bg-network-active text-on-primary shadow-[0_8px_32px_-4px_rgba(16,185,129,0.4)] hover:brightness-110 transition-transform active:scale-95" href="https://wa.me/243980208012" rel="noopener noreferrer" target="_blank"><span class="material-symbols-outlined text-[20px]">chat</span><span class="font-label-lg text-label-lg hidden sm:inline">Assistance WhatsApp</span></a><footer class="w-full bg-surface-dark text-on-primary"><div class="max-w-[1280px] mx-auto px-gutter lg:px-gutter-desktop py-space-2xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-space-xl"><div class="flex flex-col gap-space-md"><div class="flex items-center gap-space-sm"><img alt="Logo LwasivaNet" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBGKusNzPLR5WHvuUOFXO64zie8y820ZUWNcxXUzVMxePRjPCdsRrHyzNaW0-WWkUR19nIe3Ga9HbJ_jn0nTBl1HSN_8CdQXXeYWK9npzT2UoVKjvTiDurX2MD8ZWQH_R7c46vv_zhwVDm8LWFg0Bn6liTX2bH61KWLJMfr3_SHUouvsQRtsCQMak8mPicT-Y3rPEbgE4s6t-IQcnJ8gzCVp7xOW6fjRfrmIjelKc7c"/><span class="font-headline-sm text-headline-sm text-on-primary font-bold">LwasivaNet</span></div><p class="font-body-sm text-body-sm text-surface-container-highest">Fournisseur d'accès Internet sans fil haut débit de référence à Goma. Connectivité stable, ultra-rapide et résiliente pour foyers et entreprises du Nord-Kivu.</p><span class="font-label-technical text-label-technical text-secondary-container tracking-wider uppercase">Votre satisfaction, notre priorité.</span></div><div class="flex flex-col gap-space-sm"><h3 class="font-headline-sm text-headline-sm text-on-primary mb-space-xs">Navigation rapide</h3><nav class="flex flex-col gap-space-xs"><a class="font-body-sm text-body-sm text-surface-container-highest hover:text-secondary-container transition-colors" data-path="accueil" href="#">Accueil</a><a class="font-body-sm text-body-sm text-surface-container-highest hover:text-secondary-container transition-colors" data-path="nos-offres" href="#">Nos offres</a><a class="font-body-sm text-body-sm text-surface-container-highest hover:text-secondary-container transition-colors" data-path="solutions-pro" href="#">Solutions Entreprises</a><a class="font-body-sm text-body-sm text-surface-container-highest hover:text-secondary-container transition-colors" data-path="couverture" href="#">Infrastructure &amp; Suivi</a><a class="font-body-sm text-body-sm text-surface-container-highest hover:text-secondary-container transition-colors" data-path="espace-client" href="#">Espace client</a></nav></div><div class="flex flex-col gap-space-sm"><h3 class="font-headline-sm text-headline-sm text-on-primary mb-space-xs">Coordonnées réelles</h3><div class="flex flex-col gap-space-xs font-body-sm text-body-sm text-surface-container-highest"><div class="flex items-start gap-space-xs"><span class="material-symbols-outlined text-secondary-container text-[18px]">call</span><span>+243 980 208 012</span></div><div class="flex items-start gap-space-xs"><span class="material-symbols-outlined text-secondary-container text-[18px]">mail</span><span>sagelusenge@gmail.com</span></div><div class="flex items-start gap-space-xs"><span class="material-symbols-outlined text-secondary-container text-[18px]">location_on</span><span>Goma, Nord-Kivu, RDC</span></div><div class="flex items-start gap-space-xs"><span class="material-symbols-outlined text-secondary-container text-[18px]">router</span><span>Technologie sans fil / CPE</span></div></div></div><div class="flex flex-col gap-space-md"><h3 class="font-headline-sm text-headline-sm text-on-primary">Conformité &amp; Support</h3><p class="font-body-sm text-body-sm text-surface-container-highest">Support technique réactif de proximité, activation rapide sur site et contrat clair avec monitoring de bande passante transparent.</p><div class="flex items-center gap-space-xs p-space-sm rounded-lg bg-surface-dark-card"><span class="material-symbols-outlined text-signal-glow text-[20px]">verified</span><span class="font-label-technical text-label-technical text-signal-glow uppercase">Intervention locale rapide 7j/7</span></div></div></div><div class="bg-surface-dark-card py-space-md"><div class="max-w-[1280px] mx-auto px-gutter lg:px-gutter-desktop flex flex-col sm:flex-row items-center justify-between gap-space-sm font-label-md text-label-md text-surface-container-highest"><p>© 2025 LwasivaNet. Connexion locale, impact réel. Tous droits réservés.</p><p class="text-outline-variant font-label-technical text-label-technical uppercase">Goma Infrastructure Telecom Node</p></div></div></footer></body></html>
