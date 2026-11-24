@@ -178,6 +178,17 @@ async function printHtml(title, html) {
   if (!win.closed) { win.focus(); win.print(); }
 }
 
+function documentStamp() {
+  return `<div class="stamp">
+                <div class="stamp-inner">
+                  <strong>LWASIVA</strong>
+                  <span>NET</span>
+                  <em>Goma - RDC</em>
+                  <em>Votre FAI</em>
+                </div>
+              </div>`;
+}
+
 function documentStyles() {
   return `
     <style>
@@ -223,6 +234,7 @@ function documentStyles() {
       .compact-signature{gap:24px;margin-top:12px}
       .signature-box{min-height:150px;border-top:1px solid #111;padding-top:8px}
       .compact-signature .signature-box{min-height:76px}
+      .compact-signature .operator-signature{min-height:150px}
       .operator-signature{position:relative;min-height:150px;overflow:hidden}
       .operator-signature>*:not(.stamp){position:relative;z-index:2}
       .signature-line{height:28px;border-bottom:1px solid #111;margin:8px 0 4px;width:74%}
@@ -236,7 +248,7 @@ function documentStyles() {
       .report-signatures div{min-height:74px;border-top:1px solid #71817b;padding-top:7px;color:#555;font-size:10px}
       .report-signatures strong{display:block;color:#14211d;font-size:11px}
       .footer{border-top:1px solid #cfd8d4;margin-top:18px;padding-top:8px;color:#555;font-size:10px;text-align:center}
-      @media print{.doc{max-width:none}.box,.report-meta{break-inside:avoid}tr{break-inside:avoid}.report-signatures{break-inside:avoid}}
+      @media print{.doc{max-width:none}.box,.report-meta{break-inside:avoid}tr{break-inside:avoid}.report-signatures,.signature{break-inside:avoid}}
     </style>`;
 }
 
@@ -1170,7 +1182,7 @@ function Countdowns({ data, submit, canEdit }) {
       <div className="panel">
         <PanelHeader icon={Timer} title="Compte à rebours des abonnements" />
         <p className="muted">Barres comparables : durée restante sur une échelle de 30 jours (plafond à 100 %). Les périodes expirées sont à zéro.</p>
-        {canEdit && <form className="form-grid" onSubmit={event => { event.preventDefault(); submit(() => api.correctDeadline(correction.contractId, correction), 'Échéance corrigée'); }}>
+        {canEdit && <form className="form-grid deadline-correction-form" onSubmit={event => { event.preventDefault(); submit(() => api.correctDeadline(correction.contractId, correction), 'Échéance corrigée'); }}>
           <SelectInput label="Contrat à corriger" value={correction.contractId} onChange={contractId => setCorrection({ ...correction, contractId })} options={eligibleContracts.map(c => ({ value:c.contract_id, label:`${c.client_name} — ${c.contract_number}` }))} />
           <label className="field"><span>Dernier jour de service</span><input required type="date" value={correction.expiresOn} onChange={e => setCorrection({ ...correction, expiresOn:e.target.value })} /></label>
           <label className="field"><span>Motif de correction</span><input required maxLength={500} value={correction.reason} onChange={e => setCorrection({ ...correction, reason:e.target.value })} /></label>
@@ -1275,7 +1287,7 @@ function Quotes({ data, submit }) {
               <p class="small">Ce devis est transmis a l'administration LWASIVA_NET. Le contrat final est imprime uniquement depuis l'espace admin.</p>
             </section>
             <section class="signature">
-              <div class="signature-box"><strong>Pour LWASIVA_NET</strong><p>Nom : KITSA LUSENGE LWASIVA Sage</p><p>Date : ..... / ..... / 202...</p></div>
+              <div class="signature-box operator-signature"><strong>Pour LWASIVA_NET</strong><p>Nom : KITSA LUSENGE LWASIVA Sage</p><p>Date : ..... / ..... / 202...</p>${documentStamp()}</div>
               <div class="signature-box"><strong>Pour le demandeur</strong><p>Nom : ${text(item.full_name)}</p><p>Date : ..... / ..... / 202...</p></div>
             </section>
             <footer class="footer">LWASIVA_NET - Devis imprime par l'administration</footer>
@@ -1312,7 +1324,7 @@ function Quotes({ data, submit }) {
 function printContractDocument(item) {
   const selectedPlan = item.plan_name || '.........................................';
   const isOtherPlan = selectedPlan === 'Autre';
-  const selectedBandwidth = isOtherPlan ? 'Selon accord familial' : text(item.bandwidth_mbps ? `${item.bandwidth_mbps} Mbps` : '');
+  const selectedBandwidth = isOtherPlan ? 'Offre spéciale' : text(item.bandwidth_mbps ? `${item.bandwidth_mbps} Mbps` : '');
   const selectedPrice = money(item.monthly_price_usd);
   const equipmentTotal = Number(item.equipment_total_price_usd || 100);
   const equipmentInitial = Number(item.equipment_initial_payment_usd || 20);
@@ -1351,7 +1363,7 @@ function printContractDocument(item) {
             <thead><tr><th>Choix</th><th>Bouquet</th><th>Debit</th><th>Usage recommande</th><th>Prix mensuel</th></tr></thead>
             <tbody>
               <tr class="${selectedPlan === 'Basic Home' ? 'selected' : ''}"><td>${selectedMark('Basic Home', selectedPlan)}</td><td>Basic Home</td><td>Jusqu'a 5 Mbps</td><td>Navigation, reseaux sociaux, video SD</td><td>15 USD</td></tr>
-              ${isOtherPlan ? `<tr class="selected"><td>[X]</td><td>Autre</td><td>Selon accord</td><td>Tarif familial ou offre speciale</td><td>${selectedPrice}</td></tr>` : ''}
+              ${isOtherPlan ? `<tr class="selected"><td>[X]</td><td>Autre</td><td>Selon accord</td><td>Offre speciale</td><td>${selectedPrice}</td></tr>` : ''}
               <tr class="${selectedPlan === 'Stream Plus' ? 'selected' : ''}"><td>${selectedMark('Stream Plus', selectedPlan)}</td><td>Stream Plus</td><td>Jusqu'a 10 Mbps</td><td>Streaming HD, teletravail</td><td>20 USD</td></tr>
               <tr class="${selectedPlan === 'Pro Ultra' ? 'selected' : ''}"><td>${selectedMark('Pro Ultra', selectedPlan)}</td><td>Pro Ultra</td><td>Jusqu'a 30 Mbps</td><td>Streaming 4K, gaming, multi-utilisateurs</td><td>50 USD</td></tr>
             </tbody>
@@ -1393,14 +1405,7 @@ function printContractDocument(item) {
               <p>Email : sagelusenge@gmail.com</p>
               <div class="signature-line"></div>
               <p class="small">Signature manuscrite</p>
-              <div class="stamp">
-                <div class="stamp-inner">
-                  <strong>LWASIVA</strong>
-                  <span>NET</span>
-                  <em>Goma - RDC</em>
-                  <em>Votre FAI</em>
-                </div>
-              </div>
+              ${documentStamp()}
             </div>
             <div class="signature-box"><strong>Pour le Client</strong><p>Nom : ${text(item.client_name)}</p><p>Date : ..... / ..... / 202...</p><p>Signature precedee de la mention "Lu et approuve"</p></div>
           </section>
@@ -2060,7 +2065,7 @@ function printInvoice(item) {
               </table>
             </section>
             <section class="signature compact-signature">
-              <div class="signature-box"><strong>LWASIVA_NET</strong><p>Nom : KITSA LUSENGE LWASIVA Sage</p></div>
+              <div class="signature-box operator-signature"><strong>LWASIVA_NET</strong><p>Nom : KITSA LUSENGE LWASIVA Sage</p>${documentStamp()}</div>
               <div class="signature-box"><strong>Client</strong><p>Nom : ${text(item.client_name)}</p></div>
             </section>
           </main>
@@ -2126,7 +2131,7 @@ function printPaymentStatement(item, data) {
             </section>
 
             <section class="signature">
-              <div class="signature-box"><strong>Pour LWASIVA_NET</strong><p>Nom : KITSA LUSENGE LWASIVA Sage</p><p>Date : ${todayDisplayDate()}</p></div>
+              <div class="signature-box operator-signature"><strong>Pour LWASIVA_NET</strong><p>Nom : KITSA LUSENGE LWASIVA Sage</p><p>Date : ${todayDisplayDate()}</p>${documentStamp()}</div>
               <div class="signature-box"><strong>Client</strong><p>Nom : ${text(item.client_name)}</p><p>Signature : ................................</p></div>
             </section>
             <footer class="footer">LWASIVA_NET - Reçu de paiement</footer>
@@ -3139,7 +3144,7 @@ function Reports({ data, canExportGlobal }) {
 
   return (
     <>
-      {canExportGlobal && <section className="panel global-report-panel"><PanelHeader icon={FileText} title="Rapport global de l’entreprise" /><p>Tous les mois depuis les premières opérations enregistrées : recettes, dépenses, solde de trésorerie, clients, contrats et annexes complètes de tous les modules.</p><p className="muted">Les paiements, le budget et la caisse Ghislain sont présentés séparément pour éviter les doubles comptes. Export réservé à l’administrateur.</p><button className="primary-button" disabled={exporting} onClick={exportGlobal}><FileText size={18} />{exporting ? 'Génération du PDF…' : 'Télécharger le rapport global PDF'}</button>{exportError && <p role="alert">{exportError}</p>}</section>}
+      {canExportGlobal && <section className="panel global-report-panel"><PanelHeader icon={FileText} title="Rapport global de l’entreprise" /><p>Tous les mois depuis les premières opérations enregistrées : recettes, dépenses, solde de trésorerie, clients, contrats et annexes complètes de tous les modules.</p><p className="muted">Matériel soldé ou restant à payer par client, répartition des contrats et suivi des factures. Les paiements et le budget restent distincts pour éviter les doubles comptes. Export réservé à l’administrateur.</p><button className="primary-button" disabled={exporting} onClick={exportGlobal}><FileText size={18} />{exporting ? 'Génération du PDF…' : 'Télécharger le rapport global PDF'}</button>{exportError && <p role="alert">{exportError}</p>}</section>}
       <section className="reports-hero">
         <div>
           <span className="reports-eyebrow"><BarChart3 size={14} /> Centre d'analyse</span>

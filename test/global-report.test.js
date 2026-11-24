@@ -17,3 +17,15 @@ test('les tables absentes sont signalées et les secrets exclus',()=>{
  for(const key of ['password_hash','auth_secret','expo_push_token','p256dh','endpoint']) assert.ok(SECRET_COLUMN.test(key));
  assert.ok(!SECRET_COLUMN.test('payment_reference'));
 });
+test('matériel : clients uniques, paiements réels et soldes par contrat',()=>{
+ const report=summarize([
+ section('clients',[{id:1,full_name:'Soldé'},{id:2},{id:3},{id:4}]),
+ section('contracts',[{id:10,client_id:1,equipment_total_price_usd:100},{id:20,client_id:2,equipment_total_price_usd:100},{id:21,client_id:2,equipment_total_price_usd:50},{id:30,client_id:3}]),
+ section('equipment_installments',[{contract_id:10,status:'payee',amount_usd:100},{contract_id:20,status:'payee',amount_usd:150},{contract_id:21,status:'en_attente',amount_usd:50}])
+ ],'2026-11-23');
+ const e=report.business.equipmentTotals;
+ assert.equal(e['Soldé'],1);assert.equal(e['À solder'],1);assert.equal(e['À vérifier'],1);assert.equal(e['Sans contrat'],1);
+ assert.equal(e.remaining,5000);assert.equal(e.paid,25000);
+ const {REPORT_TABLES}=require('../src/services/global-report.service');
+ assert.ok(REPORT_TABLES.every(([table])=>!table.startsWith('ghislain_')));
+});

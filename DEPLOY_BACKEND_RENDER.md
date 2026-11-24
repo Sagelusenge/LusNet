@@ -133,7 +133,7 @@ Le backend et le frontend doivent être déployés ensemble pour utiliser ces fo
   personnalisés.
 - **Rapport global** : Rapports > Télécharger le rapport global PDF (administrateur uniquement).
   L’export lit directement toutes les lignes des modules, dans un instantané cohérent de la base.
-  Les journaux budget, paiements clients et caisse Ghislain restent distincts afin d’éviter les
+  L’espace Ghislain est exclu du rapport. La synthèse détaille le matériel soldé et restant par client. Les journaux budget et paiements clients restent distincts afin d’éviter les
   doubles comptes. Le solde mensuel présenté est un solde de trésorerie du budget, pas un bénéfice
   comptable certifié. Le début de l’activité correspond aux premières écritures conservées.
   Les modules manquants sont signalés ; les secrets sont exclus ; les pièces jointes sont

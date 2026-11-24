@@ -35,13 +35,30 @@ function renderGlobalReport(report, stream) {
   const t=report.totals;
   table(['Indicateur','Montant'],[
     ['Recettes enregistrées au budget',cash(t.receipts)],['Dépenses enregistrées au budget',cash(t.expenses)],['Solde de trésorerie du budget (recettes - dépenses)',cash(t.result)],
-    ['Paiements clients enregistrés (présentés séparément)',cash(t.payments)],['Factures émises hors brouillons et annulations',cash(t.invoiced)],['Avoirs émis (présentés séparément)',cash(t.creditNotes)],
-    ['Livre de caisse Ghislain : entrées',cash(t.cashIn)],['Livre de caisse Ghislain : sorties',cash(t.cashOut)]
+    ['Paiements clients enregistrés (présentés séparément)',cash(t.payments)],['Factures émises hors brouillons et annulations',cash(t.invoiced)],['Avoirs émis (présentés séparément)',cash(t.creditNotes)]
   ],[3,2]);
-  text('Méthode : les paiements clients, le budget et la caisse Ghislain sont trois journaux distincts. Leurs recettes ne sont jamais additionnées : une même opération peut y figurer plusieurs fois. Le solde du budget est un résultat de trésorerie, pas un bénéfice comptable certifié. Aucun rapprochement automatique n’est supposé.');
+  text('Méthode : les paiements clients et le budget sont deux journaux distincts. Leurs recettes ne sont jamais additionnées : une même opération peut y figurer plusieurs fois. Le solde du budget est un résultat de trésorerie, pas un bénéfice comptable certifié. Aucun rapprochement automatique n’est supposé.');
   text(`Écart de contrôle entre paiements clients et recettes du budget : ${cash((t.payments||0)-(t.receipts||0))}. Cet écart peut aussi inclure des financements, des décalages ou des écritures manquantes.`);
   text('Le détail inclut les proformas et les factures annulées ; ces documents sont exclus du total facturé. Les montants historiques proviennent des écritures, jamais du tarif actuel des bouquets.');
   if(report.missing.length){section('Données non disponibles');text(`Modules absents de cette base : ${report.missing.join(', ')}. Le rapport ne les assimile pas à un solde nul.`);}
+  doc.addPage();section('Situation globale des clients et du matériel');
+  const b=report.business, e=b.equipmentTotals;
+  text('Situation actuelle sur les contrats conservés, y compris les contrats terminés. Un client est soldé lorsque tous ses contrats avec frais de matériel sont entièrement réglés. Seules les échéances matériel marquées payées sont comptées comme encaissements.');
+  table(['Indicateur','Total'],[
+    ['Clients enregistrés',b.clientCount],['Clients ayant soldé tout leur matériel',e['Soldé'] || 0],
+    ['Clients avec matériel restant à payer',e['À solder'] || 0],['Clients avec données matériel à vérifier',e['À vérifier'] || 0],
+    ['Clients sans frais de matériel',e['Sans frais matériel'] || 0],['Clients sans contrat',e['Sans contrat'] || 0],
+    ['Coût du matériel renseigné',cash(e.total)],['Matériel payé',cash(e.paid)],['Matériel restant à payer (montants connus)',cash(e.remaining)]
+  ],[3,2]);
+  text('Les montants inconnus ne sont pas remplacés par un prix supposé. Les trop-perçus sur un contrat ne compensent pas les dettes d’un autre. Les paiements matériel sont une ventilation et ne sont pas ajoutés aux recettes globales. Si un module source est absent, cette synthèse est incomplète : consulter les données non disponibles.');
+  section('Détail du matériel par client');
+  table(['Client','Contrats','Coût connu','Payé','Reste connu','Situation'], b.equipment.map(c=>[c.name,c.contracts,cash(c.total),cash(c.paid),cash(c.remaining),c.status]),[1.7,.6,1,1,1,1]);
+  section('Répartition de l’activité');
+  const names={contracts:'Contrats',invoices:'Factures et documents commerciaux',support_tickets:'Support et interventions'};
+  for(const group of b.statuses) {
+    text(names[group.table],12);
+    table(['Statut enregistré','Nombre'],group.rows.length ? group.rows : [['Aucun enregistrement',0]],[3,1]);
+  }
   doc.addPage();section('Évolution mensuelle');
   text('Tous les mois sont présents, y compris ceux sans mouvement. Les mois futurs éventuels correspondent à des dates saisies à vérifier.');
   table(['Mois','Recettes budget','Dépenses budget','Solde du mois','Cumul'],report.monthly.map(m=>[monthLabel(m.month),cash(m.receipts),cash(m.expenses),cash(m.result),cash(m.cumulative)]),[1.4,1,1,1,1]);

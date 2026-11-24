@@ -10,18 +10,51 @@ const REPORT_TABLES = [
   ['client_account_requests', 'Demandes de comptes'], ['users', 'Utilisateurs et rôles'],
   ['app_messages', 'Messages internes'], ['app_message_recipients', 'Destinataires et lectures'],
   ['whatsapp_notification_logs', 'Historique WhatsApp'], ['deadline_push_logs', 'Historique des alertes'],
-  ['app_push_tokens', 'Appareils enregistrés'], ['web_push_subscriptions', 'Abonnements aux notifications'],
-  ['ghislain_cashbook_entries', 'Ghislain - livre de caisse'], ['ghislain_budget_entries', 'Ghislain - budget']
+  ['app_push_tokens', 'Appareils enregistrés'], ['web_push_subscriptions', 'Abonnements aux notifications']
 ];
 const SECRET_COLUMN = /password|secret|token|p256dh|endpoint|credential/i;
 const cents = value => Math.round(Number(value || 0) * 100);
 function monthOf(value) { return /^\d{4}-\d{2}/.test(String(value || '')) ? String(value).slice(0,7) : null; }
+function businessSummary(data) {
+  const clients = new Map((data.clients || []).map(c => [String(c.id), {
+    id:c.id, name:c.full_name || `Client ${c.id}`, contracts:0, total:0, paid:0, remaining:0, unknown:0
+  }]));
+  const paidByContract = new Map();
+  for (const row of data.equipment_installments || []) {
+    if (row.status === 'payee') paidByContract.set(String(row.contract_id), (paidByContract.get(String(row.contract_id)) || 0) + cents(row.amount_usd));
+  }
+  for (const contract of data.contracts || []) {
+    const key = String(contract.client_id);
+    if (!clients.has(key)) clients.set(key, {id:contract.client_id, name:`Client non référencé (${key})`, contracts:0, total:0, paid:0, remaining:0, unknown:0});
+    const client = clients.get(key);
+    client.contracts++;
+    const paid = paidByContract.get(String(contract.id)) || 0;
+    client.paid += paid;
+    if (contract.equipment_total_price_usd == null || !Number.isFinite(Number(contract.equipment_total_price_usd))) { client.unknown++; continue; }
+    const total = cents(contract.equipment_total_price_usd);
+    client.total += total;
+    // A surplus on one contract must not erase another contract's outstanding balance.
+    client.remaining += Math.max(total - paid, 0);
+  }
+  const equipment = [...clients.values()].map(c => ({...c, status:
+    !c.contracts ? 'Sans contrat' : c.unknown ? 'À vérifier' : c.remaining > 0 ? 'À solder' : c.total > 0 ? 'Soldé' : 'Sans frais matériel'
+  }));
+  const statuses = table => Object.entries((data[table] || []).reduce((acc,row) => {
+    const key=row.status || 'Non renseigné'; acc[key]=(acc[key] || 0)+1; return acc;
+  }, {}));
+  return {
+    equipment,
+    equipmentTotals: equipment.reduce((a,c) => { for(const key of ['total','paid','remaining']) a[key]+=c[key]; a[c.status]=(a[c.status] || 0)+1; return a; }, {total:0,paid:0,remaining:0}),
+    clientCount:(data.clients || []).length,
+    statuses: ['contracts','invoices','support_tickets'].map(table => ({table, rows:statuses(table)}))
+  };
+}
 function summarize(sections, generatedAt = new Date().toISOString()) {
   const data = Object.fromEntries(sections.map(s => [s.table, s.rows]));
   const months = new Map();
   function month(value) {
     const key = monthOf(value); if (!key) return null;
-    if (!months.has(key)) months.set(key, { month:key, receipts:0, expenses:0, payments:0, invoiced:0, creditNotes:0, newClients:0, newContracts:0, cashIn:0, cashOut:0 });
+    if (!months.has(key)) months.set(key, { month:key, receipts:0, expenses:0, payments:0, invoiced:0, creditNotes:0, newClients:0, newContracts:0 });
     return months.get(key);
   }
   for (const row of data.clients || []) { const m=month(row.created_at); if(m) m.newClients++; }
@@ -32,7 +65,6 @@ function summarize(sections, generatedAt = new Date().toISOString()) {
     if (['brouillon','annulee'].includes(row.status) || row.invoice_type === 'proforma') continue;
     const m=month(row.created_at); if(m) m[row.invoice_type === 'avoir' ? 'creditNotes' : 'invoiced']+=cents(row.total_amount_usd);
   }
-  for (const row of data.ghislain_cashbook_entries || []) { const m=month(row.entry_date); if(m) m[row.movement_type === 'entree' ? 'cashIn' : 'cashOut']+=cents(row.amount_usd); }
   const firstMonth=[...months.keys()].sort()[0] || null;
   const lastMonth=[...months.keys(), monthOf(generatedAt)].sort().at(-1);
   if (firstMonth) {
@@ -51,11 +83,11 @@ function summarize(sections, generatedAt = new Date().toISOString()) {
     return { ...m, clients, result:m.receipts-m.expenses, cumulative };
   });
   const totals = monthly.reduce((acc,m) => {
-    for (const key of ['receipts','expenses','payments','invoiced','creditNotes','newClients','newContracts','cashIn','cashOut','result']) acc[key]=(acc[key]||0)+m[key];
+    for (const key of ['receipts','expenses','payments','invoiced','creditNotes','newClients','newContracts','result']) acc[key]=(acc[key]||0)+m[key];
     return acc;
   }, {});
   const missing = sections.filter(s=>s.missing).map(s=>s.title);
-  return { firstMonth, monthly, totals, missing, counts:sections.map(s=>({ title:s.title, count:s.rows.length, missing:s.missing })) };
+  return { business:businessSummary(data), firstMonth, monthly, totals, missing, counts:sections.map(s=>({ title:s.title, count:s.rows.length, missing:s.missing })) };
 }
 async function collectGlobalReport() {
   const connection=await getConnection();
